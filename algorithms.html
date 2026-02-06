@@ -90,36 +90,54 @@ li { margin: 4px 0; font-size: 14px; }
 <div class="tab-content active" id="spo2">
 <div class="card">
   <h2>SpO2 &mdash; Blood Oxygen Saturation</h2>
-  <p><span class="badge badge-file">mmt_vital_algorithms.c</span><span class="badge badge-file">mmt_spo2.c</span><span class="badge badge-sensor">MAX86178 PPG</span><span class="badge badge-rate">Processed every 15 s</span></p>
+  <p><span class="badge badge-file">mmt_vital_algorithms.c</span><span class="badge badge-file">mmt_spo2.c</span><span class="badge badge-file">mmt_process_fxi.c</span><span class="badge badge-sensor">MAX86178 PPG</span><span class="badge badge-rate">Processed every 15 s</span></p>
 
   <h3>Overview</h3>
   <div class="overview-grid">
-    <div class="item"><strong>Inputs</strong>Raw PPG samples from Red, Infrared (and optionally Green) LEDs; LED power levels; ADC gain; sampling rate (32 or 128&nbsp;Hz).</div>
-    <div class="item"><strong>Outputs</strong>SpO2 percentage (0&ndash;100%), quality score (0&ndash;4), timestamp.</div>
-    <div class="item"><strong>Processing Cadence</strong>PPG data is accumulated per second. Every <code>SPO2_PROCESS_CHUNK_SIZE</code> = 15&nbsp;seconds, the algorithm runs a full SpO2 calculation.</div>
-    <div class="item"><strong>Calibration Parameters</strong>Skin color (1&ndash;6), BMI, hair density, slope offset, SpO2 offset. Persisted in FDS (Flash Data Storage).</div>
+    <div class="item"><strong>Inputs</strong>Raw PPG samples from Red, Infrared (and optionally Green) LEDs; LED power levels; ADC gain; sampling rate (32 or 128&nbsp;Hz). Multi-channel: RED1/IRED1 and RED2/IRED2 pairs from MAX86178.</div>
+    <div class="item"><strong>Outputs</strong><code>spo2_f</code> (final fused SpO2 percentage 0&ndash;100%), quality score <code>q_f</code> (0&ndash;4), timestamp. Additionally: PPG state (<code>ppg_state_t</code>) with DC levels, LED powers, amplitudes, and pulse counts per channel.</div>
+    <div class="item"><strong>Processing Cadence</strong>PPG data is accumulated per second. Every <code>SPO2_PROCESS_CHUNK_SIZE</code> = 15&nbsp;seconds (configurable, extended to 22&nbsp;s during initialization), the algorithm runs a full SpO2 calculation on each channel independently.</div>
+    <div class="item"><strong>Calibration Parameters</strong><code>spo2_algorithm_params_t</code>: skin color (1&ndash;6), BMI, hair density, slope offset, SpO2 offset, DC red/IR references, quality score. Persisted in FDS at <code>FDS_MAXIM_SPO2_ALGO</code>.</div>
   </div>
 
-  <h3>Processing Pipeline</h3>
+  <h3>Two Implementations</h3>
+  <p>The firmware contains two SpO2 processing paths:</p>
+  <table>
+    <tr><th>Module</th><th>File</th><th>Sampling Rate</th><th>Channels</th><th>Usage</th></tr>
+    <tr><td><b>Legacy SpO2</b></td><td><code>mmt_spo2.c</code></td><td>128&nbsp;Hz (default)</td><td>Single channel (best of RED1/IRED1 or RED2/IRED2)</td><td>Standalone simpler module, older firmware path</td></tr>
+    <tr><td><b>Main Vital SpO2</b></td><td><code>mmt_vital_algorithms.c</code></td><td>32 or 128&nbsp;Hz</td><td>Dual-channel with fusion &rarr; <code>spo2_f</code></td><td>Primary algorithm used in production with initialization, offset calibration, and venous pooling detection</td></tr>
+  </table>
+
+  <h3>Processing Pipeline (Main Algorithm)</h3>
   <div class="pipeline">
-    <span class="step">Raw PPG (Red &amp; IR)</span><span class="arrow">&rarr;</span>
+    <span class="step">Raw PPG (Red &amp; IR) &times;2 channels</span><span class="arrow">&rarr;</span>
     <span class="step">Band-pass Filter (4th-order Butterworth)</span><span class="arrow">&rarr;</span>
     <span class="step">Rolling Average (8-sample)</span><span class="arrow">&rarr;</span>
-    <span class="step">Peak Detection (max/min tracking)</span><span class="arrow">&rarr;</span>
-    <span class="step">SQI Assessment</span><span class="arrow">&rarr;</span>
-    <span class="step">RMS AC/DC Ratio (R)</span><span class="arrow">&rarr;</span>
-    <span class="step">Polynomial SpO2 Curve</span><span class="arrow">&rarr;</span>
-    <span class="step">Outlier Removal &amp; Quality</span>
+    <span class="step">Peak Detection (delta-based)</span><span class="arrow">&rarr;</span>
+    <span class="step">SQI Assessment per channel</span><span class="arrow">&rarr;</span>
+    <span class="step">Good Pulse Matching (Red+IR pairs)</span><span class="arrow">&rarr;</span>
+    <span class="step">Per-pulse SpO2 with tuning</span><span class="arrow">&rarr;</span>
+    <span class="step">Dual-channel Fusion &rarr; <b>spo2_f</b></span><span class="arrow">&rarr;</span>
+    <span class="step">Offset + Venous Pooling</span><span class="arrow">&rarr;</span>
+    <span class="step">Reporting via callback</span>
   </div>
 
   <h3>Implementation Details</h3>
   <h4>1. Band-pass Filtering</h4>
-  <p>A 4th-order Butterworth band-pass filter isolates the cardiac-frequency range (~0.7&ndash;4&nbsp;Hz). Two sets of coefficients are maintained for 32&nbsp;Hz and 128&nbsp;Hz sampling rates. The filter is applied independently to the Red and Infrared channels using <code>bb_digital_float_filter()</code>.</p>
+  <p>A 4th-order Butterworth band-pass filter isolates the cardiac-frequency range (~0.7&ndash;4&nbsp;Hz). Two sets of coefficients are maintained for 32&nbsp;Hz and 128&nbsp;Hz sampling rates. The filter is applied independently to the Red and Infrared channels using <code>bb_digital_float_filter()</code>. A small correction (<code>-0.000015</code>) is applied to the filter delay to compensate for C vs Python floating-point precision differences.</p>
 
-  <h4>2. Peak Detection</h4>
-  <p>A delta-based peak/trough detector tracks filtered signal extrema. When the signal drops below <code>mx - delta</code>, a peak is recorded; when it rises above <code>mn + delta</code>, a trough is recorded. Peaks and inverse peaks are stored in circular <code>Peaks_array_t</code> buffers.</p>
+  <h4>2. LED Normalization &amp; Deel Factor</h4>
+  <p>If the IR LED power is higher than the Red LED power, raw PPG values are divided by their respective LED powers (normalization). The <code>deel</code> factor adjusts the R ratio based on IR LED power:</p>
+  <ul>
+    <li><code>deel = 2.0</code> if IR LED power &ge; 25</li>
+    <li><code>deel = 1.8</code> otherwise</li>
+  </ul>
+  <p>This compensates for the calibration curve shift depending on LED drive levels.</p>
 
-  <h4>3. Signal Quality Index (SQI)</h4>
+  <h4>3. Peak Detection</h4>
+  <p>A delta-based peak/trough detector tracks filtered signal extrema. When the signal drops below <code>mx - delta</code>, a peak is recorded; when it rises above <code>mn + delta</code>, a trough is recorded. Peaks and inverse peaks are stored in circular <code>Peaks_array_t</code> buffers. Each peak carries: filtered value, raw PPG, LED power, timestamp, position, movement level, and amplitude.</p>
+
+  <h4>4. Signal Quality Index (SQI)</h4>
   <p>Each pulse is evaluated against morphological criteria ported from Corsano Python code:</p>
   <ul>
     <li><b>Rise Time (RT)</b>: must be 0.08&ndash;0.49&nbsp;s</li>
@@ -128,25 +146,59 @@ li { margin: 4px 0; font-size: 14px; }
     <li><b>Systolic-Diastolic Ratio (SDR)</b>: must be &le;&nbsp;1.1</li>
     <li><b>Temporal consistency</b>: consecutive pulse ratios (PWA, RT, PWD) within 33&ndash;200%</li>
   </ul>
+  <p>Both Red and IR channels are independently assessed. The count of good pulses per channel is tracked in <code>ppg_state.no_good_pulses_red</code> / <code>no_good_pulses_ired</code>.</p>
 
-  <h4>4. SpO2 Calculation</h4>
-  <p>The ratio <code>R = RMS_red / RMS_ir / deel</code> is converted to SpO2 using a quadratic polynomial:</p>
+  <h4>5. Good Pulse Matching &amp; Per-pulse SpO2</h4>
+  <p><code>mmt_spo2_find_good_pulses_two()</code> pairs Red and IR peaks that pass SQI. For each valid pair, a per-pulse SpO2 is computed using the quadratic polynomial:</p>
   <p><code>SpO2 = -30.089 &times; R - 0.031 &times; R&sup2; + 108.490</code></p>
-  <p>Outliers (&lt;65 or &gt;105) are rejected, then a 1-standard-deviation filter removes remaining outliers. The final SpO2 is the <b>maximum</b> of the remaining values, clamped to 72&ndash;100.</p>
+  <p>Each pulse result is stored in a <code>Pulse_array_t</code> as a <code>Pulse_t</code> containing: RMS red, RMS IR, R-ratio, DC levels, SpO2 raw, SpO2 tuned (with skin/BMI offsets applied), quality flag, timestamp, and movement level. The tuned SpO2 value applies individual calibration offsets (<code>spo2_algo.spo2_offset</code>) at the pulse level.</p>
 
-  <h4>5. Quality Assignment</h4>
+  <h4>6. SpO2 Calculation (Legacy Path &mdash; mmt_spo2.c)</h4>
+  <p>The simpler single-channel path computes <code>R = RMS_red / RMS_ir / deel</code> for all good pulses, then:</p>
+  <ul>
+    <li>Outliers (&lt;65 or &gt;105) are rejected</li>
+    <li>A 1-standard-deviation filter removes remaining outliers</li>
+    <li>Final SpO2 = <b>maximum</b> of remaining values, clamped to 72&ndash;100</li>
+    <li>Low SpO2 values (&lt;90) are only shown if quality &ge; 3; values &lt;97 require quality &ge; 2</li>
+  </ul>
+
+  <h4>7. SpO2f &mdash; Dual-Channel Fusion</h4>
+  <p>The main algorithm (<code>mmt_vital_algorithms.c</code>) computes SpO2 independently on both optical channels (RED1/IRED1 and RED2/IRED2), producing <code>spo2_f_1</code> and <code>spo2_f_2</code>. The final <code>spo2_f</code> is derived by fusion:</p>
+  <table>
+    <tr><th>Scenario</th><th>Fusion Logic</th></tr>
+    <tr><td>Both channels valid</td><td><code>spo2_f = (spo2_f_1 + spo2_f_2) / 2</code>, quality boosted if channels agree (&Delta; &lt; 5)</td></tr>
+    <tr><td>Only Channel 1 valid</td><td><code>spo2_f = spo2_f_1</code>, quality reduced by 1</td></tr>
+    <tr><td>Only Channel 2 valid</td><td><code>spo2_f = spo2_f_2</code>, quality reduced by 1</td></tr>
+    <tr><td>Channels disagree &gt; 15%</td><td>Both rejected (spo2_f = 0) &mdash; only when <code>spo2_algo.rate &ge; 59</code></td></tr>
+    <tr><td>One channel &ge;93, other &le;85</td><td>Low channel discarded, only high channel used (outlier rejection)</td></tr>
+  </table>
+  <p>The fusion is logged as <code>SPO2_F1 (val,q) SPO2_F2 (val,q)</code> and the final result as <code>SPO2_F</code>.</p>
+
+  <h4>8. Initialization Phase</h4>
+  <p>When the SpO2 module first starts (<code>mmt_spo2_initialization = true</code>), an extended initialization sequence runs for up to 7 minutes:</p>
+  <ul>
+    <li>First window is extended to 22&nbsp;s (15+7) instead of the normal 15&nbsp;s</li>
+    <li>SpO2 values are collected into 5 sequential minute buffers (<code>spo2_1st_min_pulse_buffer</code> through <code>spo2_5th_min_pulse_buffer</code>), each holding up to 3 measurements</li>
+    <li>Once at least 3 buffers have 3 samples each (or 7 minutes elapsed), the median of all buffer means is computed &rarr; <code>mid_spo2_f</code></li>
+    <li>This median is used to compute the personal <code>spo2_offset</code> via <code>mmt_spo2_compute_offset()</code>, which is saved to FDS</li>
+    <li>During initialization, quality is capped at 1 to avoid premature high-confidence reporting</li>
+    <li>LED power optimization runs concurrently to find optimal LED levels</li>
+  </ul>
+
+  <h4>9. Quality Assignment</h4>
   <table>
     <tr><th>Quality</th><th>Condition</th></tr>
-    <tr><td>0</td><td>No valid pulses</td></tr>
-    <tr><td>1</td><td>&lt;&nbsp;3 valid pulses</td></tr>
-    <tr><td>2</td><td>R-ratio std &gt;&nbsp;0.5</td></tr>
-    <tr><td>3</td><td>R-ratio std &gt;&nbsp;0.22</td></tr>
-    <tr><td>4</td><td>All conditions met (best quality)</td></tr>
+    <tr><td>0</td><td>No valid pulses or insufficient data</td></tr>
+    <tr><td>1</td><td>&lt;&nbsp;3 valid pulses, or only one channel available, or during initialization</td></tr>
+    <tr><td>2</td><td>R-ratio std &gt;&nbsp;0.5 (high variance between pulses)</td></tr>
+    <tr><td>3</td><td>R-ratio std &gt;&nbsp;0.22 (moderate variance)</td></tr>
+    <tr><td>4</td><td>All conditions met (best quality), dual-channel agreement</td></tr>
   </table>
+  <p>Special quality codes at the reporting level: <code>MOTION_ALERT_CODE</code> if movement detected, <code>SPO2_LOW_QUALITY_SIGNAL</code> if no good pulses for 20+ minutes, <code>VENOUS_POLLING_CODE</code> if venous pooling detected during sleep.</p>
 
-  <h4>6. Skin Color &amp; BMI Offset Compensation</h4>
+  <h4>10. Skin Color &amp; BMI Offset Compensation</h4>
   <table>
-    <tr><th>Skin Color</th><th>Offset</th></tr>
+    <tr><th>Skin Color (Fitzpatrick)</th><th>Offset</th></tr>
     <tr><td>1 (Very light)</td><td>&minus;0.42</td></tr>
     <tr><td>2 (Light)</td><td>+1.30</td></tr>
     <tr><td>3 (Medium)</td><td>&minus;1.22</td></tr>
@@ -155,7 +207,13 @@ li { margin: 4px 0; font-size: 14px; }
   </table>
   <p>BMI offset: +0.05 if BMI&lt;29; linear interpolation down to &minus;5.4 for BMI&ge;35.</p>
 
-  <div class="note">The <code>spo2_algo.rate</code> parameter controls the measurement rate (default 1800&nbsp;s = 30&nbsp;min). This is configurable per plan and affects how often SpO2 data is reported upstream (not the 15&nbsp;s internal processing cadence).</div>
+  <h4>11. Venous Pooling Detection</h4>
+  <p>During sleep recording, SpO2 values between 60 and 92 are flagged as venous pooling (blood accumulation in extremities). These readings are set to 0 and a <code>venous_count</code> counter increments (max 30). When <code>venous_count &gt; 10</code>, the quality code is set to <code>VENOUS_POLLING_CODE</code> to inform downstream consumers.</p>
+
+  <h4>12. Reporting &amp; Aggregation</h4>
+  <p>Each computed <code>spo2_f</code> is passed to <code>mmt_spo2_callback()</code> in <code>mmt_process_fxi.c</code>, which adds it to the weighted-average buffer <code>spo2_buffer</code>. At the <code>vital_reporting_rate.Spo2</code> interval, the buffered samples are aggregated into the final activity output. Values between 90&ndash;98 are biased upward by +2, and values 80&ndash;90 by +1 before reporting.</p>
+
+  <div class="note"><b>Reporting Rate (<code>spo2_algo.rate</code>)</b>: Controls the upstream reporting frequency (default 1800&nbsp;s = 30&nbsp;min). This is independent of the 15&nbsp;s internal processing cadence. When rate &lt; 59&nbsp;s, the <code>spo2_max</code> cap changes from 100 to 98 and additional cross-channel rejection logic is bypassed. The rate is configurable per plan via BLE command and persisted in FDS.</div>
 </div>
 </div>
 
@@ -189,18 +247,23 @@ li { margin: 4px 0; font-size: 14px; }
   <p>The green PPG signal is filtered through a 4th-order Chebyshev Type II band-pass filter (0.7&ndash;4&nbsp;Hz passband) to isolate the cardiac component. Coefficients are adapted for different sampling rates (32, 64, 128&nbsp;Hz).</p>
 
   <h4>2. FFT-based BPM Extraction</h4>
-  <p>A 256-point real FFT (<code>kiss_fftr</code>) is computed on the filtered green PPG data. The dominant frequency peak in the 45&ndash;190&nbsp;BPM range is identified. A minimum FFT magnitude threshold of 35 rejects noise.</p>
+  <p>A 256-point real FFT (<code>kiss_fftr</code>) is computed on the filtered green PPG data, using a dedicated internal buffer of 16&nbsp;KB (<code>fft_buffer_internal</code>). The dominant frequency peak in the 45&ndash;190&nbsp;BPM range is identified. A minimum FFT magnitude threshold of <code>MINIMUM_FFT_MAG = 35</code> rejects noise peaks. The resolution is approximately 7.5&nbsp;BPM per FFT bin at 32&nbsp;Hz sampling. Sub-bin interpolation may be applied for finer resolution.</p>
 
   <h4>3. Motion Artifact Cancellation</h4>
-  <p>The accelerometer magnitude is band-pass filtered (same passband) and its FFT computed. If the accelerometer shows a frequency peak within <code>ACC_FREQ_CANCELING_RANGE</code> = 3&nbsp;BPM of the PPG peak, that PPG peak is considered motion-corrupted and suppressed.</p>
+  <p>The 3-axis accelerometer magnitude is band-pass filtered (same passband) and its FFT computed. If the accelerometer shows a frequency peak within <code>ACC_FREQ_CANCELING_RANGE = 0.05 &times; 60 = 3&nbsp;BPM</code> of the PPG peak, that PPG peak is considered motion-corrupted and suppressed. This prevents step cadence from being misidentified as heart rate during walking/running.</p>
 
   <h4>4. Adaptive Filter Switching</h4>
-  <p><code>mmt_switch_bpm_filter()</code> dynamically selects narrower or wider band-pass coefficients depending on the currently estimated BPM, the number of consecutive good SQI pulses, and RR-interval stability. This improves accuracy across rest and exercise.</p>
+  <p><code>mmt_switch_bpm_filter()</code> dynamically selects narrower or wider band-pass coefficients depending on: the currently estimated BPM, the number of consecutive good SQI pulses, RR-interval stability (<code>rr_std</code>), and peak-to-peak consistency. Multiple BPM filter coefficient sets (<code>mmt_bpm_filters.h</code>) cover different heart rate ranges. If insufficient good peaks are detected, the filter widens to capture a broader BPM range. Can be force-reinitialized when conditions change significantly.</p>
 
   <h4>5. RR Intervals &amp; RMSSD</h4>
-  <p>RR intervals are derived from peak-to-peak timing in the green PPG. The <code>calculate_RMSSD()</code> function computes the Root Mean Square of Successive Differences, used for Heart Rate Variability (HRV) estimation and sleep staging.</p>
+  <p>RR intervals are derived from peak-to-peak timing in the green PPG, stored in a circular buffer (<code>rr_buffer</code>). The <code>calculate_RMSSD()</code> function computes the Root Mean Square of Successive Differences:</p>
+  <p><code>RMSSD = sqrt(mean((RR[i+1] - RR[i])&sup2;))</code></p>
+  <p>This metric feeds into: Heart Rate Variability (HRV) estimation, sleep staging data collection (written to the Corsano sleep record), and stress level evaluation.</p>
 
-  <div class="note">BPM is reported via the <code>mmt_HR_cb</code> callback and stored with timestamp and quality for downstream consumers (sleep staging, NIBP calibration, etc.).</div>
+  <h4>6. BPM Weighted-Average Buffer</h4>
+  <p>Each BPM reading is added with its quality score to the <code>pulse_rate_buffer</code> (weighted buffer with quality). At the <code>vital_reporting_rate.Pulse</code> interval, the aggregated weighted-average BPM is computed via <code>mmt_buffer_get_weighted_avg_value_q()</code>, with higher-quality readings having more weight. This smooths transient fluctuations. Additionally, a separate <code>hrm_buffer_high_spo2</code> stores BPM readings only when SpO2 &ge;&nbsp;95 for high-confidence BPM data.</p>
+
+  <div class="note">BPM is reported via the <code>mmt_HR_cb</code> callback and stored with timestamp and quality for downstream consumers (sleep staging, NIBP calibration, cardiac arrest monitoring, activity file output, etc.). Default reporting rate: 60&nbsp;s. Hospital plan: 1&nbsp;s.</div>
 </div>
 </div>
 
@@ -309,7 +372,18 @@ li { margin: 4px 0; font-size: 14px; }
     <li>Aggregates the offset with the previous offset (rolling average)</li>
     <li>Switches model to HBP if measured systolic &gt; 140&nbsp;mmHg</li>
     <li>Stores up to 10 cuff records in FDS</li>
+    <li>Applies age-adjusted models (HAGE variants) when patient age &ge; 53</li>
   </ul>
+
+  <h4>5. NIBP Measurement Scheduling</h4>
+  <p>NIBP requires 128&nbsp;Hz PPG (vs. 32&nbsp;Hz for normal BPM), so it cannot run continuously in most plans. Instead, the state machine schedules 2-minute measurement windows:</p>
+  <ul>
+    <li>Every <code>PERIOD_MOITORING_NIBP = 30</code> minutes, if user is idle &rarr; switch to MODE_PREVENTICUS, set PPG to 128&nbsp;Hz, enable NIBP</li>
+    <li>After 2 minutes of data &rarr; disable NIBP, restore normal PPG rate</li>
+    <li>Reporting rate minimum: 5&nbsp;min (<code>mmt_process_fxi_set_reporting_rate_NIBP</code> enforces &ge; 300&nbsp;s)</li>
+    <li>Default reporting rate: 1800&nbsp;s (30&nbsp;min). Reset to 30&nbsp;min if set to &gt; 30&nbsp;min</li>
+  </ul>
+  <div class="note"><b>Constraint</b>: When Emography/BioZ is enabled (<code>emography_plan != PLAN_STRESS_DISABLED</code>), 128&nbsp;Hz PPG is disabled, so NIBP operates at the lower PPG rate with reduced accuracy.</div>
 </div>
 </div>
 
@@ -349,6 +423,10 @@ li { margin: 4px 0; font-size: 14px; }
 
   <h4>Status Code Encoding (8 bits)</h4>
   <p><code>[Contact:1][Stability:1][Noise:2][Strength:2][Activity:2]</code></p>
+  <p>A perfect ECG signal has status = <code>0b00_00_00_0_0 = 0x00</code>. The worst case is <code>0xFF</code>. The activity bits use accelerometer <code>sum_d</code> (sum of absolute differential acceleration) to estimate patient movement during ECG recording.</p>
+
+  <h4>Plan Dependency</h4>
+  <p>ECG is only available in <b>PLAN_HOSPITAL</b> (continuous 256&nbsp;Hz). In all other plans, the ECG subsystem of the MAX86178 is disabled. ECG and Emography/BioZ are mutually exclusive &mdash; starting ECG saves and disables the current stress plan, which is restored when ECG stops.</p>
 </div>
 </div>
 
@@ -503,6 +581,17 @@ li { margin: 4px 0; font-size: 14px; }
     <li>Large jumps (&gt;60000 pp) are discarded</li>
     <li>Unstable readings (&gt;2000 pp) are ignored</li>
   </ul>
+
+  <h4>5. Plan Dependency</h4>
+  <p>Cardiac arrest detection requires continuous PPG monitoring (green channel). It runs in:</p>
+  <ul>
+    <li><b>HRM, HRM_MC plans</b>: Continuous monitoring</li>
+    <li><b>TYPICAL / TYPICAL_MC plans</b>: Only during PPG measurement windows (2-min bursts)</li>
+    <li><b>HOSPITAL plan</b>: Continuous monitoring</li>
+    <li><b>5min plan</b>: Only during the 1&ndash;2 min on-phase of each 5-min cycle</li>
+    <li><b>DISABLED / MAX_BATTERY plans</b>: Not available (no PPG)</li>
+  </ul>
+  <p>The algorithm resets its counters when PPG is turned off, so intermittent plans may not detect arrests occurring during the off-phase.</p>
 </div>
 </div>
 
@@ -554,9 +643,29 @@ li { margin: 4px 0; font-size: 14px; }
     <li><b>Activity count</b>: from <code>calculate_activity_count()</code></li>
     <li><b>RMSSD</b>: from <code>calculate_RMSSD()</code> (RR-interval variability)</li>
   </ul>
-  <p>Data is packaged into a <code>CorsanoSleepData_t</code> struct, CRC8-verified, and written to flash for later retrieval.</p>
+  <p>Data is packaged into a <code>CorsanoSleepData_t</code> struct, CRC8-verified, and written to flash for later retrieval via BLE.</p>
 
-  <div class="note">The actual sleep stage classification (wake/light/deep/REM) is performed server-side or by the Corsano cloud. The firmware collects and logs the required features.</div>
+  <h3>BPM Fallback Windows</h3>
+  <p>Heart rate for the sleep record uses a cascading window strategy:</p>
+  <ul>
+    <li><b>Primary</b>: weighted average over the last 75&nbsp;s from the HRM buffer</li>
+    <li><b>Fallback 1</b>: if no data in 75&nbsp;s, extend to 150&nbsp;s</li>
+    <li><b>Fallback 2</b>: if still no data, extend to 375&nbsp;s</li>
+  </ul>
+  <p>This ensures the sleep record is populated even during brief PPG dropouts.</p>
+
+  <h3>Plan Dependency</h3>
+  <p>Sleep staging data is collected whenever the device enters a sleep tracking mode:</p>
+  <table>
+    <tr><th>Plan</th><th>Sleep Mode</th><th>PPG Type</th></tr>
+    <tr><td>TYPICAL / TYPICAL_MC</td><td>MODE_SLEEP_TRACKING</td><td>Single-color (Green only)</td></tr>
+    <tr><td>HRM_MC</td><td>MODE_SLEEP_TRACKING_MULTICOLOR</td><td>Multi-color (Green + Red + IR)</td></tr>
+    <tr><td>HOSPITAL / 25_HZ</td><td>MODE_PREVENTICUS_SLEEP</td><td>Continuous 128&nbsp;Hz / 25&nbsp;Hz</td></tr>
+    <tr><td>5min</td><td>No dedicated sleep mode</td><td>Cycles between activity and monitoring</td></tr>
+  </table>
+  <p>Sleep mode is entered automatically based on configurable sleep/wake times (stored in FDS) and detected idle state. The <code>mmt_fxi_setSleepPreference()</code> function controls the transition: preference 1 = sleep, 2 = waking up.</p>
+
+  <div class="note">The actual sleep stage classification (wake/light/deep/REM) is performed <b>server-side</b> by the Corsano cloud algorithm. The firmware only collects and logs the required feature vectors. The "OHR" preamble and version byte (6) identify the record format for the cloud parser.</div>
 </div>
 </div>
 
@@ -564,60 +673,125 @@ li { margin: 4px 0; font-size: 14px; }
 <div class="tab-content" id="plans">
 <div class="card">
   <h2>Power Plans &mdash; Measurement Scheduling</h2>
-  <p><span class="badge badge-file">mmt_state_machine.h</span><span class="badge badge-file">mmt_ble_manage.c</span></p>
+  <p><span class="badge badge-file">mmt_state_machine.h</span><span class="badge badge-file">mmt_state_machine.c</span><span class="badge badge-file">mmt_ble_manage.c</span><span class="badge badge-file">mmt_process_fxi.c</span></p>
 
   <h3>Overview</h3>
-  <p>The firmware supports multiple power plans that control which sensors are active, at what frequency measurements are taken, and how data is stored. The plan is set via BLE command and persisted in FDS.</p>
+  <p>The firmware supports multiple power plans that control which sensors are active, at what frequency measurements are taken, which operating modes are permitted, and how data is stored. The plan is set via BLE command and persisted in FDS. Each plan maps to one or more <b>operating modes</b> (MODE_NORMAL, MODE_HRM, MODE_PREVENTICUS, MODE_ACTIVITY, etc.) that determine the hardware configuration.</p>
+
+  <h3>Architecture: Plan &rarr; Mode &rarr; Sensors</h3>
+  <div class="pipeline">
+    <span class="step">BLE Command sets Plan</span><span class="arrow">&rarr;</span>
+    <span class="step">Plan persisted in FDS</span><span class="arrow">&rarr;</span>
+    <span class="step">MMT_TASK_VERIFY_PLAN_SET_MODE</span><span class="arrow">&rarr;</span>
+    <span class="step">Operating Mode selected</span><span class="arrow">&rarr;</span>
+    <span class="step">Sensors &amp; Vitals configured</span>
+  </div>
 
   <h3>Plan Definitions</h3>
   <table class="plan-table">
-    <tr><th>Plan ID</th><th>Name</th><th>Description</th></tr>
-    <tr><td>0</td><td>PLAN_DISABLED</td><td>All measurements off. Minimum power consumption.</td></tr>
-    <tr><td>1</td><td>PLAN_MAX_BATTERY</td><td>Maximum battery life. Minimal measurement frequency.</td></tr>
-    <tr><td>2</td><td>PLAN_TYPICAL</td><td>Balanced mode. Standard measurement intervals (single-color PPG).</td></tr>
-    <tr><td>3</td><td>PLAN_HRM</td><td>Continuous heart rate monitoring (single-color PPG).</td></tr>
-    <tr><td>4</td><td>PLAN_25_HZ</td><td>PPG at 25&nbsp;Hz sampling rate.</td></tr>
-    <tr><td>5</td><td>PLAN_HOSPITAL</td><td>Highest fidelity. High-frequency PPG sampling. Continuous SpO2, NIBP, ECG, all vitals. Used in clinical settings.</td></tr>
-    <tr><td>7</td><td>PLAN_TYPICAL_MULTICOLOR</td><td>Balanced mode with multi-wavelength PPG (Red + IR + Green). Enables SpO2.</td></tr>
-    <tr><td>8</td><td>PLAN_HRM_MULTICOLOR</td><td>Continuous HR + SpO2 with multi-wavelength PPG. 2-minute measurement intervals for some vitals.</td></tr>
-    <tr><td>9</td><td>PLAN_INTERMITTENT_MULTICOLOR_RAW</td><td>Intermittent multi-color measurements with raw data logging. High-frequency PPG sampling enabled.</td></tr>
-    <tr><td>10</td><td>PLAN_INTERMITTENT_MULTICOLOR</td><td>Intermittent multi-color measurements (processed data only).</td></tr>
-    <tr><td>11</td><td>PLAN_5min</td><td>Measurement every 5 minutes. Low-power intermittent monitoring.</td></tr>
+    <tr><th>Plan ID</th><th>Name</th><th>Default Mode</th><th>Description</th></tr>
+    <tr><td>0</td><td>PLAN_DISABLED</td><td>MODE_SLEEP</td><td>All measurements off. Minimum power consumption. Only accelerometer-based step counting may remain on.</td></tr>
+    <tr><td>1</td><td>PLAN_MAX_BATTERY</td><td>MODE_ACTIVITY</td><td>Maximum battery life. Only accelerometer processing (steps, gait, fall detection). No PPG, no vitals. Activity file at configurable resolution (default 60&nbsp;s).</td></tr>
+    <tr><td>2</td><td>PLAN_TYPICAL</td><td>MODE_NORMAL</td><td>Balanced mode. Single-color (Green) PPG at 32&nbsp;Hz. Heart rate every 1&nbsp;min, 2-min measurement bursts every 30&nbsp;min for SpO2/NIBP/Resp when reporting rates are configured. Sleep tracking at night.</td></tr>
+    <tr><td>3</td><td>PLAN_HRM</td><td>MODE_HRM</td><td>Continuous heart rate monitoring with single-color PPG. Higher BPM accuracy. Periodic 2-min multicolor bursts every 30&nbsp;min when NIBP/SpO2 rates are set.</td></tr>
+    <tr><td>4</td><td>PLAN_25_HZ</td><td>MODE_NORMAL</td><td>PPG at 25&nbsp;Hz sampling rate. Same schedule as TYPICAL but with reduced PPG bandwidth. Goes to PREVENTICUS_SLEEP at night.</td></tr>
+    <tr><td>5</td><td>PLAN_HOSPITAL</td><td>MODE_PREVENTICUS</td><td>Highest fidelity. Continuous 128&nbsp;Hz PPG (Red+IR+Green). All vitals continuous. ECG enabled. Night mode: PREVENTICUS_SLEEP. Used in clinical settings.</td></tr>
+    <tr><td>7</td><td>PLAN_TYPICAL_MULTICOLOR</td><td>MODE_NORMAL</td><td>Balanced mode with multi-wavelength PPG (Red + IR + Green). Enables SpO2 during 2-min measurement windows. Sleep tracking with multicolor at night.</td></tr>
+    <tr><td>8</td><td>PLAN_HRM_MULTICOLOR</td><td>MODE_HRM_MULTICOLOR</td><td>Continuous HR + SpO2 with multi-wavelength PPG. Periodic 2-min 128&nbsp;Hz bursts for NIBP every 30&nbsp;min. Sleep tracking multicolor at night.</td></tr>
+    <tr><td>9</td><td>PLAN_INTERMITTENT_MC_RAW</td><td>MODE_HRM</td><td>Intermittent multi-color measurements with raw data logging (PPG files). 2-min bursts every 30&nbsp;min with raw PPG export.</td></tr>
+    <tr><td>10</td><td>PLAN_INTERMITTENT_MC</td><td>MODE_HRM</td><td>Intermittent multi-color measurements (processed data only, no raw PPG). 2-min bursts every 30&nbsp;min.</td></tr>
+    <tr><td>11</td><td>PLAN_5min</td><td>MODE_HRM_MULTICOLOR</td><td>Alternates: ~1&ndash;2&nbsp;min multicolor monitoring every 5 minutes, then switches to MODE_ACTIVITY. NIBP burst every 30&nbsp;min at 128&nbsp;Hz. LED optimization on first run.</td></tr>
   </table>
+
+  <h3>Vital Parameter Reporting Rates</h3>
+  <p>Each vital parameter has an independent configurable reporting rate (<code>vital_reporting_rate</code> struct in <code>mmt_process_fxi.c</code>), set in <b>seconds</b>. The rate controls how often the aggregated/weighted-average value is written to the activity file. The internal processing cadence is always faster (e.g., SpO2 processes every 15&nbsp;s, BPM is continuous).</p>
+
+  <table>
+    <tr><th>Vital Parameter</th><th>Field</th><th>Default Value</th><th>Min Allowed</th><th>Typical Values per Plan</th></tr>
+    <tr><td><b>Heart Rate (BPM)</b></td><td><code>vital_reporting_rate.Pulse</code></td><td>60&nbsp;s (1&nbsp;min)</td><td>1&nbsp;s</td><td>HOSPITAL: 1&nbsp;s &bull; HRM/HRM_MC: 1&nbsp;s &bull; TYPICAL: 60&nbsp;s &bull; 5min: 60&nbsp;s</td></tr>
+    <tr><td><b>SpO2</b></td><td><code>vital_reporting_rate.Spo2</code></td><td>1800&nbsp;s (30&nbsp;min)</td><td>30&nbsp;s</td><td>HOSPITAL: 30&nbsp;s &bull; HRM_MC: 60&nbsp;s &bull; TYPICAL_MC: 1800&nbsp;s &bull; 5min: 300&nbsp;s</td></tr>
+    <tr><td><b>Respiration Rate</b></td><td><code>vital_reporting_rate.Resp</code></td><td>1800&nbsp;s (30&nbsp;min)</td><td>&mdash;</td><td>HOSPITAL: 30&nbsp;s &bull; HRM_MC: 30&nbsp;s &bull; TYPICAL: 1800&nbsp;s</td></tr>
+    <tr><td><b>Activity</b></td><td><code>vital_reporting_rate.Act</code></td><td>60&nbsp;s (1&nbsp;min)</td><td>&mdash;</td><td>HOSPITAL: 60&nbsp;s &bull; All others: 60&nbsp;s</td></tr>
+    <tr><td><b>Temperature</b></td><td><code>vital_reporting_rate.Temp</code></td><td>60&nbsp;s (1&nbsp;min)</td><td>&mdash;</td><td>HOSPITAL: 60&nbsp;s &bull; All others: 60&nbsp;s</td></tr>
+    <tr><td><b>NIBP (Blood Pressure)</b></td><td><code>vital_reporting_rate.NIBP</code></td><td>1800&nbsp;s (30&nbsp;min)</td><td>300&nbsp;s (5&nbsp;min)</td><td>HOSPITAL: 300&nbsp;s &bull; HRM_MC: 1800&nbsp;s &bull; 5min: 1800&nbsp;s</td></tr>
+  </table>
+  <div class="note">These rates are configurable via BLE command (opcode in <code>mmt_ble_manage.c</code>, vitals 1&ndash;6) and persisted in FDS at <code>MMT_TASK_PERSIST_VITALS_RATES_IN_FDS</code>. When the SpO2 rate changes, <code>mmt_vital_spo2_set_rate()</code> is called to update the internal <code>spo2_algo.rate</code>.</div>
 
   <h3>Plan Impact on Algorithms</h3>
   <table>
-    <tr><th>Algorithm</th><th>DISABLED</th><th>MAX_BATTERY</th><th>TYPICAL</th><th>HRM / HRM_MC</th><th>HOSPITAL</th><th>5min</th></tr>
-    <tr><td><b>Heart Rate</b></td><td>Off</td><td>Periodic</td><td>~1/min</td><td>Continuous</td><td>Continuous</td><td>~1/5min</td></tr>
-    <tr><td><b>SpO2</b></td><td>Off</td><td>Off</td><td>Off (single-color)</td><td>On (multicolor)</td><td>Continuous</td><td>~1/5min</td></tr>
-    <tr><td><b>NIBP</b></td><td>Off</td><td>Off</td><td>Periodic</td><td>Periodic</td><td>Continuous</td><td>~1/5min</td></tr>
-    <tr><td><b>ECG</b></td><td>Off</td><td>Off</td><td>Off</td><td>Off</td><td>On (256 Hz)</td><td>Off</td></tr>
-    <tr><td><b>Resp. Rate</b></td><td>Off</td><td>Off</td><td>Periodic</td><td>Continuous</td><td>Continuous</td><td>~1/5min</td></tr>
-    <tr><td><b>Steps / Gait</b></td><td>Off</td><td>On</td><td>On</td><td>On</td><td>On</td><td>On</td></tr>
-    <tr><td><b>Fall Detect</b></td><td>Off</td><td>On</td><td>On</td><td>On</td><td>On</td><td>On</td></tr>
-    <tr><td><b>Cardiac Arrest</b></td><td>Off</td><td>Off</td><td>Periodic</td><td>Continuous</td><td>Continuous</td><td>Periodic</td></tr>
-    <tr><td><b>PPG Sampling</b></td><td>Off</td><td>32 Hz</td><td>32 Hz</td><td>32 Hz</td><td>128 Hz</td><td>32 Hz</td></tr>
+    <tr><th>Algorithm</th><th>DISABLED</th><th>MAX_BATTERY</th><th>TYPICAL / TYPICAL_MC</th><th>HRM / HRM_MC</th><th>HOSPITAL</th><th>5min</th></tr>
+    <tr><td><b>Heart Rate</b></td><td>Off</td><td>Off</td><td>1/min (2-min bursts every 30&nbsp;min)</td><td>Continuous</td><td>Continuous (1&nbsp;s reporting)</td><td>~1&ndash;2&nbsp;min on / 3&ndash;4&nbsp;min off cycle</td></tr>
+    <tr><td><b>SpO2</b></td><td>Off</td><td>Off</td><td>Off (single-color) or 1/30min (multicolor)</td><td>Continuous (1/min MC)</td><td>Continuous (1/30s)</td><td>~1/5min (during on-phase)</td></tr>
+    <tr><td><b>NIBP</b></td><td>Off</td><td>Off</td><td>2-min burst every 30&nbsp;min at 128&nbsp;Hz</td><td>2-min burst every 30&nbsp;min at 128&nbsp;Hz</td><td>Continuous 128&nbsp;Hz</td><td>2-min burst every 30&nbsp;min at 128&nbsp;Hz</td></tr>
+    <tr><td><b>ECG</b></td><td>Off</td><td>Off</td><td>Off</td><td>Off</td><td>On (256&nbsp;Hz)</td><td>Off</td></tr>
+    <tr><td><b>Resp. Rate</b></td><td>Off</td><td>Off</td><td>1/30min (during PPG bursts)</td><td>Continuous</td><td>Continuous</td><td>During on-phase</td></tr>
+    <tr><td><b>Steps / Gait</b></td><td>Off</td><td>Always on</td><td>Always on</td><td>Always on</td><td>Always on</td><td>Always on</td></tr>
+    <tr><td><b>Fall Detect</b></td><td>Off</td><td>Always on</td><td>Always on</td><td>Always on</td><td>Always on</td><td>Always on</td></tr>
+    <tr><td><b>Cardiac Arrest</b></td><td>Off</td><td>Off</td><td>During PPG bursts</td><td>Continuous</td><td>Continuous</td><td>During on-phase</td></tr>
+    <tr><td><b>Sleep Staging</b></td><td>Off</td><td>Off</td><td>At night (MODE_SLEEP_TRACKING)</td><td>At night</td><td>At night (PREVENTICUS_SLEEP)</td><td>Off</td></tr>
+    <tr><td><b>PPG Sampling</b></td><td>Off</td><td>Off</td><td>32&nbsp;Hz green / 128&nbsp;Hz during 2-min bursts</td><td>32&nbsp;Hz green / 128&nbsp;Hz bursts</td><td>128&nbsp;Hz continuous (R+IR+G)</td><td>32&nbsp;Hz green / 128&nbsp;Hz NIBP bursts</td></tr>
+    <tr><td><b>Wearing Detection</b></td><td>Off</td><td>Off</td><td>During PPG on</td><td>Continuous</td><td>Continuous</td><td>During on-phase</td></tr>
   </table>
+
+  <h3>The 2-min / 30-min Measurement Pattern</h3>
+  <p>Many plans use an intermittent pattern (<code>mmt_state_30min_2min_measurements()</code>) where the device alternates between a low-power base mode and a 2-minute high-fidelity measurement window:</p>
+  <ul>
+    <li>Every <b>30 minutes</b> (<code>PERIOD_MOITORING_NIBP = 30</code>), the state machine checks if the user is idle enough (activity &le; IDLE_5050)</li>
+    <li>If idle: switch to MODE_PREVENTICUS, enable 128&nbsp;Hz PPG, enable NIBP monitoring for 2 minutes</li>
+    <li>If too active: schedule a retry (<code>mmt_retrial_Res_spo2_enabled</code>) that retries every minute, forcing measurement in the last 1/3 of the 30-min period</li>
+    <li>After 2 minutes: switch back to the base PPG rate, disable NIBP monitoring</li>
+  </ul>
+  <p>This applies to: <b>TYPICAL</b>, <b>TYPICAL_MC</b>, <b>HRM</b>, <b>HRM_MC</b>, <b>INTERMITTENT_MC</b>, and <b>5min</b> plans.</p>
+
+  <h3>PLAN_5min Detail &mdash; Activity/Monitoring Cycle</h3>
+  <p>The 5-minute plan uses a unique cycling strategy between MODE_ACTIVITY (accelerometer only, low power) and MODE_HRM_MULTICOLOR (full vital monitoring):</p>
+  <table>
+    <tr><th>Phase</th><th>Duration</th><th>Mode</th><th>What Runs</th></tr>
+    <tr><td>Monitoring</td><td>~1&ndash;2 min (until vitals are good, max 10&nbsp;min)</td><td>MODE_HRM_MULTICOLOR</td><td>Green PPG 32&nbsp;Hz, Red/IR PPG, BPM, SpO2, Resp Rate, Cardiac Arrest detection</td></tr>
+    <tr><td>Activity</td><td>~3&ndash;4 min (until next 5-min boundary)</td><td>MODE_ACTIVITY</td><td>Accelerometer only: steps, gait, fall detection. Minimal power.</td></tr>
+    <tr><td>NIBP burst</td><td>2 min every 30 min</td><td>MODE_PREVENTICUS</td><td>128&nbsp;Hz PPG, NIBP feature extraction, BP prediction</td></tr>
+  </table>
+  <p>The switch from monitoring to activity happens when <code>mmt_process_fxi_are_vitals_good(2min)</code> returns true (SpO2 &ge; 90, quality &ge; 1, at least 2 samples) or after 10 minutes timeout. LED optimization delays the first switch if LEDs were recently optimized.</p>
+
+  <h3>SpO2 Internal Rate Parameter (<code>spo2_algo.rate</code>)</h3>
+  <p>In addition to the reporting rate, SpO2 has an internal rate parameter that affects the algorithm behavior:</p>
+  <table>
+    <tr><th>Rate Value (seconds)</th><th>Effective Frequency</th><th>Behavioral Changes</th><th>Typical Plan</th></tr>
+    <tr><td>1800 (default)</td><td>Every 30 minutes</td><td>Standard mode. Cross-channel rejection active. <code>spo2_max = 100</code>.</td><td>TYPICAL_MULTICOLOR</td></tr>
+    <tr><td>300</td><td>Every 5 minutes</td><td>Cross-channel rejection active. <code>spo2_max = 100</code>.</td><td>PLAN_5min</td></tr>
+    <tr><td>60</td><td>Every 1 minute</td><td>Cross-channel rejection active (rate &ge; 59). <code>spo2_max = 100</code>.</td><td>HRM_MULTICOLOR</td></tr>
+    <tr><td>30</td><td>Every 30 seconds</td><td>High-frequency mode. Cross-channel rejection bypassed (rate &lt; 59). <code>spo2_max = 98</code>. Faster responsiveness.</td><td>HOSPITAL</td></tr>
+  </table>
+  <p>When <code>rate &ge; 59</code>: if both channels produce SpO2 but differ by &ge;15%, both are rejected. If one channel reports &ge;93 and the other &le;85, the low channel is discarded.<br>
+  When <code>rate &lt; 59</code>: these cross-channel safety checks are bypassed for faster updates (HOSPITAL plan).</p>
 
   <h3>Stress / BioZ Plans</h3>
+  <p>A secondary plan system controls Emography (stress measurement) and raw BioZ recording, independent of the main vital plan:</p>
   <table>
-    <tr><th>Plan</th><th>Description</th></tr>
-    <tr><td>PLAN_STRESS_DISABLED (1)</td><td>Emography / BioZ measurements disabled.</td></tr>
-    <tr><td>PLAN_STRESS_NIGHT (2)</td><td>BioZ measurements enabled only during nighttime (sleep).</td></tr>
-    <tr><td>PLAN_STRESS_ALWAYS (3)</td><td>BioZ measurements always enabled.</td></tr>
+    <tr><th>Plan ID</th><th>Name</th><th>Description</th><th>Impact</th></tr>
+    <tr><td>1</td><td>PLAN_STRESS_DISABLED</td><td>Emography / BioZ measurements disabled.</td><td>No effect on PPG. 128&nbsp;Hz PPG available during NIBP bursts.</td></tr>
+    <tr><td>2</td><td>PLAN_STRESS_NIGHT</td><td>BioZ measurements enabled only during nighttime (sleep).</td><td>PPG forced to 32&nbsp;Hz when BioZ active (cannot run 128&nbsp;Hz PPG + BioZ simultaneously).</td></tr>
+    <tr><td>3</td><td>PLAN_STRESS_ALWAYS</td><td>BioZ measurements always enabled.</td><td>PPG always at 32&nbsp;Hz. NIBP 128&nbsp;Hz bursts disabled. Raw BioZ data written to file.</td></tr>
   </table>
+  <div class="note"><b>Constraint</b>: Emography/BioZ and 128&nbsp;Hz PPG are mutually exclusive on the MAX86178. When emography is enabled, the firmware forces <code>MAX86178_set_high_freq_sampling_rate(false)</code> and NIBP measurements use the lower PPG rate.</div>
 
-  <h3>SpO2 Rate Parameter</h3>
-  <p>The <code>spo2_algo.rate</code> field controls the upstream reporting frequency of SpO2, independently of the 15&nbsp;s internal processing. It is set in seconds:</p>
+  <h3>Vital States System</h3>
+  <p>Each vital parameter has an independent state machine (<code>mmt_vital_state_t</code>) with configurable enable/disable, rate, and processing time:</p>
   <table>
-    <tr><th>Rate Value</th><th>Effective Frequency</th><th>Typical Plan</th></tr>
-    <tr><td>1800 (default)</td><td>Every 30 minutes</td><td>TYPICAL_MULTICOLOR</td></tr>
-    <tr><td>300</td><td>Every 5 minutes</td><td>PLAN_5min</td></tr>
-    <tr><td>60</td><td>Every 1 minute</td><td>HRM_MULTICOLOR</td></tr>
-    <tr><td>30</td><td>Every 30 seconds</td><td>HOSPITAL</td></tr>
+    <tr><th>Vital ID</th><th>Name</th><th>Processing Time (s)</th><th>Minimum Period (s)</th><th>Default Rate (s)</th></tr>
+    <tr><td>V_BPM (0)</td><td>Heart Rate</td><td>4</td><td>10</td><td>60</td></tr>
+    <tr><td>V_TEMP (1)</td><td>Temperature</td><td>14</td><td>14</td><td>60</td></tr>
+    <tr><td>V_NIBP (2)</td><td>Blood Pressure</td><td>28</td><td>112</td><td>1800</td></tr>
+    <tr><td>V_BRPM (3)</td><td>Respiration Rate</td><td>14</td><td>112</td><td>1800</td></tr>
+    <tr><td>V_SPO2 (4)</td><td>SpO2</td><td>1</td><td>10</td><td>60</td></tr>
+    <tr><td>V_RR (5)</td><td>RR Intervals</td><td>1</td><td>1</td><td>0 (off)</td></tr>
+    <tr><td>V_SLEEP (6)</td><td>Sleep</td><td>30</td><td>300</td><td>0 (off)</td></tr>
+    <tr><td>V_AFIB (7)</td><td>AFib</td><td>30</td><td>150</td><td>0 (off)</td></tr>
+    <tr><td>V_SPO2 (8)</td><td>SpO2 (2nd)</td><td>120</td><td>120</td><td>1800</td></tr>
   </table>
+  <p>The state machine checks every 10&nbsp;s whether each vital's rate period has elapsed, then toggles the start/stop of the corresponding sensor. Processing times define how long the sensor must run before producing a valid measurement.</p>
 
-  <div class="note">The plan is set via BLE command (opcode in <code>mmt_ble_manage.c</code>) and persisted in FDS at keys <code>FDS_PLAN_FILE_ID / FDS_PLAN_CONFIG_ID</code>. Changing the plan triggers <code>MMT_TASK_VERIFY_PLAN_SET_MODE</code> which reconfigures all sensor subsystems.</div>
+  <div class="note">The plan is set via BLE command (opcode in <code>mmt_ble_manage.c</code>) and persisted in FDS at keys <code>FDS_PLAN_FILE_ID / FDS_PLAN_CONFIG_ID</code>. Changing the plan triggers <code>MMT_TASK_VERIFY_PLAN_SET_MODE</code> which validates the current mode is compatible with the new plan and reconfigures all sensor subsystems accordingly. If incompatible, the firmware automatically switches to the correct default mode for the new plan.</div>
 </div>
 </div>
 
