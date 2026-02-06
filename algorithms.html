@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CardioWatch 287-2B — Algorithm Documentation</title>
+<style>
+:root {
+  --bg: #f5f7fa;
+  --card: #ffffff;
+  --accent: #1a73e8;
+  --accent-light: #e8f0fe;
+  --text: #202124;
+  --text2: #5f6368;
+  --border: #dadce0;
+  --green: #0d652d;
+  --green-bg: #e6f4ea;
+  --orange: #e37400;
+  --orange-bg: #fef7e0;
+  --red: #c5221f;
+  --red-bg: #fce8e6;
+  --blue: #1967d2;
+  --blue-bg: #e8f0fe;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+header { background: linear-gradient(135deg, #1a237e 0%, #1565c0 100%); color: #fff; padding: 32px 40px; }
+header h1 { font-size: 28px; font-weight: 600; }
+header p { color: #bbdefb; margin-top: 6px; font-size: 15px; }
+.tab-bar { display: flex; flex-wrap: wrap; gap: 0; background: #fff; border-bottom: 2px solid var(--border); padding: 0 20px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 4px rgba(0,0,0,.06); overflow-x: auto; }
+.tab-btn { padding: 12px 18px; font-size: 13px; font-weight: 500; color: var(--text2); background: none; border: none; border-bottom: 3px solid transparent; cursor: pointer; white-space: nowrap; transition: all .15s; }
+.tab-btn:hover { color: var(--accent); background: var(--accent-light); }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+.tab-content { display: none; padding: 32px 40px; max-width: 1100px; margin: 0 auto; }
+.tab-content.active { display: block; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 28px; margin-bottom: 24px; }
+.card h2 { font-size: 22px; color: var(--accent); margin-bottom: 4px; }
+.card h3 { font-size: 17px; color: var(--text); margin: 20px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+.card h4 { font-size: 14px; color: var(--text2); margin: 14px 0 6px; text-transform: uppercase; letter-spacing: .5px; }
+.badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; margin-right: 6px; }
+.badge-file { background: var(--blue-bg); color: var(--blue); }
+.badge-sensor { background: var(--green-bg); color: var(--green); }
+.badge-rate { background: var(--orange-bg); color: var(--orange); }
+.badge-plan { background: var(--red-bg); color: var(--red); }
+table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+table th { background: var(--accent-light); color: var(--accent); text-align: left; padding: 10px 14px; font-weight: 600; }
+table td { padding: 9px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+table tr:last-child td { border-bottom: none; }
+code { background: #f1f3f4; padding: 2px 6px; border-radius: 4px; font-size: 13px; font-family: 'Consolas', 'Fira Code', monospace; }
+.pipeline { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0; }
+.pipeline .step { background: var(--accent-light); color: var(--accent); padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; }
+.pipeline .arrow { color: var(--text2); font-size: 18px; }
+.plan-table td:first-child { font-weight: 600; white-space: nowrap; }
+.note { background: #fffde7; border-left: 4px solid #fbc02d; padding: 12px 16px; border-radius: 0 6px 6px 0; margin: 12px 0; font-size: 14px; }
+ul { padding-left: 20px; margin: 8px 0; }
+li { margin: 4px 0; font-size: 14px; }
+.overview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 12px 0; }
+.overview-grid .item { background: var(--bg); padding: 14px; border-radius: 8px; }
+.overview-grid .item strong { display: block; color: var(--text2); font-size: 12px; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 4px; }
+@media(max-width:768px) {
+  .tab-content { padding: 20px; }
+  .overview-grid { grid-template-columns: 1fr; }
+  header { padding: 20px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>CardioWatch 287-2B &mdash; Firmware Algorithm Documentation</h1>
+  <p>Platform: nRF52840 (Cortex-M4F) &bull; Target: MMT287-2B_MultiColor &bull; Generated 2026-02-06</p>
+</header>
+
+<div class="tab-bar" id="tabBar">
+  <button class="tab-btn active" data-tab="spo2">SpO2</button>
+  <button class="tab-btn" data-tab="pulse-rate">Pulse Rate</button>
+  <button class="tab-btn" data-tab="respiration">Respiration Rate</button>
+  <button class="tab-btn" data-tab="nibp">Blood Pressure (NIBP)</button>
+  <button class="tab-btn" data-tab="ecg">ECG Quality</button>
+  <button class="tab-btn" data-tab="gait">Gait Analysis</button>
+  <button class="tab-btn" data-tab="steps">Step Counter</button>
+  <button class="tab-btn" data-tab="fall">Fall Detection</button>
+  <button class="tab-btn" data-tab="cardiac">Cardiac Arrest</button>
+  <button class="tab-btn" data-tab="wearing">Wearing Detection</button>
+  <button class="tab-btn" data-tab="sleep">Sleep Staging</button>
+  <button class="tab-btn" data-tab="plans">Power Plans</button>
+</div>
+
+<!-- ======================= SpO2 ======================= -->
+<div class="tab-content active" id="spo2">
+<div class="card">
+  <h2>SpO2 &mdash; Blood Oxygen Saturation</h2>
+  <p><span class="badge badge-file">mmt_vital_algorithms.c</span><span class="badge badge-file">mmt_spo2.c</span><span class="badge badge-sensor">MAX86178 PPG</span><span class="badge badge-rate">Processed every 15 s</span></p>
+
+  <h3>Overview</h3>
+  <div class="overview-grid">
+    <div class="item"><strong>Inputs</strong>Raw PPG samples from Red, Infrared (and optionally Green) LEDs; LED power levels; ADC gain; sampling rate (32 or 128&nbsp;Hz).</div>
+    <div class="item"><strong>Outputs</strong>SpO2 percentage (0&ndash;100%), quality score (0&ndash;4), timestamp.</div>
+    <div class="item"><strong>Processing Cadence</strong>PPG data is accumulated per second. Every <code>SPO2_PROCESS_CHUNK_SIZE</code> = 15&nbsp;seconds, the algorithm runs a full SpO2 calculation.</div>
+    <div class="item"><strong>Calibration Parameters</strong>Skin color (1&ndash;6), BMI, hair density, slope offset, SpO2 offset. Persisted in FDS (Flash Data Storage).</div>
+  </div>
+
+  <h3>Processing Pipeline</h3>
+  <div class="pipeline">
+    <span class="step">Raw PPG (Red &amp; IR)</span><span class="arrow">&rarr;</span>
+    <span class="step">Band-pass Filter (4th-order Butterworth)</span><span class="arrow">&rarr;</span>
+    <span class="step">Rolling Average (8-sample)</span><span class="arrow">&rarr;</span>
+    <span class="step">Peak Detection (max/min tracking)</span><span class="arrow">&rarr;</span>
+    <span class="step">SQI Assessment</span><span class="arrow">&rarr;</span>
+    <span class="step">RMS AC/DC Ratio (R)</span><span class="arrow">&rarr;</span>
+    <span class="step">Polynomial SpO2 Curve</span><span class="arrow">&rarr;</span>
+    <span class="step">Outlier Removal &amp; Quality</span>
+  </div>
+
+  <h3>Implementation Details</h3>
+  <h4>1. Band-pass Filtering</h4>
+  <p>A 4th-order Butterworth band-pass filter isolates the cardiac-frequency range (~0.7&ndash;4&nbsp;Hz). Two sets of coefficients are maintained for 32&nbsp;Hz and 128&nbsp;Hz sampling rates. The filter is applied independently to the Red and Infrared channels using <code>bb_digital_float_filter()</code>.</p>
+
+  <h4>2. Peak Detection</h4>
+  <p>A delta-based peak/trough detector tracks filtered signal extrema. When the signal drops below <code>mx - delta</code>, a peak is recorded; when it rises above <code>mn + delta</code>, a trough is recorded. Peaks and inverse peaks are stored in circular <code>Peaks_array_t</code> buffers.</p>
+
+  <h4>3. Signal Quality Index (SQI)</h4>
+  <p>Each pulse is evaluated against morphological criteria ported from Corsano Python code:</p>
+  <ul>
+    <li><b>Rise Time (RT)</b>: must be 0.08&ndash;0.49&nbsp;s</li>
+    <li><b>Pulse Width Duration (PWD)</b>: must be 0.3&ndash;2.0&nbsp;s</li>
+    <li><b>Amplitude symmetry</b>: left/right division &ge;&nbsp;0.4</li>
+    <li><b>Systolic-Diastolic Ratio (SDR)</b>: must be &le;&nbsp;1.1</li>
+    <li><b>Temporal consistency</b>: consecutive pulse ratios (PWA, RT, PWD) within 33&ndash;200%</li>
+  </ul>
+
+  <h4>4. SpO2 Calculation</h4>
+  <p>The ratio <code>R = RMS_red / RMS_ir / deel</code> is converted to SpO2 using a quadratic polynomial:</p>
+  <p><code>SpO2 = -30.089 &times; R - 0.031 &times; R&sup2; + 108.490</code></p>
+  <p>Outliers (&lt;65 or &gt;105) are rejected, then a 1-standard-deviation filter removes remaining outliers. The final SpO2 is the <b>maximum</b> of the remaining values, clamped to 72&ndash;100.</p>
+
+  <h4>5. Quality Assignment</h4>
+  <table>
+    <tr><th>Quality</th><th>Condition</th></tr>
+    <tr><td>0</td><td>No valid pulses</td></tr>
+    <tr><td>1</td><td>&lt;&nbsp;3 valid pulses</td></tr>
+    <tr><td>2</td><td>R-ratio std &gt;&nbsp;0.5</td></tr>
+    <tr><td>3</td><td>R-ratio std &gt;&nbsp;0.22</td></tr>
+    <tr><td>4</td><td>All conditions met (best quality)</td></tr>
+  </table>
+
+  <h4>6. Skin Color &amp; BMI Offset Compensation</h4>
+  <table>
+    <tr><th>Skin Color</th><th>Offset</th></tr>
+    <tr><td>1 (Very light)</td><td>&minus;0.42</td></tr>
+    <tr><td>2 (Light)</td><td>+1.30</td></tr>
+    <tr><td>3 (Medium)</td><td>&minus;1.22</td></tr>
+    <tr><td>4 (Olive)</td><td>&minus;1.40</td></tr>
+    <tr><td>5&ndash;6 (Dark)</td><td>&minus;1.62</td></tr>
+  </table>
+  <p>BMI offset: +0.05 if BMI&lt;29; linear interpolation down to &minus;5.4 for BMI&ge;35.</p>
+
+  <div class="note">The <code>spo2_algo.rate</code> parameter controls the measurement rate (default 1800&nbsp;s = 30&nbsp;min). This is configurable per plan and affects how often SpO2 data is reported upstream (not the 15&nbsp;s internal processing cadence).</div>
+</div>
+</div>
+
+<!-- ======================= Pulse Rate ======================= -->
+<div class="tab-content" id="pulse-rate">
+<div class="card">
+  <h2>Pulse Rate (Heart Rate / BPM)</h2>
+  <p><span class="badge badge-file">mmt_vital_algorithms.c</span><span class="badge badge-sensor">Green PPG + Accelerometer</span><span class="badge badge-rate">FFT-based, continuous</span></p>
+
+  <h3>Overview</h3>
+  <div class="overview-grid">
+    <div class="item"><strong>Inputs</strong>Green PPG samples (32&nbsp;Hz); 3-axis accelerometer data (25&nbsp;Hz).</div>
+    <div class="item"><strong>Outputs</strong>Heart rate (BPM), quality score, RR-interval data, RMSSD for HRV.</div>
+    <div class="item"><strong>Processing Cadence</strong>FFT computed on 256-sample windows. BPM reported via callback. Adaptive BPM filter switching based on heart rate range.</div>
+    <div class="item"><strong>Key Constants</strong><code>LOW_BPM_50 = 45</code>, <code>HIGH_BPM_50 = 190</code>, <code>MINIMUM_FFT_MAG = 35</code>.</div>
+  </div>
+
+  <h3>Processing Pipeline</h3>
+  <div class="pipeline">
+    <span class="step">Green PPG (32 Hz)</span><span class="arrow">&rarr;</span>
+    <span class="step">Chebyshev II Band-pass (4th order)</span><span class="arrow">&rarr;</span>
+    <span class="step">Peak Detection (delta-based)</span><span class="arrow">&rarr;</span>
+    <span class="step">FFT (256-pt Kiss FFT)</span><span class="arrow">&rarr;</span>
+    <span class="step">Accelerometer FFT</span><span class="arrow">&rarr;</span>
+    <span class="step">Motion Artifact Cancellation</span><span class="arrow">&rarr;</span>
+    <span class="step">BPM Estimation</span>
+  </div>
+
+  <h3>Implementation Details</h3>
+  <h4>1. Band-pass Filtering</h4>
+  <p>The green PPG signal is filtered through a 4th-order Chebyshev Type II band-pass filter (0.7&ndash;4&nbsp;Hz passband) to isolate the cardiac component. Coefficients are adapted for different sampling rates (32, 64, 128&nbsp;Hz).</p>
+
+  <h4>2. FFT-based BPM Extraction</h4>
+  <p>A 256-point real FFT (<code>kiss_fftr</code>) is computed on the filtered green PPG data. The dominant frequency peak in the 45&ndash;190&nbsp;BPM range is identified. A minimum FFT magnitude threshold of 35 rejects noise.</p>
+
+  <h4>3. Motion Artifact Cancellation</h4>
+  <p>The accelerometer magnitude is band-pass filtered (same passband) and its FFT computed. If the accelerometer shows a frequency peak within <code>ACC_FREQ_CANCELING_RANGE</code> = 3&nbsp;BPM of the PPG peak, that PPG peak is considered motion-corrupted and suppressed.</p>
+
+  <h4>4. Adaptive Filter Switching</h4>
+  <p><code>mmt_switch_bpm_filter()</code> dynamically selects narrower or wider band-pass coefficients depending on the currently estimated BPM, the number of consecutive good SQI pulses, and RR-interval stability. This improves accuracy across rest and exercise.</p>
+
+  <h4>5. RR Intervals &amp; RMSSD</h4>
+  <p>RR intervals are derived from peak-to-peak timing in the green PPG. The <code>calculate_RMSSD()</code> function computes the Root Mean Square of Successive Differences, used for Heart Rate Variability (HRV) estimation and sleep staging.</p>
+
+  <div class="note">BPM is reported via the <code>mmt_HR_cb</code> callback and stored with timestamp and quality for downstream consumers (sleep staging, NIBP calibration, etc.).</div>
+</div>
+</div>
+
+<!-- ======================= Respiration Rate ======================= -->
+<div class="tab-content" id="respiration">
+<div class="card">
+  <h2>Respiration Rate (BRPM)</h2>
+  <p><span class="badge badge-file">mmt_vital_algorithms.c</span><span class="badge badge-sensor">Green PPG</span><span class="badge badge-rate">30&ndash;36 s window</span></p>
+
+  <h3>Overview</h3>
+  <div class="overview-grid">
+    <div class="item"><strong>Inputs</strong>Green PPG signal (32&nbsp;Hz); current heart rate (for filter selection).</div>
+    <div class="item"><strong>Outputs</strong>Respiration rate in breaths/min &times;&nbsp;4 (fixed-point), quality score.</div>
+    <div class="item"><strong>Processing Window</strong><code>RESPIRATION_PROCESS_WINDOW</code> = 36&nbsp;s (6&nbsp;s init + 30&nbsp;s analysis). Minimum usable window: 14&nbsp;s.</div>
+    <div class="item"><strong>Valid Range</strong>3&ndash;50 breaths/min (output &times;&nbsp;4 for resolution).</div>
+  </div>
+
+  <h3>Processing Pipeline</h3>
+  <div class="pipeline">
+    <span class="step">Green PPG</span><span class="arrow">&rarr;</span>
+    <span class="step">Respiration Band-pass Filter</span><span class="arrow">&rarr;</span>
+    <span class="step">Peak Detection (adaptive delta)</span><span class="arrow">&rarr;</span>
+    <span class="step">Breath Counting</span><span class="arrow">&rarr;</span>
+    <span class="step">Rate &amp; Quality</span>
+  </div>
+
+  <h3>Implementation Details</h3>
+  <h4>1. Adaptive Filter Selection</h4>
+  <p>Three band-pass filter configurations target different respiratory ranges, automatically selected based on the current heart rate:</p>
+  <table>
+    <tr><th>Heart Rate</th><th>Filter</th><th>Passband (brpm)</th><th>Peak Delta Coeff</th></tr>
+    <tr><td>&lt;&nbsp;55 BPM</td><td>Low</td><td>7.5&ndash;22</td><td>0.20</td></tr>
+    <tr><td>55&ndash;110 BPM</td><td>Mid</td><td>10&ndash;28</td><td>0.10</td></tr>
+    <tr><td>&gt;&nbsp;110 BPM</td><td>High</td><td>20&ndash;45</td><td>0.05</td></tr>
+  </table>
+
+  <h4>2. Dual-stage Filtering</h4>
+  <p>Two independent filter delay lines (<code>Band_pass_filter_res_delay_green1/2</code>) are used to allow seamless reinitialization without data loss. The filter is a 4th-order Butterworth with coefficients generated from Python (<code>butter_bandpass</code>).</p>
+
+  <h4>3. Peak Detection</h4>
+  <p>A delta-based peak detector with adaptive delta: <code>delta = max(delta_min, delta_coeff &times; (max - min))</code>. This adapts to the signal amplitude to maintain robust peak detection across varying PPG conditions.</p>
+
+  <div class="note">Respiration rate calculation uses peak-interval timing. The <code>RESP_RATE_DELTA_MAX = 320</code> guards against erroneous inter-peak intervals.</div>
+</div>
+</div>
+
+<!-- ======================= NIBP ======================= -->
+<div class="tab-content" id="nibp">
+<div class="card">
+  <h2>NIBP &mdash; Non-Invasive Blood Pressure</h2>
+  <p><span class="badge badge-file">mmt_nibp.c</span><span class="badge badge-file">nibp_individual.c</span><span class="badge badge-sensor">Green PPG (128 Hz)</span><span class="badge badge-rate">Per-pulse feature extraction</span></p>
+
+  <h3>Overview</h3>
+  <div class="overview-grid">
+    <div class="item"><strong>Inputs</strong>Green PPG at 128&nbsp;Hz; LED power; ADC gain; cuff calibration measurements; age; sex.</div>
+    <div class="item"><strong>Outputs</strong>Systolic BP (mmHg), Diastolic BP (mmHg), quality score.</div>
+    <div class="item"><strong>Valid Ranges</strong>Systolic: 60&ndash;230 mmHg. Diastolic: 40&ndash;130 mmHg.</div>
+    <div class="item"><strong>Calibration</strong>Requires cuff reference measurements. Up to 10 cuff records stored in FDS. Model type switches between NBP (normal) and HBP (high BP) based on calibration.</div>
+  </div>
+
+  <h3>Processing Pipeline</h3>
+  <div class="pipeline">
+    <span class="step">Green PPG (128 Hz)</span><span class="arrow">&rarr;</span>
+    <span class="step">DC Removal + Butterworth HPF (0.54 Hz)</span><span class="arrow">&rarr;</span>
+    <span class="step">Smoothing Filter</span><span class="arrow">&rarr;</span>
+    <span class="step">Peak/Trough Detection</span><span class="arrow">&rarr;</span>
+    <span class="step">Pulse Morphology Feature Extraction (20 features)</span><span class="arrow">&rarr;</span>
+    <span class="step">SVM Regression (RBF kernel)</span><span class="arrow">&rarr;</span>
+    <span class="step">Offset Correction &amp; PR Compensation</span>
+  </div>
+
+  <h3>Implementation Details</h3>
+  <h4>1. Feature Extraction</h4>
+  <p>20 morphological features are extracted from each PPG pulse:</p>
+  <table>
+    <tr><th>#</th><th>Feature</th><th>Description</th></tr>
+    <tr><td>0</td><td>Pulse Length</td><td>Total pulse duration (normalized)</td></tr>
+    <tr><td>1</td><td>Systolic Upstroke Time</td><td>Time from trough to peak</td></tr>
+    <tr><td>2</td><td>Systolic Downstroke Time</td><td>Time from peak to dicrotic notch</td></tr>
+    <tr><td>3&ndash;10</td><td>Width at 25/50/75/90%</td><td>Pulse width at various amplitude levels (with sub-diastolic time)</td></tr>
+    <tr><td>11&ndash;12</td><td>Height at 25/50%</td><td>Signal amplitude at percentage points</td></tr>
+    <tr><td>13</td><td>Height Diff</td><td>Amplitude difference metric</td></tr>
+    <tr><td>14&ndash;16</td><td>Dicrotic Notch</td><td>Distance, intensity, and amplitude of dicrotic notch</td></tr>
+    <tr><td>17&ndash;18</td><td>Diastolic Bump</td><td>Size and intensity of diastolic bump</td></tr>
+    <tr><td>19</td><td>Pulse Count</td><td>Number of valid features</td></tr>
+  </table>
+
+  <h4>2. SVM Regression (RBF Kernel)</h4>
+  <p>Separate Support Vector Regression models predict systolic and diastolic BP. Four model variants are available:</p>
+  <table>
+    <tr><th>Model</th><th># Support Vectors (SYS / DIAS)</th><th>Condition</th></tr>
+    <tr><td>NBP</td><td>29 / 29</td><td>Normal blood pressure patients</td></tr>
+    <tr><td>HBP</td><td>43 / 32</td><td>High blood pressure patients</td></tr>
+    <tr><td>NBP_HAGE</td><td>29 / 20</td><td>Normal BP, age-adjusted (age &ge; 53)</td></tr>
+    <tr><td>HBP_HAGE</td><td>37 / 29</td><td>High BP, age-adjusted (age &ge; 53)</td></tr>
+  </table>
+  <p>The RBF kernel: <code>K(x, x') = exp(-&gamma; &times; ||x - x'||&sup2;)</code> with &gamma;&nbsp;=&nbsp;1 (HBP/NBP newer models).</p>
+
+  <h4>3. Pulse-Rate Linear Fallback</h4>
+  <p>A simple linear model serves as fallback: <code>SBP = 0.6552 &times; PR + 94.47</code>, <code>DBP = 0.4153 &times; PR + 48.29</code>. The offset from this model is stored per cuff calibration.</p>
+
+  <h4>4. Cuff Calibration</h4>
+  <p>When a new cuff measurement arrives, the firmware:</p>
+  <ul>
+    <li>Computes the difference between predicted and measured BP</li>
+    <li>Aggregates the offset with the previous offset (rolling average)</li>
+    <li>Switches model to HBP if measured systolic &gt; 140&nbsp;mmHg</li>
+    <li>Stores up to 10 cuff records in FDS</li>
+  </ul>
+</div>
+</div>
+
+<!-- ======================= ECG ======================= -->
+<div class="tab-content" id="ecg">
+<div class="card">
+  <h2>ECG Quality Assessment</h2>
+  <p><span class="badge badge-file">mmt_ECG.c</span><span class="badge badge-sensor">MAX86178 ECG</span><span class="badge badge-rate">256 Hz sampling</span></p>
+
+  <h3>Overview</h3>
+  <div class="overview-grid">
+    <div class="item"><strong>Inputs</strong>Raw ECG samples (18-bit signed, 256&nbsp;Hz); ECG amplifier gain.</div>
+    <div class="item"><strong>Outputs</strong>8-bit quality status code encoding: contact (1 bit), stability (1 bit), noise (2 bits), signal strength (2 bits), activity level (2 bits).</div>
+    <div class="item"><strong>Windowing</strong>Small window: 40&nbsp;ms (peak-to-peak extraction). Big window: 2000&nbsp;ms (quality evaluation, ~50 small windows).</div>
+    <div class="item"><strong>Conversion</strong>Raw &rarr; &micro;V: <code>ecg_uV = raw &times; (10<sup>6</sup> / 131072) / gain</code></div>
+  </div>
+
+  <h3>Processing Pipeline</h3>
+  <div class="pipeline">
+    <span class="step">Raw ECG (18-bit)</span><span class="arrow">&rarr;</span>
+    <span class="step">Sign correction &amp; &micro;V conversion</span><span class="arrow">&rarr;</span>
+    <span class="step">40 ms min/max extraction</span><span class="arrow">&rarr;</span>
+    <span class="step">Peak-to-peak (PP) computation</span><span class="arrow">&rarr;</span>
+    <span class="step">Top-4 max &amp; Top-6 min PP tracking</span><span class="arrow">&rarr;</span>
+    <span class="step">2 s quality assessment</span>
+  </div>
+
+  <h3>Quality Metrics</h3>
+  <table>
+    <tr><th>Metric</th><th>BAD</th><th>50/50</th><th>GOOD</th><th>EXCELLENT</th></tr>
+    <tr><td><b>Stability</b> (peak ratio)</td><td>&gt;&nbsp;2.0</td><td colspan="3">&le;&nbsp;2.0</td></tr>
+    <tr><td><b>Contact</b> (max PP)</td><td>&gt;&nbsp;1800 &micro;V</td><td colspan="3">&le;&nbsp;1800 &micro;V</td></tr>
+    <tr><td><b>Noise</b> (min PP)</td><td>&gt;&nbsp;220</td><td>&gt;&nbsp;150</td><td>&gt;&nbsp;70</td><td>&le;&nbsp;70</td></tr>
+    <tr><td><b>Strength</b> (SNR)</td><td>&lt;&nbsp;1.3</td><td>&lt;&nbsp;1.6</td><td>&lt;&nbsp;2.0</td><td>&ge;&nbsp;2.0</td></tr>
+    <tr><td><b>Activity</b> (acc sum_d)</td><td>&ge;&nbsp;1500</td><td>&ge;&nbsp;800</td><td>&ge;&nbsp;400</td><td>&lt;&nbsp;400</td></tr>
+  </table>
+
+  <h4>Status Code Encoding (8 bits)</h4>
+  <p><code>[Contact:1][Stability:1][Noise:2][Strength:2][Activity:2]</code></p>
+</div>
+</div>
+
+<!-- ======================= Gait ======================= -->
+<div class="tab-content" id="gait">
+<div class="card">
+  <h2>Gait Analysis</h2>
+  <p><span class="badge badge-file">mmt_gait.c</span><span class="badge badge-sensor">LIS2DW12 Accelerometer</span><span class="badge badge-rate">2 s frames, 10 s integration</span></p>
+
+  <h3>Overview</h3>
+  <div class="overview-grid">
+    <div class="item"><strong>Inputs</strong>3-axis accelerometer data (32&nbsp;Hz).</div>
+    <div class="item"><strong>Outputs</strong>Gait symmetry (0&ndash;99), gait speed (relative), gait variability (delta from previous).</div>
+    <div class="item"><strong>Frame Size</strong>2&nbsp;s &times; 32&nbsp;Hz = 64 samples per analysis frame.</div>
+    <div class="item"><strong>Integration Window</strong>5 frames (10&nbsp;s) before reporting aggregated results.</div>
+  </div>
+
+  <h3>Processing Pipeline</h3>
+  <div class="pipeline">
+    <span class="step">3-axis ACC (32 Hz)</span><span class="arrow">&rarr;</span>
+    <span class="step">Vector Magnitude</span><span class="arrow">&rarr;</span>
+    <span class="step">Mean &amp; Std Deviation</span><span class="arrow">&rarr;</span>
+    <span class="step">Tremor Score</span><span class="arrow">&rarr;</span>
+    <span class="step">90th Percentile Scaling</span><span class="arrow">&rarr;</span>
+    <span class="step">Non-linear Mapping (0&ndash;100)</span>
+  </div>
+
+  <h3>Implementation Details</h3>
+  <h4>1. Magnitude &amp; Differential</h4>
+  <p><code>magnitude = sqrt(X&sup2; + Y&sup2; + Z&sup2;)</code>. The differential acceleration <code>d_acc = magnitude[i] - magnitude[i-1]</code> provides the speed estimate.</p>
+
+  <h4>2. Tremor / Symmetry Score</h4>
+  <p>Standard deviation of magnitudes around the mean, divided by the 90th percentile (approximated as <code>max &times; 0.9</code>), scaled to 0&ndash;100. Then mapped through a non-linear function: <code>score = 0.426 &times; s + 0.239 &times; s&sup2;</code> and clamped to 0&ndash;99.</p>
+
+  <h4>3. Aggregation</h4>
+  <p>Over 10&nbsp;s (5 frames), the <b>minimum</b> symmetry score is kept (worst case). Speed is averaged only when above the <code>MINIMUM_GAIT_SPEED = 5</code> threshold. Variability is computed as the absolute change from the previous aggregation period.</p>
+</div>
+</div>
+
+<!-- ======================= Steps ======================= -->
+<div class="tab-content" id="steps">
+<div class="card">
+  <h2>Step Counter</h2>
+  <p><span class="badge badge-file">mmt_steps_counter.c</span><span class="badge badge-file">mmt_motion_state.c</span><span class="badge badge-sensor">LIS2DW12 Accelerometer</span><span class="badge badge-rate">2 s frames</span></p>
+
+  <h3>Overview</h3>
+  <div class="overview-grid">
+    <div class="item"><strong>Inputs</strong>3-axis accelerometer data (32&nbsp;Hz); timestamps.</div>
+    <div class="item"><strong>Outputs</strong>Number of steps per 2&nbsp;s frame; motion state (idle, walking, etc.).</div>
+    <div class="item"><strong>Frame Size</strong>2&nbsp;s &times; 32&nbsp;Hz = 64 base samples + filter overlap.</div>
+    <div class="item"><strong>Filter</strong>Butterworth band-pass (0.7&ndash;4&nbsp;Hz, order 2) + rolling mean of 5.</div>
+  </div>
+
+  <h3>Processing Pipeline</h3>
+  <div class="pipeline">
+    <span class="step">3-axis ACC</span><span class="arrow">&rarr;</span>
+    <span class="step">Magnitude = &radic;(X&sup2;+Y&sup2;+Z&sup2;)</span><span class="arrow">&rarr;</span>
+    <span class="step">Butterworth Band-pass</span><span class="arrow">&rarr;</span>
+    <span class="step">Rolling Mean (5)</span><span class="arrow">&rarr;</span>
+    <span class="step">Local Peak Detection</span><span class="arrow">&rarr;</span>
+    <span class="step">Periodicity Filter</span><span class="arrow">&rarr;</span>
+    <span class="step">Similarity Filter</span><span class="arrow">&rarr;</span>
+    <span class="step">Variance Filter</span><span class="arrow">&rarr;</span>
+    <span class="step">Motion State (SVM)</span><span class="arrow">&rarr;</span>
+    <span class="step">Step Count</span>
+  </div>
+
+  <h3>Implementation Details</h3>
+  <h4>1. Preprocessing</h4>
+  <p>Raw 3-axis data &rarr; vector magnitude &rarr; Butterworth IIR band-pass (0.7&ndash;4&nbsp;Hz) &rarr; rolling mean of 5 samples for smoothing.</p>
+
+  <h4>2. Peak Detection</h4>
+  <p>A local maximum search in windows of <code>PEAK_WINDOW_LENGTH = 4</code> samples. Each candidate peak is verified against its neighbors within <code>PEAK_HALF_INTERVAL</code>. Minimum peak threshold: <code>0.1 &times; 512 = 51.2</code>.</p>
+
+  <h4>3. Triple Filtering</h4>
+  <table>
+    <tr><th>Filter</th><th>Purpose</th><th>Criteria</th></tr>
+    <tr><td><b>Periodicity</b></td><td>Reject non-rhythmic peaks</td><td>Inter-peak distance must be 5&ndash;40 samples (~0.16&ndash;1.25&nbsp;s)</td></tr>
+    <tr><td><b>Similarity</b></td><td>Left/right foot consistency</td><td>Amplitude difference between every-other-step &lt; threshold</td></tr>
+    <tr><td><b>Variance</b></td><td>Signal energy between peaks</td><td>Variance must exceed threshold with temporal continuity</td></tr>
+  </table>
+
+  <h4>4. Motion State Classification</h4>
+  <p>An SVM classifier (<code>mmt_motion_state_Detect()</code>) uses 6 features (filtered variance, amplitude, min, peak count, peak period, raw magnitude) to classify the 2&nbsp;s frame as <b>idle</b>, <b>walking</b>, or other states. Steps are only reported when the motion state is <b>walking</b>.</p>
+</div>
+</div>
+
+<!-- ======================= Fall Detection ======================= -->
+<div class="tab-content" id="fall">
+<div class="card">
+  <h2>Fall Detection</h2>
+  <p><span class="badge badge-file">mmt_fall_detect.c</span><span class="badge badge-sensor">Accelerometer</span><span class="badge badge-rate">Event-driven, &le; 50 ms sampling</span></p>
+
+  <h3>Overview</h3>
+  <div class="overview-grid">
+    <div class="item"><strong>Inputs</strong>3-axis acceleration data with relative timestamps (&micro;s).</div>
+    <div class="item"><strong>Outputs</strong><code>_FDEvent</code> structure: isFall flag, confidence (0&ndash;100), intensity, energy, power, long-lie metrics, timing.</div>
+    <div class="item"><strong>Thresholds</strong>Low-G trigger: &le;&nbsp;250 mg. Impact: &ge;&nbsp;2250 mg. Long-lie window: 20&nbsp;s.</div>
+    <div class="item"><strong>Architecture</strong>4-state state machine with circular buffer (210 samples).</div>
+  </div>
+
+  <h3>State Machine</h3>
+  <table>
+    <tr><th>State</th><th>Behavior</th><th>Transition</th></tr>
+    <tr><td><b>IDLE</b></td><td>Monitor acceleration magnitude</td><td>&rarr; GETDATA when acc &le; 250 mg and sampling &le; 50&nbsp;ms</td></tr>
+    <tr><td><b>GETDATA</b></td><td>Buffer 2&nbsp;s of data</td><td>&rarr; FALLDETECT after 2&nbsp;s elapsed</td></tr>
+    <tr><td><b>FALLDETECT</b></td><td>Analyze buffer for impact (&ge; 2250 mg)</td><td>&rarr; LONGLIEDETECT if impact found; &rarr; IDLE otherwise</td></tr>
+    <tr><td><b>LONGLIEDETECT</b></td><td>Monitor 20&nbsp;s for long-lie (300&ndash;600 mg band)</td><td>&rarr; IDLE after 20&nbsp;s with confidence estimate</td></tr>
+  </table>
+
+  <h3>Confidence Estimation</h3>
+  <p>Starts at 100 and adjusts based on three independent factors:</p>
+  <ul>
+    <li><b>Signal Power</b>: optimal range 500k&ndash;950k (increases confidence); very low (&lt;200k) or very high (&gt;1250k) decreases confidence</li>
+    <li><b>Intensity</b>: <code>(max - 2250) / 2250 &times; 100</code>. Low intensity (&lt;50) decreases confidence, high (&gt;50) increases</li>
+    <li><b>Long Lie</b>: 0 out-of-range samples = +20; &ge;25 out-of-range samples = &minus;50</li>
+  </ul>
+  <p>Final confidence is clamped to 0&ndash;100 after each factor.</p>
+</div>
+</div>
+
+<!-- ======================= Cardiac Arrest ======================= -->
+<div class="tab-content" id="cardiac">
+<div class="card">
+  <h2>Cardiac Arrest Detection</h2>
+  <p><span class="badge badge-file">mmt_cardiac_arrest.c</span><span class="badge badge-sensor">Green PPG</span><span class="badge badge-rate">Every 2 s</span></p>
+
+  <h3>Overview</h3>
+  <div class="overview-grid">
+    <div class="item"><strong>Inputs</strong>Green PPG max and min values per second; LED power.</div>
+    <div class="item"><strong>Outputs</strong>Cardiac state: <code>UNSPECIFIED (0)</code>, <code>NORMAL_RHYTHM (1)</code>, <code>CARDIAC_ARREST (2)</code>.</div>
+    <div class="item"><strong>Detection Logic</strong>If the PPG peak-to-peak amplitude stays below an adaptive threshold for &ge;&nbsp;40 consecutive seconds, a cardiac arrest alarm is raised.</div>
+    <div class="item"><strong>Recovery</strong>4 consecutive above-threshold readings end the alarm.</div>
+  </div>
+
+  <h3>Implementation Details</h3>
+  <h4>1. 2-Second Aggregation</h4>
+  <p>1-second PPG max/min values are combined into 2-second windows: <code>max_2s = max(max_1, max_2)</code>, <code>min_2s = min(min_1, min_2)</code>. The amplitude is <code>pp = max_2s - min_2s</code>.</p>
+
+  <h4>2. Adaptive Threshold</h4>
+  <p>The threshold is computed over ~1 hour of data: <code>threshold = mean(pp) / 5</code>, capped at 30. This adapts to the individual's typical PPG amplitude. Recalculated every ~1 hour; reset every ~24 hours.</p>
+
+  <h4>3. Alarm Logic</h4>
+  <ul>
+    <li>If <code>pp &lt; threshold</code> for &ge;&nbsp;40 seconds &rarr; state = CARDIAC_ARREST</li>
+    <li>If <code>pp &ge; threshold</code> for 4 consecutive readings while in CARDIAC_ARREST &rarr; state = NORMAL_RHYTHM</li>
+  </ul>
+
+  <h4>4. Safety Guards</h4>
+  <ul>
+    <li>Saturated PPG readings (&gt;65525 or &lt;10) are discarded</li>
+    <li>Large jumps (&gt;60000 pp) are discarded</li>
+    <li>Unstable readings (&gt;2000 pp) are ignored</li>
+  </ul>
+</div>
+</div>
+
+<!-- ======================= Wearing Detection ======================= -->
+<div class="tab-content" id="wearing">
+<div class="card">
+  <h2>Wearing Detection</h2>
+  <p><span class="badge badge-file">mmt_wearing_detection_287_2b.h</span><span class="badge badge-sensor">Multi-channel PPG + Accelerometer</span><span class="badge badge-rate">Continuous</span></p>
+
+  <h3>Overview</h3>
+  <div class="overview-grid">
+    <div class="item"><strong>Inputs</strong>PPG values from green, red, and infrared channels; LED power; ADC gain; accelerometer data.</div>
+    <div class="item"><strong>Outputs</strong>Wearing state: <code>NOT_WEARING (0)</code>, <code>WEARING_5050 (2)</code>, <code>WEARING (4)</code>. Also: PPG quality per channel (0&ndash;255).</div>
+    <div class="item"><strong>Skin Types</strong>6 Fitzpatrick skin types (1&ndash;6) affect LED power and detection thresholds.</div>
+    <div class="item"><strong>Functions</strong><code>mmt_wearing_detection_get_state()</code> (instantaneous), <code>mmt_wearing_detection_get_long_state()</code> (long-term average), <code>mmt_wearing_detection_get_min_state()</code> (minimum over time window).</div>
+  </div>
+
+  <h3>Detection Methods</h3>
+  <table>
+    <tr><th>Method</th><th>Description</th></tr>
+    <tr><td><b>In-Air Detection</b></td><td>Monitors LED power vs. PPG value. If LED is at maximum and PPG is near zero, the device is likely in air (not on wrist).</td></tr>
+    <tr><td><b>Skin Proximity (Green)</b></td><td>Green PPG max-min amplitude tracked over time. Low amplitude indicates no skin contact.</td></tr>
+    <tr><td><b>Red/IR Cross-check</b></td><td>Red and infrared channels provide additional skin contact confirmation.</td></tr>
+    <tr><td><b>Filtered PP Tracking</b></td><td>Filtered peak-to-peak with LED power correlation provides confidence metric.</td></tr>
+    <tr><td><b>PPG Quality on LEDs</b></td><td>Optional visual feedback mode where LEDs indicate PPG signal quality.</td></tr>
+  </table>
+</div>
+</div>
+
+<!-- ======================= Sleep Staging ======================= -->
+<div class="tab-content" id="sleep">
+<div class="card">
+  <h2>Sleep Staging (Corsano)</h2>
+  <p><span class="badge badge-file">corsano_sleep_process.c</span><span class="badge badge-file">mmt_sleep_process.h</span><span class="badge badge-sensor">Accelerometer + Green PPG</span><span class="badge badge-rate">Per epoch (minutes)</span></p>
+
+  <h3>Overview</h3>
+  <div class="overview-grid">
+    <div class="item"><strong>Inputs</strong>Mean movement (from accelerometer); heart rate (BPM); activity count; RMSSD (HRV metric from PPG).</div>
+    <div class="item"><strong>Outputs</strong>16-byte <code>CorsanoSleepData_t</code> records written to flash: timestamp, sleep stage, movement, activity count, heart rate, RMSSD, CRC.</div>
+    <div class="item"><strong>Record Format</strong>Preamble "OHR" + version (6) + data fields + CRC8. Record size: 16 bytes.</div>
+    <div class="item"><strong>BPM Window</strong>75&nbsp;s primary; falls back to 150&nbsp;s then 375&nbsp;s if no BPM available.</div>
+  </div>
+
+  <h3>Data Collection</h3>
+  <p>Each epoch, the firmware collects:</p>
+  <ul>
+    <li><b>Mean movement</b>: provided by the accelerometer processing chain</li>
+    <li><b>Heart rate</b>: weighted average from <code>mmt_hrm_get_weighted_avg()</code> over 75&nbsp;s</li>
+    <li><b>Activity count</b>: from <code>calculate_activity_count()</code></li>
+    <li><b>RMSSD</b>: from <code>calculate_RMSSD()</code> (RR-interval variability)</li>
+  </ul>
+  <p>Data is packaged into a <code>CorsanoSleepData_t</code> struct, CRC8-verified, and written to flash for later retrieval.</p>
+
+  <div class="note">The actual sleep stage classification (wake/light/deep/REM) is performed server-side or by the Corsano cloud. The firmware collects and logs the required features.</div>
+</div>
+</div>
+
+<!-- ======================= Power Plans ======================= -->
+<div class="tab-content" id="plans">
+<div class="card">
+  <h2>Power Plans &mdash; Measurement Scheduling</h2>
+  <p><span class="badge badge-file">mmt_state_machine.h</span><span class="badge badge-file">mmt_ble_manage.c</span></p>
+
+  <h3>Overview</h3>
+  <p>The firmware supports multiple power plans that control which sensors are active, at what frequency measurements are taken, and how data is stored. The plan is set via BLE command and persisted in FDS.</p>
+
+  <h3>Plan Definitions</h3>
+  <table class="plan-table">
+    <tr><th>Plan ID</th><th>Name</th><th>Description</th></tr>
+    <tr><td>0</td><td>PLAN_DISABLED</td><td>All measurements off. Minimum power consumption.</td></tr>
+    <tr><td>1</td><td>PLAN_MAX_BATTERY</td><td>Maximum battery life. Minimal measurement frequency.</td></tr>
+    <tr><td>2</td><td>PLAN_TYPICAL</td><td>Balanced mode. Standard measurement intervals (single-color PPG).</td></tr>
+    <tr><td>3</td><td>PLAN_HRM</td><td>Continuous heart rate monitoring (single-color PPG).</td></tr>
+    <tr><td>4</td><td>PLAN_25_HZ</td><td>PPG at 25&nbsp;Hz sampling rate.</td></tr>
+    <tr><td>5</td><td>PLAN_HOSPITAL</td><td>Highest fidelity. High-frequency PPG sampling. Continuous SpO2, NIBP, ECG, all vitals. Used in clinical settings.</td></tr>
+    <tr><td>7</td><td>PLAN_TYPICAL_MULTICOLOR</td><td>Balanced mode with multi-wavelength PPG (Red + IR + Green). Enables SpO2.</td></tr>
+    <tr><td>8</td><td>PLAN_HRM_MULTICOLOR</td><td>Continuous HR + SpO2 with multi-wavelength PPG. 2-minute measurement intervals for some vitals.</td></tr>
+    <tr><td>9</td><td>PLAN_INTERMITTENT_MULTICOLOR_RAW</td><td>Intermittent multi-color measurements with raw data logging. High-frequency PPG sampling enabled.</td></tr>
+    <tr><td>10</td><td>PLAN_INTERMITTENT_MULTICOLOR</td><td>Intermittent multi-color measurements (processed data only).</td></tr>
+    <tr><td>11</td><td>PLAN_5min</td><td>Measurement every 5 minutes. Low-power intermittent monitoring.</td></tr>
+  </table>
+
+  <h3>Plan Impact on Algorithms</h3>
+  <table>
+    <tr><th>Algorithm</th><th>DISABLED</th><th>MAX_BATTERY</th><th>TYPICAL</th><th>HRM / HRM_MC</th><th>HOSPITAL</th><th>5min</th></tr>
+    <tr><td><b>Heart Rate</b></td><td>Off</td><td>Periodic</td><td>~1/min</td><td>Continuous</td><td>Continuous</td><td>~1/5min</td></tr>
+    <tr><td><b>SpO2</b></td><td>Off</td><td>Off</td><td>Off (single-color)</td><td>On (multicolor)</td><td>Continuous</td><td>~1/5min</td></tr>
+    <tr><td><b>NIBP</b></td><td>Off</td><td>Off</td><td>Periodic</td><td>Periodic</td><td>Continuous</td><td>~1/5min</td></tr>
+    <tr><td><b>ECG</b></td><td>Off</td><td>Off</td><td>Off</td><td>Off</td><td>On (256 Hz)</td><td>Off</td></tr>
+    <tr><td><b>Resp. Rate</b></td><td>Off</td><td>Off</td><td>Periodic</td><td>Continuous</td><td>Continuous</td><td>~1/5min</td></tr>
+    <tr><td><b>Steps / Gait</b></td><td>Off</td><td>On</td><td>On</td><td>On</td><td>On</td><td>On</td></tr>
+    <tr><td><b>Fall Detect</b></td><td>Off</td><td>On</td><td>On</td><td>On</td><td>On</td><td>On</td></tr>
+    <tr><td><b>Cardiac Arrest</b></td><td>Off</td><td>Off</td><td>Periodic</td><td>Continuous</td><td>Continuous</td><td>Periodic</td></tr>
+    <tr><td><b>PPG Sampling</b></td><td>Off</td><td>32 Hz</td><td>32 Hz</td><td>32 Hz</td><td>128 Hz</td><td>32 Hz</td></tr>
+  </table>
+
+  <h3>Stress / BioZ Plans</h3>
+  <table>
+    <tr><th>Plan</th><th>Description</th></tr>
+    <tr><td>PLAN_STRESS_DISABLED (1)</td><td>Emography / BioZ measurements disabled.</td></tr>
+    <tr><td>PLAN_STRESS_NIGHT (2)</td><td>BioZ measurements enabled only during nighttime (sleep).</td></tr>
+    <tr><td>PLAN_STRESS_ALWAYS (3)</td><td>BioZ measurements always enabled.</td></tr>
+  </table>
+
+  <h3>SpO2 Rate Parameter</h3>
+  <p>The <code>spo2_algo.rate</code> field controls the upstream reporting frequency of SpO2, independently of the 15&nbsp;s internal processing. It is set in seconds:</p>
+  <table>
+    <tr><th>Rate Value</th><th>Effective Frequency</th><th>Typical Plan</th></tr>
+    <tr><td>1800 (default)</td><td>Every 30 minutes</td><td>TYPICAL_MULTICOLOR</td></tr>
+    <tr><td>300</td><td>Every 5 minutes</td><td>PLAN_5min</td></tr>
+    <tr><td>60</td><td>Every 1 minute</td><td>HRM_MULTICOLOR</td></tr>
+    <tr><td>30</td><td>Every 30 seconds</td><td>HOSPITAL</td></tr>
+  </table>
+
+  <div class="note">The plan is set via BLE command (opcode in <code>mmt_ble_manage.c</code>) and persisted in FDS at keys <code>FDS_PLAN_FILE_ID / FDS_PLAN_CONFIG_ID</code>. Changing the plan triggers <code>MMT_TASK_VERIFY_PLAN_SET_MODE</code> which reconfigures all sensor subsystems.</div>
+</div>
+</div>
+
+<script>
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+  });
+});
+</script>
+</body>
+</html>

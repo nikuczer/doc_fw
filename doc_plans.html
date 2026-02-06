@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>287-2B — Power Plans &amp; Vital Parameters Sampling</title>
+<style>
+  :root {
+    --bg: #f8f9fa;
+    --card: #ffffff;
+    --border: #dee2e6;
+    --accent: #2563eb;
+    --accent-light: #dbeafe;
+    --text: #1e293b;
+    --muted: #64748b;
+    --green: #16a34a;
+    --red: #dc2626;
+    --orange: #ea580c;
+    --yellow: #ca8a04;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; padding: 2rem; }
+  h1 { font-size: 1.8rem; margin-bottom: .3rem; }
+  h2 { font-size: 1.3rem; margin: 2rem 0 1rem; border-bottom: 2px solid var(--accent); padding-bottom: .3rem; color: var(--accent); }
+  h3 { font-size: 1.05rem; margin: 1.2rem 0 .5rem; }
+  .subtitle { color: var(--muted); margin-bottom: 2rem; font-size: .95rem; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1.2rem 1.5rem; margin-bottom: 1rem; }
+  .card-title { font-weight: 700; font-size: 1rem; margin-bottom: .4rem; display: flex; align-items: center; gap: .5rem; }
+  .badge { display: inline-block; font-size: .72rem; font-weight: 600; padding: 2px 8px; border-radius: 10px; text-transform: uppercase; letter-spacing: .3px; }
+  .badge-plan  { background: var(--accent-light); color: var(--accent); }
+  .badge-green { background: #dcfce7; color: var(--green); }
+  .badge-red   { background: #fee2e2; color: var(--red); }
+  .badge-orange{ background: #ffedd5; color: var(--orange); }
+  .badge-yellow{ background: #fef9c3; color: var(--yellow); }
+
+  table { width: 100%; border-collapse: collapse; font-size: .88rem; margin-bottom: 1rem; }
+  th, td { padding: .55rem .7rem; text-align: left; border: 1px solid var(--border); }
+  th { background: var(--accent); color: #fff; font-weight: 600; white-space: nowrap; }
+  tr:nth-child(even) { background: #f1f5f9; }
+  td.center { text-align: center; }
+  .yes { color: var(--green); font-weight: 600; }
+  .no  { color: var(--red); font-weight: 600; }
+  .opt { color: var(--orange); font-weight: 600; }
+
+  .note { background: #fffbeb; border-left: 4px solid var(--yellow); padding: .7rem 1rem; border-radius: 0 6px 6px 0; margin: .8rem 0; font-size: .88rem; }
+  code { background: #e2e8f0; padding: 1px 5px; border-radius: 3px; font-size: .85em; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 800px) { .grid2 { grid-template-columns: 1fr; } }
+  footer { margin-top: 3rem; color: var(--muted); font-size: .8rem; text-align: center; }
+</style>
+</head>
+<body>
+
+<h1>287-2B Firmware — Power Plans &amp; Vital Parameters</h1>
+<p class="subtitle">Reference documentation &mdash; generated from source code (Feb 2026)</p>
+
+<!-- ===== SECTION 1 : OVERVIEW TABLE ===== -->
+<h2>1. Power Plans Overview</h2>
+<p>Plans are defined in <code>mmt_state_machine.h</code> as <code>mmt_power_plan_t</code>. The default plan loaded from flash is <strong>PLAN_TYPICAL (2)</strong>.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Enum Name</th>
+      <th>Day Mode</th>
+      <th>Night Mode</th>
+      <th>PPG&nbsp;Hz</th>
+      <th>HRM</th>
+      <th>Emography</th>
+      <th>BioZ</th>
+      <th>NIBP</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="center">0</td>
+      <td>PLAN_DISABLED</td>
+      <td>SLEEP</td>
+      <td>&mdash;</td>
+      <td class="center">&mdash;</td>
+      <td class="center no">Off</td>
+      <td class="center no">Off</td>
+      <td class="center no">Off</td>
+      <td class="center no">Off</td>
+    </tr>
+    <tr>
+      <td class="center">1</td>
+      <td>PLAN_MAX_BATTERY</td>
+      <td>ACTIVITY</td>
+      <td>&mdash;</td>
+      <td class="center">25/32</td>
+      <td class="center no">Off</td>
+      <td class="center no">Off</td>
+      <td class="center no">Off</td>
+      <td class="center no">Off</td>
+    </tr>
+    <tr>
+      <td class="center">2</td>
+      <td>PLAN_TYPICAL</td>
+      <td>NORMAL</td>
+      <td>SLEEP_TRACKING</td>
+      <td class="center">25/32</td>
+      <td class="center yes">On</td>
+      <td class="center no">Off</td>
+      <td class="center no">Off</td>
+      <td class="center no">Off</td>
+    </tr>
+    <tr>
+      <td class="center">3</td>
+      <td>PLAN_HRM</td>
+      <td>HRM</td>
+      <td>SLEEP_TRACKING</td>
+      <td class="center">25/32</td>
+      <td class="center yes">Continuous</td>
+      <td class="center no">Off</td>
+      <td class="center no">Off</td>
+      <td class="center no">Off</td>
+    </tr>
+    <tr>
+      <td class="center">4</td>
+      <td>PLAN_25_HZ</td>
+      <td>NORMAL</td>
+      <td>PREVENTICUS_SLEEP</td>
+      <td class="center">25</td>
+      <td class="center yes">On</td>
+      <td class="center no">Off</td>
+      <td class="center no">Off</td>
+      <td class="center no">Off</td>
+    </tr>
+    <tr>
+      <td class="center">5</td>
+      <td>PLAN_HOSPITAL</td>
+      <td>PREVENTICUS</td>
+      <td>PREVENTICUS_SLEEP</td>
+      <td class="center"><strong>128</strong></td>
+      <td class="center yes">On</td>
+      <td class="center no">Off</td>
+      <td class="center no">Off</td>
+      <td class="center yes">On*</td>
+    </tr>
+    <tr>
+      <td class="center">7</td>
+      <td>PLAN_TYPICAL_MULTICOLOR</td>
+      <td>NORMAL</td>
+      <td>SLEEP_TRACKING_MC</td>
+      <td class="center">32</td>
+      <td class="center yes">On</td>
+      <td class="center opt">Optional</td>
+      <td class="center opt">Optional</td>
+      <td class="center no">Off</td>
+    </tr>
+    <tr>
+      <td class="center">8</td>
+      <td>PLAN_HRM_MULTICOLOR</td>
+      <td>HRM_MULTICOLOR</td>
+      <td>&mdash;</td>
+      <td class="center">32</td>
+      <td class="center yes">Continuous</td>
+      <td class="center opt">Optional</td>
+      <td class="center opt">Optional</td>
+      <td class="center no">Off</td>
+    </tr>
+    <tr>
+      <td class="center">9</td>
+      <td>PLAN_INTERMITTENT_MC_RAW</td>
+      <td>HRM</td>
+      <td>SLEEP_TRACKING</td>
+      <td class="center"><strong>128</strong></td>
+      <td class="center yes">On</td>
+      <td class="center no">Off</td>
+      <td class="center no">Off</td>
+      <td class="center no">Off</td>
+    </tr>
+    <tr>
+      <td class="center">10</td>
+      <td>PLAN_INTERMITTENT_MC</td>
+      <td>HRM</td>
+      <td>SLEEP_TRACKING</td>
+      <td class="center">32</td>
+      <td class="center yes">On</td>
+      <td class="center opt">Optional</td>
+      <td class="center opt">Optional</td>
+      <td class="center no">Off</td>
+    </tr>
+    <tr>
+      <td class="center">11</td>
+      <td>PLAN_5min</td>
+      <td>HRM_MULTICOLOR</td>
+      <td>&mdash;</td>
+      <td class="center">32</td>
+      <td class="center yes">Intermittent</td>
+      <td class="center no">Off</td>
+      <td class="center no">Off</td>
+      <td class="center no">Off</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="note">
+  <strong>PPG base frequency:</strong> Non-multicolor builds default to <strong>25&nbsp;Hz</strong>, multicolor builds (<code>MODULE_287_2B_MULTICOLOR</code>) default to <strong>32&nbsp;Hz</strong>.
+  NIBP* in PLAN_HOSPITAL is enabled only when emography is disabled.
+</div>
+
+<!-- ===== SECTION 2 : PLAN DETAILS ===== -->
+<h2>2. Plan Details</h2>
+
+<div class="grid2">
+
+  <div class="card">
+    <div class="card-title"><span class="badge badge-red">0</span> PLAN_DISABLED</div>
+    <p>Device enters <strong>MODE_SLEEP</strong>. All active monitoring is turned off. Lowest power consumption.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="badge badge-orange">1</span> PLAN_MAX_BATTERY</div>
+    <p>Only basic <strong>activity tracking</strong> (accelerometer). No HRM, no PPG-based measurements. Best battery life with some data.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="badge badge-green">2</span> PLAN_TYPICAL <span class="badge badge-plan">Default</span></div>
+    <p>Standard monitoring: <strong>MODE_NORMAL</strong> during the day with periodic HRM, switches to <strong>MODE_SLEEP_TRACKING</strong> at night. Good balance between features and battery.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="badge badge-green">3</span> PLAN_HRM</div>
+    <p>Continuous heart rate monitoring (<strong>MODE_HRM</strong>) during the day, <strong>MODE_SLEEP_TRACKING</strong> at night. Higher battery consumption than TYPICAL.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="badge badge-yellow">4</span> PLAN_25_HZ</div>
+    <p>Medical-oriented: <strong>MODE_NORMAL</strong> with forced 25&nbsp;Hz PPG. Night mode is <strong>MODE_PREVENTICUS_SLEEP</strong>. Used for Preventicus-compatible data.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="badge badge-yellow">5</span> PLAN_HOSPITAL</div>
+    <p>High-resolution hospital monitoring: <strong>MODE_PREVENTICUS</strong> with PPG at <strong>128&nbsp;Hz</strong> (if emography off). NIBP monitoring enabled. Highest data resolution, highest power draw.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="badge badge-plan">7</span> PLAN_TYPICAL_MULTICOLOR</div>
+    <p>Multicolor variant of PLAN_TYPICAL. Same day/night logic with multi-LED PPG channels. Emography &amp; BioZ available as options.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="badge badge-plan">8</span> PLAN_HRM_MULTICOLOR</div>
+    <p>Continuous HRM using multi-LED PPG (<strong>MODE_HRM_MULTICOLOR</strong>). No distinct night mode transition. Emography &amp; BioZ configurable.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="badge badge-plan">9</span> PLAN_INTERMITTENT_MC_RAW</div>
+    <p>Intermittent HRM with <strong>raw PPG data at 128&nbsp;Hz</strong>. Used for research / data collection. Emography automatically disabled due to high PPG rate.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="badge badge-plan">10</span> PLAN_INTERMITTENT_MC</div>
+    <p>Intermittent multicolor HRM at standard frequency. Emography &amp; BioZ optionally available.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="badge badge-plan">11</span> PLAN_5min</div>
+    <p>5-minute intermittent measurement cycles using <strong>MODE_HRM_MULTICOLOR</strong>. Designed for extended battery life with periodic vital signs capture.</p>
+  </div>
+
+</div>
+
+<!-- ===== SECTION 3 : SAMPLING FREQUENCIES ===== -->
+<h2>3. Hardware Sampling Frequencies</h2>
+
+<table>
+  <thead>
+    <tr><th>Sensor</th><th>Standard Build</th><th>Multicolor Build</th><th>Notes</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>PPG (SpO2, HR)</td><td>25 Hz</td><td>32 Hz</td><td>Configurable up to 512&nbsp;Hz via <code>PPG2_SAMPLING_FREQ</code> enum</td></tr>
+    <tr><td>Accelerometer</td><td>25 Hz</td><td>32 Hz</td><td>Activity &amp; motion detection</td></tr>
+    <tr><td>ECG</td><td colspan="2" class="center">256 Hz</td><td>MAX86178 ECG channel</td></tr>
+    <tr><td>BioZ (Impedance)</td><td colspan="2" class="center">25 Hz</td><td>Emography / stress detection</td></tr>
+  </tbody>
+</table>
+
+<h3>PPG Sampling Rate Options (MAX86178)</h3>
+<table>
+  <thead>
+    <tr><th>Enum</th><th>Value</th><th>Frequency</th><th>Compatible with Emography?</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>PPG2_SR_0</td><td>0</td><td>Disabled</td><td class="center">&mdash;</td></tr>
+    <tr><td>PPG2_SR_32</td><td>1</td><td>32 Hz</td><td class="center yes">Yes</td></tr>
+    <tr><td>PPG2_SR_64</td><td>2</td><td>64 Hz</td><td class="center opt">Limit</td></tr>
+    <tr><td>PPG2_SR_128</td><td>3</td><td>128 Hz</td><td class="center no">No &mdash; auto-disabled</td></tr>
+    <tr><td>PPG2_SR_256</td><td>4</td><td>256 Hz</td><td class="center no">No &mdash; auto-disabled</td></tr>
+    <tr><td>PPG2_SR_512</td><td>5</td><td>512 Hz</td><td class="center no">No &mdash; auto-disabled</td></tr>
+  </tbody>
+</table>
+
+<div class="note">
+  <strong>Conflict rule:</strong> If PPG sampling rate is set above 32&nbsp;Hz while emography is active, the firmware either forces PPG back to 32&nbsp;Hz or automatically disables emography &amp; BioZ (depending on the call path).
+</div>
+
+<!-- ===== SECTION 4 : VITAL REPORTING RATES ===== -->
+<h2>4. Vital Parameters Reporting Rates</h2>
+
+<p>These are the <em>reporting</em> intervals &mdash; how often a computed vital value is logged/transmitted. Defined in <code>mmt_process_fxi.c</code>.</p>
+
+<table>
+  <thead>
+    <tr><th>Parameter</th><th>Default Interval</th><th>Minimum Allowed</th><th>Description</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>SpO2</td><td>30 min (1800 s)</td><td>30 s</td><td>Blood oxygen saturation</td></tr>
+    <tr><td>Pulse (HR)</td><td>1 min (60 s)</td><td>&mdash;</td><td>Heart rate from PPG</td></tr>
+    <tr><td>Respiration</td><td>30 min (1800 s)</td><td>30 s</td><td>Breathing rate</td></tr>
+    <tr><td>Activity</td><td>1 min (60 s)</td><td>&mdash;</td><td>Accelerometer-derived activity level</td></tr>
+    <tr><td>Temperature</td><td>1 min (60 s)</td><td>&mdash;</td><td>Skin temperature</td></tr>
+    <tr><td>NIBP</td><td>30 min (1800 s)</td><td>5 min (300 s)</td><td>Non-invasive blood pressure</td></tr>
+  </tbody>
+</table>
+
+<div class="note">
+  Reporting rates are configurable over BLE and persisted in flash (<code>FDS_VITAL_RATES_*</code>). The activity resolution is stored separately (<code>FDS_PLAN_ACT_RES_*</code>), default <strong>60&nbsp;s</strong>.
+</div>
+
+<!-- ===== SECTION 5 : STRESS / EMOGRAPHY ===== -->
+<h2>5. Stress Monitoring Plans (Emography / BioZ)</h2>
+
+<p>Controlled independently via <code>mmt_stress_plan_t</code>. Both emography and raw BioZ have their own plan setting.</p>
+
+<table>
+  <thead>
+    <tr><th>#</th><th>Enum</th><th>Behavior</th></tr>
+  </thead>
+  <tbody>
+    <tr><td class="center">0</td><td>PLAN_STRESS_INVALID</td><td>Invalid / not set</td></tr>
+    <tr><td class="center">1</td><td>PLAN_STRESS_DISABLED</td><td>Emography &amp; BioZ off <span class="badge badge-plan">Default</span></td></tr>
+    <tr><td class="center">2</td><td>PLAN_STRESS_NIGHT</td><td>Active during sleep mode only</td></tr>
+    <tr><td class="center">3</td><td>PLAN_STRESS_ALWAYS</td><td>Always active (day &amp; night)</td></tr>
+  </tbody>
+</table>
+
+<!-- ===== SECTION 6 : DISABLED FEATURES SUMMARY ===== -->
+<h2>6. Disabled Features Summary by Plan</h2>
+
+<table>
+  <thead>
+    <tr><th>Plan</th><th>Disabled / Inactive Features</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>PLAN_DISABLED (0)</strong></td><td>Everything except basic sleep mode &mdash; no HRM, no SpO2, no activity, no vitals reporting</td></tr>
+    <tr><td><strong>PLAN_MAX_BATTERY (1)</strong></td><td>HRM, SpO2, respiration, temperature, NIBP, emography, BioZ &mdash; only accelerometer active</td></tr>
+    <tr><td><strong>PLAN_TYPICAL (2)</strong></td><td>Emography, BioZ, NIBP, high-frequency PPG</td></tr>
+    <tr><td><strong>PLAN_HRM (3)</strong></td><td>Emography, BioZ, NIBP, high-frequency PPG</td></tr>
+    <tr><td><strong>PLAN_25_HZ (4)</strong></td><td>Emography, BioZ, NIBP; PPG locked to 25&nbsp;Hz</td></tr>
+    <tr><td><strong>PLAN_HOSPITAL (5)</strong></td><td>Emography, BioZ (if PPG at 128&nbsp;Hz). NIBP enabled only when emography is off</td></tr>
+    <tr><td><strong>PLAN_TYPICAL_MC (7)</strong></td><td>NIBP. Emography/BioZ available but disabled by default</td></tr>
+    <tr><td><strong>PLAN_HRM_MC (8)</strong></td><td>NIBP, sleep tracking transition. Emography/BioZ available but disabled by default</td></tr>
+    <tr><td><strong>PLAN_INTERMITTENT_MC_RAW (9)</strong></td><td>Emography &amp; BioZ forced off (PPG at 128&nbsp;Hz), NIBP</td></tr>
+    <tr><td><strong>PLAN_INTERMITTENT_MC (10)</strong></td><td>NIBP. Emography/BioZ available but disabled by default</td></tr>
+    <tr><td><strong>PLAN_5min (11)</strong></td><td>Emography, BioZ, NIBP, continuous monitoring (measurements only every 5&nbsp;min)</td></tr>
+  </tbody>
+</table>
+
+<!-- ===== SECTION 7 : KEY CONSTRAINTS ===== -->
+<h2>7. Key Constraints &amp; Interactions</h2>
+
+<div class="card">
+  <div class="card-title">PPG vs. Emography conflict</div>
+  <p>Emography requires the BioZ channel of the MAX86178. When PPG sampling exceeds <strong>32&nbsp;Hz</strong>, emography is automatically disabled (or PPG is forced back to 32&nbsp;Hz if emography was set first). This is enforced in both <code>mmt_state_machine.c</code> and <code>mmt_ble_manage.c</code>.</p>
+</div>
+
+<div class="card">
+  <div class="card-title">NIBP availability</div>
+  <p>NIBP monitoring is only enabled in <strong>PLAN_HOSPITAL</strong> and only when emography is disabled. In all other plans, NIBP is inactive.</p>
+</div>
+
+<div class="card">
+  <div class="card-title">Plan persistence</div>
+  <p>All plan settings (power plan, emography plan, BioZ plan, PPG sampling rate, activity resolution, vital rates) are stored in <strong>FDS (Flash Data Storage)</strong> and survive reboots. If a read from FDS fails, safe defaults are applied (PLAN_TYPICAL, PPG 32&nbsp;Hz, activity 60&nbsp;s, emography disabled).</p>
+</div>
+
+<footer>
+  Generated from 287-2B firmware source &mdash; February 2026
+</footer>
+
+</body>
+</html>
