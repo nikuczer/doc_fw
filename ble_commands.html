@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MMT 287-2B MultiColor - BLE Commands Reference</title>
+<style>
+  :root { --bg: #f8f9fa; --card: #fff; --border: #dee2e6; --primary: #0d6efd; --dark: #212529; --muted: #6c757d; --green: #198754; --orange: #fd7e14; --red: #dc3545; --cyan: #0dcaf0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--dark); line-height: 1.5; }
+  .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+  h1 { font-size: 1.8rem; margin-bottom: 6px; }
+  .subtitle { color: var(--muted); margin-bottom: 20px; font-size: 0.95rem; }
+  .toc { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px 24px; margin-bottom: 24px; columns: 3; column-gap: 24px; }
+  .toc h2 { font-size: 1.1rem; margin-bottom: 8px; column-span: all; }
+  .toc a { display: block; color: var(--primary); text-decoration: none; font-size: 0.85rem; padding: 2px 0; break-inside: avoid; }
+  .toc a:hover { text-decoration: underline; }
+  .section { margin-bottom: 32px; }
+  .section h2 { font-size: 1.3rem; border-bottom: 2px solid var(--primary); padding-bottom: 6px; margin-bottom: 16px; }
+  table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 12px; font-size: 0.88rem; }
+  thead { background: #e9ecef; }
+  th { text-align: left; padding: 8px 12px; font-weight: 600; white-space: nowrap; }
+  td { padding: 7px 12px; border-top: 1px solid var(--border); vertical-align: top; }
+  tr:hover td { background: #f0f7ff; }
+  .cmd-id { font-weight: 700; color: var(--primary); font-family: monospace; font-size: 0.95rem; }
+  .cmd-name { font-weight: 600; }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 600; }
+  .badge-get { background: #d1e7dd; color: #0f5132; }
+  .badge-set { background: #fff3cd; color: #664d03; }
+  .badge-action { background: #cfe2ff; color: #084298; }
+  .badge-stream { background: #e2d9f3; color: #432874; }
+  code { background: #e9ecef; padding: 1px 5px; border-radius: 3px; font-size: 0.85rem; }
+  .param-table { width: 100%; margin: 4px 0; }
+  .param-table td { padding: 3px 8px; font-size: 0.82rem; border: none; border-bottom: 1px dashed #eee; }
+  .param-table td:first-child { font-weight: 600; white-space: nowrap; width: 80px; }
+  .note { font-size: 0.82rem; color: var(--muted); font-style: italic; }
+  .error-table td:first-child { font-family: monospace; font-weight: 600; }
+  .resp { font-size: 0.82rem; }
+  .search-box { width: 100%; padding: 10px 16px; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem; margin-bottom: 20px; }
+  .search-box:focus { outline: none; border-color: var(--primary); }
+  .hidden { display: none; }
+  @media (max-width: 900px) { .toc { columns: 1; } }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>MMT 287-2B MultiColor &mdash; BLE Commands Reference</h1>
+<p class="subtitle">Firmware BLE ITS (Intelligent Transport Service) protocol &bull; Auto-generated from source code &bull; 247 commands</p>
+
+<input class="search-box" type="text" id="search" placeholder="Search commands by name, ID, or keyword..." oninput="filterTable()">
+
+<!-- ============================================================ -->
+<!-- ERROR CODES -->
+<!-- ============================================================ -->
+<div class="section">
+<h2>Error Codes</h2>
+<table class="error-table" style="max-width:600px">
+<thead><tr><th>Code</th><th>Name</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td>0</td><td>CEC_NO_ERROR</td><td>Success</td></tr>
+<tr><td>1</td><td>CEC_FORMAT_ERROR</td><td>Wrong number of bytes received</td></tr>
+<tr><td>2</td><td>CEC_INVALID_PARAM</td><td>Parameter out of range</td></tr>
+<tr><td>3</td><td>CEC_NOT_SUPPORTED</td><td>Command not supported on this hardware</td></tr>
+<tr><td>4</td><td>CEC_INVALID_STATE</td><td>Cannot execute in current state</td></tr>
+</tbody>
+</table>
+<p class="note">Default response: <code>response_data[0] = 100</code> (success), response size = 4 bytes. Response is sent via TX characteristic with CRC8.</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- TABLE OF CONTENTS -->
+<!-- ============================================================ -->
+<div class="toc">
+<h2>Categories</h2>
+<a href="#cat-streaming">Data Streaming &amp; Files</a>
+<a href="#cat-erase">Data Erasure</a>
+<a href="#cat-mode">Mode Control</a>
+<a href="#cat-time">Time &amp; Display</a>
+<a href="#cat-profile">User Profile &amp; Body</a>
+<a href="#cat-device">Device Info &amp; Serialization</a>
+<a href="#cat-sensor">Sensor Readings</a>
+<a href="#cat-alarm">Alarms</a>
+<a href="#cat-alert">Alerts &amp; Notifications</a>
+<a href="#cat-ble">BLE Configuration</a>
+<a href="#cat-ppg">PPG &amp; Optical Config</a>
+<a href="#cat-vitals">Vitals &amp; Measurement</a>
+<a href="#cat-special">Special Modes &amp; Tests</a>
+<a href="#cat-files">File Transfer (Phone &rarr; Watch)</a>
+<a href="#cat-bracelet">Bracelet Parameters</a>
+<a href="#cat-misc">Miscellaneous</a>
+</div>
+
+<!-- ============================================================ -->
+<!-- DATA STREAMING & FILE SIZES -->
+<!-- ============================================================ -->
+<div class="section" id="cat-streaming">
+<h2>Data Streaming &amp; File Sizes</h2>
+<table>
+<thead><tr><th>ID</th><th>Command</th><th>Type</th><th>Parameters (TX &rarr; Watch)</th><th>Response (Watch &rarr; Phone)</th><th>Description</th></tr></thead>
+<tbody class="searchable">
+
+<tr><td class="cmd-id">1</td><td class="cmd-name">APP_CMD_Start_Streaming_data</td><td><span class="badge badge-stream">Stream</span></td>
+<td>None</td><td>No direct response. Data streamed via notifications.</td>
+<td>Start streaming the currently active file. Must call a Get_*_Size command first to set the active file.</td></tr>
+
+<tr><td class="cmd-id">2</td><td class="cmd-name">APP_CMD_Stop_Streaming_data</td><td><span class="badge badge-action">Action</span></td>
+<td>None</td><td>Default (100)</td>
+<td>Stop any active data stream.</td></tr>
+
+<tr><td class="cmd-id">3</td><td class="cmd-name">APP_CMD_Get_HRM_Size</td><td><span class="badge badge-get">GET</span></td>
+<td>None</td><td><code>[0-3]</code> uint32 LE: file size (bytes)</td>
+<td>Get PPG file size and activate it for streaming.</td></tr>
+
+<tr><td class="cmd-id">4</td><td class="cmd-name">APP_CMD_Get_Activity_Size</td><td><span class="badge badge-get">GET</span></td>
+<td>None</td><td><code>[0-3]</code> uint32 LE: file size</td>
+<td>Get Activity file size and activate it.</td></tr>
+
+<tr><td class="cmd-id">5</td><td class="cmd-name">APP_CMD_Get_Workout_Size</td><td><span class="badge badge-get">GET</span></td>
+<td>None</td><td><code>[0-3]</code> uint32 LE: file size</td>
+<td>Get Workout file size and activate it.</td></tr>
+
+<tr><td class="cmd-id">6</td><td class="cmd-name">APP_CMD_Get_HRV_Size</td><td><span class="badge badge-get">GET</span></td>
+<td>None</td><td><code>[0-3]</code> uint32 LE: file size</td>
+<td>Get Heartbeat/HRV file size and activate it.</td></tr>
+
+<tr><td class="cmd-id">7</td><td class="cmd-name">APP_CMD_Get_Sleep_Size</td><td><span class="badge badge-get">GET</span></td>
+<td>None</td><td><code>[0-3]</code> uint32 LE: file size</td>
+<td>Get Sleep file size and activate it.</td></tr>
+
+<tr><td class="cmd-id">8</td><td class="cmd-name">APP_CMD_Get_Logs_Size</td><td><span class="badge badge-get">GET</span></td>
+<td>None</td><td><code>[0-3]</code> uint32 LE: file size</td>
+<td>Get Log file size and activate it.</td></tr>
+
+<tr><td class="cmd-id">46</td><td class="cmd-name">APP_CMD_GET_FILE_SIZE</td><td><span class="badge badge-get">GET</span></td>
+<td><code>p[1]</code>: file_id (uint8)</td>
+<td><code>[0]</code> file_id, <code>[1-4]</code> uint32 LE: size. Total 5 bytes.</td>
+<td>Get size of any file by ID.</td></tr>
+
+<tr><td class="cmd-id">47</td><td class="cmd-name">APP_CMD_Start_Streaming_File</td><td><span class="badge badge-stream">Stream</span></td>
+<td><code>p[1]</code>: file_id (0..MAX_NO_FILES)</td>
+<td>No direct response. Full file content streamed.</td>
+<td>Stream the entire content of a file by ID.</td></tr>
+
+<tr><td class="cmd-id">48</td><td class="cmd-name">APP_CMD_Start_Streaming_File_With_Size</td><td><span class="badge badge-stream">Stream</span></td>
+<td><code>p[1]</code>: file_id, <code>p[2-5]</code>: size uint32 LE (50000000 = continuous)</td>
+<td>No direct response. Data streamed.</td>
+<td>Stream a file with a specified byte count. Use size=50000000 for continuous streaming.</td></tr>
+
+<tr><td class="cmd-id">68</td><td class="cmd-name">APP_CMD_Start_Streaming_File_From_Address_With_Size</td><td><span class="badge badge-stream">Stream</span></td>
+<td><code>p[1]</code>: file_id, <code>p[2-5]</code>: size uint32 LE, <code>p[6-9]</code>: offset uint32 LE</td>
+<td>No direct response. Data streamed from offset.</td>
+<td>Stream a file from a specific offset with a specific size.</td></tr>
+
+<tr><td class="cmd-id">92</td><td class="cmd-name">APP_CMD_Get_GPS_Size</td><td><span class="badge badge-get">GET</span></td>
+<td>None</td><td><code>[0-3]</code> uint32 LE: file size</td>
+<td>Get GPS file size.</td></tr>
+
+<tr><td class="cmd-id">112</td><td class="cmd-name">APP_GET_PPG2_SIZE</td><td><span class="badge badge-get">GET</span></td>
+<td>None</td><td><code>[0-3]</code> uint32 LE: file size</td>
+<td>Get PPG2 file size.</td></tr>
+
+<tr><td class="cmd-id">140</td><td class="cmd-name">APP_CMD_Get_GPS_Debug_Size</td><td><span class="badge badge-get">GET</span></td>
+<td>None</td><td><code>[0-3]</code> uint32 LE: file size</td>
+<td>Get GPS debug file size.</td></tr>
+
+<tr><td class="cmd-id">161</td><td class="cmd-name">APP_GET_ECG_SIZE</td><td><span class="badge badge-get">GET</span></td>
+<td>None</td><td><code>[0-3]</code> uint32 LE: file size</td>
+<td>Get ECG file size.</td></tr>
+
+<tr><td class="cmd-id">169</td><td class="cmd-name">APP_GET_BIOZ_SIZE</td><td><span class="badge badge-get">GET</span></td>
+<td>None</td><td><code>[0-3]</code> uint32 LE: file size</td>
+<td>Get BioZ file size.</td></tr>
+
+<tr><td class="cmd-id">201</td><td class="cmd-name">APP_CMD_GET_SIZE_FILES_BUNCH</td><td><span class="badge badge-get">GET</span></td>
+<td><code>p[1]</code>: number_of_files, <code>p[2..N]</code>: file IDs</td>
+<td><code>[0-3]</code> uint32 LE: total size of all files</td>
+<td>Get combined size of multiple files at once.</td></tr>
+
+<tr><td class="cmd-id">227</td><td class="cmd-name">APP_CMD_GET_FILE_SIZE_CAPACITY</td><td><span class="badge badge-get">GET</span></td>
+<td><code>p[1]</code>: file_id</td>
+<td><code>[0]</code> file_id, <code>[1-4]</code> uint32 LE: max capacity. 5 bytes.</td>
+<td>Get maximum capacity of a file.</td></tr>
+
+</tbody></table></div>
+
+<!-- ============================================================ -->
+<!-- DATA ERASURE -->
+<!-- ============================================================ -->
+<div class="section" id="cat-erase">
+<h2>Data Erasure</h2>
+<table>
+<thead><tr><th>ID</th><th>Command</th><th>Parameters</th><th>Description</th></tr></thead>
+<tbody class="searchable">
+<tr><td class="cmd-id">9</td><td class="cmd-name">APP_CMD_Erase_HRM_Data</td><td>None</td><td>Erase PPG/HRM data file.</td></tr>
+<tr><td class="cmd-id">10</td><td class="cmd-name">APP_CMD_Erase_Activity_Data</td><td>None</td><td>Erase Activity data file.</td></tr>
+<tr><td class="cmd-id">11</td><td class="cmd-name">APP_CMD_Erase_Workout_Data</td><td>None</td><td>Erase Workout data file.</td></tr>
+<tr><td class="cmd-id">12</td><td class="cmd-name">APP_CMD_Erase_HRV_Data</td><td>None</td><td>Erase Heartbeat/HRV data file.</td></tr>
+<tr><td class="cmd-id">13</td><td class="cmd-name">APP_CMD_Erase_Sleep_Data</td><td>None</td><td>Erase Sleep data file.</td></tr>
+<tr><td class="cmd-id">14</td><td class="cmd-name">APP_CMD_Erase_Logs_Data</td><td>None</td><td>Erase Logs data file.</td></tr>
+<tr><td class="cmd-id">21</td><td class="cmd-name">APP_CMD_Erase_All_files</td><td>None</td><td>Erase ALL files. Takes ~3 minutes.</td></tr>
+<tr><td class="cmd-id">36</td><td class="cmd-name">APP_CMD_ERASE_TEST</td><td>None</td><td>Erase test file (PPG file).</td></tr>
+<tr><td class="cmd-id">45</td><td class="cmd-name">APP_CMD_ERASE_FROM_FILE</td><td><code>p[1]</code>: file_id, <code>p[2-5]</code>: erase_size uint32 LE</td><td>Erase specified number of bytes from a file.</td></tr>
+<tr><td class="cmd-id">113</td><td class="cmd-name">APP_SET_ERASE_PPG2_FILE</td><td>None</td><td>Erase PPG2 data file.</td></tr>
+<tr><td class="cmd-id">144</td><td class="cmd-name">APP_CMD_ERASE_FDS</td><td>None</td><td>Erase FDS (Flash Data Storage) settings. Causes reset.</td></tr>
+<tr><td class="cmd-id">162</td><td class="cmd-name">APP_CMD_Erase_ECG_Data</td><td>None</td><td>Erase ECG data file.</td></tr>
+<tr><td class="cmd-id">170</td><td class="cmd-name">APP_CMD_Erase_BIOZ_Data</td><td>None</td><td>Erase BioZ data file.</td></tr>
+<tr><td class="cmd-id">178</td><td class="cmd-name">APP_CMD_ERASE_ALL_ALARMS</td><td>None</td><td>Erase all alarms. Returns <code>[0]</code> result.</td></tr>
+<tr><td class="cmd-id">200</td><td class="cmd-name">APP_CMD_ERASE_AND_RESET</td><td><code>p[1]</code>: erase_flash (0/1), <code>p[2]</code>: erase_fds_and_reset (0/1)</td><td>Erase flash and/or FDS, then reset. Returns <code>[0]</code> error_code, <code>[1]</code> reset_flag.</td></tr>
+</tbody></table></div>
+
+<!-- ============================================================ -->
+<!-- MODE CONTROL -->
+<!-- ============================================================ -->
+<div class="section" id="cat-mode">
+<h2>Mode Control</h2>
+<table>
+<thead><tr><th>ID</th><th>Command</th><th>Type</th><th>Parameters</th><th>Response</th><th>Description</th></tr></thead>
+<tbody class="searchable">
+<tr><td class="cmd-id">15</td><td class="cmd-name">APP_CMD_Set_Normal_Mode</td><td><span class="badge badge-set">SET</span></td><td>None</td><td>Default (100)</td><td>Switch to Normal (day) mode.</td></tr>
+<tr><td class="cmd-id">16</td><td class="cmd-name">APP_CMD_Set_Workout_Mode</td><td><span class="badge badge-set">SET</span></td><td><code>p[1]</code>: 3=stop (opt), <code>p[2]</code>: activity_type (opt)</td><td>Default</td><td>Start/stop Workout mode. Optional activity type.</td></tr>
+<tr><td class="cmd-id">17</td><td class="cmd-name">APP_CMD_Set_Sleep_Mode</td><td><span class="badge badge-set">SET</span></td><td>None</td><td>Default</td><td>Enter Sleep tracking mode.</td></tr>
+<tr><td class="cmd-id">18</td><td class="cmd-name">APP_CMD_Set_Preventicus_Mode</td><td><span class="badge badge-set">SET</span></td><td>None</td><td>Default</td><td>Enter Preventicus recording mode.</td></tr>
+<tr><td class="cmd-id">19</td><td class="cmd-name">APP_CMD_Set_Intention_WakeUp</td><td><span class="badge badge-set">SET</span></td><td>None</td><td>Default</td><td>Signal user wants to wake up (during sleep tracking).</td></tr>
+<tr><td class="cmd-id">20</td><td class="cmd-name">APP_CMD_Stop_Sleep_Mode</td><td><span class="badge badge-set">SET</span></td><td>None</td><td>Default</td><td>Stop Sleep tracking mode.</td></tr>
+<tr><td class="cmd-id">39</td><td class="cmd-name">APP_CMD_STOP_HMM</td><td><span class="badge badge-set">SET</span></td><td>None</td><td>Default</td><td>Stop HRM mode, switch to HRM base mode.</td></tr>
+<tr><td class="cmd-id">49</td><td class="cmd-name">APP_CMD_GET_ACTIVE_MODE</td><td><span class="badge badge-get">GET</span></td><td>None</td><td><code>[0]</code>: mode (0=SHIPPING, 1=POWER_SAVING, 2=HRM, 3=SLEEP, 4=PREVENTICUS, 5=PREVENTICUS_SLEEP, 6=WORKOUT, 7=NORMAL, 8=CHARGING)</td><td>Get current operating mode.</td></tr>
+<tr><td class="cmd-id">155</td><td class="cmd-name">APP_CMD_WORKOUT_DISABLE</td><td><span class="badge badge-action">Action</span></td><td>None</td><td>14 bytes: workout summary (HRM, quality, steps, energy, HRM_max, speed, duration, battery)</td><td>Stop workout and return summary data.</td></tr>
+</tbody></table></div>
+
+<!-- ============================================================ -->
+<!-- TIME & DISPLAY -->
+<!-- ============================================================ -->
+<div class="section" id="cat-time">
+<h2>Time &amp; Display</h2>
+<table>
+<thead><tr><th>ID</th><th>Command</th><th>Type</th><th>Parameters</th><th>Response</th><th>Description</th></tr></thead>
+<tbody class="searchable">
+<tr><td class="cmd-id">22</td><td class="cmd-name">APP_CMD_Update_Time</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: year-2000 (23..40), <code>p[2]</code>: month (1-12), <code>p[3]</code>: day (1-31), <code>p[4]</code>: hour (0-23), <code>p[5]</code>: min (0-59), <code>p[6]</code>: sec (0-59), <code>p[7-8]</code>: timezone offset (int16 LE, minutes)</td>
+<td>Default (100)</td><td>Set the watch time. Must be the first command after connection.</td></tr>
+
+<tr><td class="cmd-id">23</td><td class="cmd-name">APP_CMD_GET_LOCAL_TIME</td><td><span class="badge badge-get">GET</span></td><td>None</td>
+<td><code>[0-3]</code> uint32 LE: local epoch time (seconds)</td><td>Get local time as epoch.</td></tr>
+
+<tr><td class="cmd-id">24</td><td class="cmd-name">APP_CMD_RESET</td><td><span class="badge badge-action">Action</span></td><td>None</td>
+<td>Response sent before restart: <code>[0]=24, [1-3]=0</code></td><td>System restart.</td></tr>
+
+<tr><td class="cmd-id">25</td><td class="cmd-name">APP_CMD_HAND_MINUTE_PLUS</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: steps (opt, default 1)</td><td>Default</td><td>Increment minute hand position.</td></tr>
+
+<tr><td class="cmd-id">26</td><td class="cmd-name">APP_CMD_HAND_MINUTE_MINUS</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: steps (opt, default 1)</td><td>Default</td><td>Decrement minute hand position.</td></tr>
+
+<tr><td class="cmd-id">27</td><td class="cmd-name">APP_CMD_HAND_HOUR_PLUS</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: steps (opt, default 1)</td><td>Default</td><td>Increment hour hand position.</td></tr>
+
+<tr><td class="cmd-id">28</td><td class="cmd-name">APP_CMD_HAND_HOUR_MINUS</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: steps (opt, default 1)</td><td>Default</td><td>Decrement hour hand position.</td></tr>
+
+<tr><td class="cmd-id">51</td><td class="cmd-name">APP_CMD_GET_CURRENT_TIME</td><td><span class="badge badge-get">GET</span></td><td>None</td>
+<td><code>[0-3]</code> uint32 LE: GMT epoch time (seconds)</td><td>Get current internal GMT time.</td></tr>
+
+<tr><td class="cmd-id">62</td><td class="cmd-name">APP_CMD_SET_HANDS_ALIGNMENT_ZERO</td><td><span class="badge badge-set">SET</span></td><td>None</td><td>Default</td><td>Start hands alignment process (set to 12:00).</td></tr>
+
+<tr><td class="cmd-id">93</td><td class="cmd-name">APP_CMD_SET_TIME_FORMAT</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: format (TF_24H or TF_12H)</td><td>Default</td><td>Set 12H/24H time format.</td></tr>
+
+<tr><td class="cmd-id">94</td><td class="cmd-name">APP_CMD_GET_TIME_FORMAT</td><td><span class="badge badge-get">GET</span></td><td>None</td>
+<td><code>[0]</code>: format value. 1 byte.</td><td>Get time format setting.</td></tr>
+
+<tr><td class="cmd-id">99</td><td class="cmd-name">APP_SET_END_HANDS_ALIGNMENT</td><td><span class="badge badge-set">SET</span></td><td>None</td><td>Default</td><td>End hands alignment process.</td></tr>
+
+<tr><td class="cmd-id">111</td><td class="cmd-name">APP_SET_SHOTDOWN</td><td><span class="badge badge-action">Action</span></td><td>None</td><td>Response sent before shutdown.</td><td>Prepare device for shipping mode (power off).</td></tr>
+
+<tr><td class="cmd-id">166</td><td class="cmd-name">APP_CMD_SET_BACKLIGHT_STANDARD_DURATION</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: duration in seconds</td><td>Default</td><td>Set backlight duration.</td></tr>
+
+<tr><td class="cmd-id">177</td><td class="cmd-name">APP_CMD_GET_BACKLIGHT_STANDARD_DURATION</td><td><span class="badge badge-get">GET</span></td><td>None</td>
+<td><code>[0]</code>: duration in seconds. 1 byte.</td><td>Get backlight duration.</td></tr>
+</tbody></table></div>
+
+<!-- ============================================================ -->
+<!-- USER PROFILE -->
+<!-- ============================================================ -->
+<div class="section" id="cat-profile">
+<h2>User Profile &amp; Body</h2>
+<table>
+<thead><tr><th>ID</th><th>Command</th><th>Type</th><th>Parameters</th><th>Response</th><th>Description</th></tr></thead>
+<tbody class="searchable">
+<tr><td class="cmd-id">40</td><td class="cmd-name">APP_CMD_SET_SLEEP_TIME</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: hour (0-23), <code>p[2]</code>: minute (0-59)</td><td>Default</td><td>Set bedtime.</td></tr>
+<tr><td class="cmd-id">41</td><td class="cmd-name">APP_CMD_SET_WAKEUP_TIME</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: hour (0-23), <code>p[2]</code>: minute (0-59)</td><td>Default</td><td>Set wake-up time.</td></tr>
+<tr><td class="cmd-id">42</td><td class="cmd-name">APP_CMD_SET_HEIGHT</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: height in cm (uint8, 0-255)</td><td>Default</td><td>Set user height.</td></tr>
+<tr><td class="cmd-id">43</td><td class="cmd-name">APP_CMD_SET_WEIGHT</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: weight in kg (uint8, multiplied by 10 internally)</td><td>Default</td><td>Set user weight.</td></tr>
+<tr><td class="cmd-id">44</td><td class="cmd-name">APP_CMD_Set_PROFILE</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: age, <code>p[2-3]</code>: birth year (uint16 LE), <code>p[4]</code>: birth month, <code>p[5]</code>: birth day, <code>p[6]</code>: sex (0=male, 1=female, 2=unspec), <code>p[7]</code>: handedness (0=right, 1=left), <code>p[8]</code>: skin_type (opt)</td>
+<td>Default</td><td>Set full user profile.</td></tr>
+<tr><td class="cmd-id">52</td><td class="cmd-name">APP_CMD_GET_SLEEP_TIME</td><td><span class="badge badge-get">GET</span></td><td>None</td>
+<td><code>[0]</code>: hour, <code>[1]</code>: minute</td><td>Get bedtime.</td></tr>
+<tr><td class="cmd-id">53</td><td class="cmd-name">APP_CMD_GET_WAKEUP_TIME</td><td><span class="badge badge-get">GET</span></td><td>None</td>
+<td><code>[0]</code>: hour, <code>[1]</code>: minute</td><td>Get wake-up time.</td></tr>
+<tr><td class="cmd-id">54</td><td class="cmd-name">APP_CMD_GET_HEIGHT</td><td><span class="badge badge-get">GET</span></td><td>None</td>
+<td><code>[0]</code>: height in cm</td><td>Get user height.</td></tr>
+<tr><td class="cmd-id">55</td><td class="cmd-name">APP_CMD_GET_WEIGHT</td><td><span class="badge badge-get">GET</span></td><td>None</td>
+<td><code>[0]</code>: weight in kg</td><td>Get user weight.</td></tr>
+<tr><td class="cmd-id">56</td><td class="cmd-name">APP_CMD_GET_USER_BIRTHDATE</td><td><span class="badge badge-get">GET</span></td><td>None</td>
+<td><code>[0-1]</code>: year (uint16 LE), <code>[2]</code>: month, <code>[3]</code>: day</td><td>Get user birth date.</td></tr>
+<tr><td class="cmd-id">57</td><td class="cmd-name">APP_CMD_GET_PROFILE</td><td><span class="badge badge-get">GET</span></td><td>None</td>
+<td><code>[0]</code>: age, <code>[1]</code>: sex (0=male, 1=female, 2=unspec), <code>[2]</code>: handedness, <code>[3]</code>: skin_type</td><td>Get user profile.</td></tr>
+<tr><td class="cmd-id">66</td><td class="cmd-name">APP_CMD_GET_BODYPOSITION</td><td><span class="badge badge-get">GET</span></td><td>None</td>
+<td><code>[0]</code>: position (1=left, 2=right)</td><td>Get wrist position.</td></tr>
+<tr><td class="cmd-id">67</td><td class="cmd-name">APP_CMD_SET_BODYPOSITION</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: position (1=left, 2=right)</td><td>Default</td><td>Set wrist position.</td></tr>
+</tbody></table></div>
+
+<!-- ============================================================ -->
+<!-- DEVICE INFO -->
+<!-- ============================================================ -->
+<div class="section" id="cat-device">
+<h2>Device Info &amp; Serialization</h2>
+<table>
+<thead><tr><th>ID</th><th>Command</th><th>Type</th><th>Parameters</th><th>Response</th><th>Description</th></tr></thead>
+<tbody class="searchable">
+<tr><td class="cmd-id">50</td><td class="cmd-name">APP_CMD_GET_BATTERY_LEVEL</td><td><span class="badge badge-get">GET</span></td><td>None</td>
+<td><code>[0]</code>: battery % (0-100), <code>[1-2]</code>: millivolts (uint16 LE), <code>[3]</code>: flags (bit0=onCharger, bit1=isCharging)</td><td>Get battery level, voltage and charging status.</td></tr>
+<tr><td class="cmd-id">61</td><td class="cmd-name">APP_CMD_GET_STEPS_DAY</td><td><span class="badge badge-get">GET</span></td><td>None</td>
+<td><code>[0-1]</code>: steps (uint16 LE)</td><td>Get daily step count.</td></tr>
+<tr><td class="cmd-id">63</td><td class="cmd-name">APP_CMD_GET_FW_VERSION</td><td><span class="badge badge-get">GET</span></td><td>None</td>
+<td><code>[0-3]</code>: major, minor, patch, build</td><td>Get firmware version.</td></tr>
+<tr><td class="cmd-id">64</td><td class="cmd-name">APP_CMD_SET_PREPARE_FOR_DFU</td><td><span class="badge badge-action">Action</span></td><td>None</td><td>Default</td><td>Prepare for DFU OTA update.</td></tr>
+<tr><td class="cmd-id">65</td><td class="cmd-name">APP_CMD_GET_HARDWARE_ID</td><td><span class="badge badge-get">GET</span></td><td>None</td>
+<td><code>[0-1]</code>: hardware ID (2 bytes)</td><td>Get hardware ID.</td></tr>
+<tr><td class="cmd-id">69</td><td class="cmd-name">APP_CMD_SERIALIZATION_SET_SN</td><td><span class="badge badge-set">SET</span></td><td><code>p[1..N]</code>: serial number bytes (S_SN_SIZE)</td><td>Default</td><td>Set serial number.</td></tr>
+<tr><td class="cmd-id">70</td><td class="cmd-name">APP_CMD_SERIALIZATION_GET_SN</td><td><span class="badge badge-get">GET</span></td><td>None</td><td>Serial number bytes (S_SN_SIZE)</td><td>Get serial number.</td></tr>
+<tr><td class="cmd-id">71</td><td class="cmd-name">APP_CMD_SERIALIZATION_SET_DEVICENAME</td><td><span class="badge badge-set">SET</span></td><td><code>p[1..N]</code>: device name</td><td>Default</td><td>Set BLE device name.</td></tr>
+<tr><td class="cmd-id">72</td><td class="cmd-name">APP_CMD_SERIALIZATION_GET_DEVICENAME</td><td><span class="badge badge-get">GET</span></td><td>None</td><td>Device name string</td><td>Get BLE device name.</td></tr>
+<tr><td class="cmd-id">73</td><td class="cmd-name">APP_CMD_SERIALIZATION_SET_HARDWARE_ID</td><td><span class="badge badge-set">SET</span></td><td><code>p[1..2]</code>: hardware ID</td><td>Default</td><td>Set hardware ID.</td></tr>
+<tr><td class="cmd-id">74</td><td class="cmd-name">APP_CMD_SERIALIZATION_SET_DATE</td><td><span class="badge badge-set">SET</span></td><td><code>p[1..N]</code>: date bytes</td><td>Default</td><td>Set manufacturing date.</td></tr>
+<tr><td class="cmd-id">75</td><td class="cmd-name">APP_CMD_SERIALIZATION_GET_DATE</td><td><span class="badge badge-get">GET</span></td><td>None</td><td>Date bytes</td><td>Get manufacturing date.</td></tr>
+<tr><td class="cmd-id">76</td><td class="cmd-name">APP_CMD_SERIALIZATION_SET_BRAND</td><td><span class="badge badge-set">SET</span></td><td><code>p[1..2]</code>: brand</td><td>Default</td><td>Set brand identifier.</td></tr>
+<tr><td class="cmd-id">77</td><td class="cmd-name">APP_CMD_SERIALIZATION_GET_BRAND</td><td><span class="badge badge-get">GET</span></td><td>None</td><td><code>[0-1]</code>: brand, <code>[2-3]</code>: 0 (padding)</td><td>Get brand identifier.</td></tr>
+<tr><td class="cmd-id">78</td><td class="cmd-name">APP_CMD_SERIALIZATION_SET_HW_VERSION</td><td><span class="badge badge-set">SET</span></td><td><code>p[1..2]</code>: HW version</td><td>Default</td><td>Set hardware version.</td></tr>
+<tr><td class="cmd-id">79</td><td class="cmd-name">APP_CMD_SERIALIZATION_GET_HW_VERSION</td><td><span class="badge badge-get">GET</span></td><td>None</td><td><code>[0-1]</code>: HW version</td><td>Get hardware version.</td></tr>
+<tr><td class="cmd-id">80</td><td class="cmd-name">APP_CMD_SERIALIZATION_SET_MODEL_ID</td><td><span class="badge badge-set">SET</span></td><td><code>p[1..2]</code>: model ID</td><td>Default</td><td>Set model ID.</td></tr>
+<tr><td class="cmd-id">81</td><td class="cmd-name">APP_CMD_SERIALIZATION_GET_MODEL_ID</td><td><span class="badge badge-get">GET</span></td><td>None</td><td><code>[0-1]</code>: model ID</td><td>Get model ID.</td></tr>
+<tr><td class="cmd-id">82</td><td class="cmd-name">APP_CMD_SERIALIZATION_SET_CALIB_DATA</td><td><span class="badge badge-set">SET</span></td><td><code>p[1]</code>: calib_set (1=temp_A, 2=temp_B), <code>p[2-3]</code>: ref_temp, rest: calib data</td><td>Default</td><td>Set calibration data.</td></tr>
+<tr><td class="cmd-id">83</td><td class="cmd-name">APP_CMD_SERIALIZATION_GET_CALIB_DATA</td><td><span class="badge badge-get">GET</span></td><td><code>p[1]</code>: calib_set</td><td><code>[0]</code>: set, <code>[1-8]</code>: 8 bytes data. Total 9 bytes.</td><td>Get calibration data.</td></tr>
+<tr><td class="cmd-id">138</td><td class="cmd-name">APP_CMD_READ_NRF_UID</td><td><span class="badge badge-get">GET</span></td><td>None</td><td><code>[0-7]</code>: 8 bytes device ID (DEVICEID[0] + DEVICEID[1] LE)</td><td>Read NRF52 unique device ID.</td></tr>
+<tr><td class="cmd-id">139</td><td class="cmd-name">APP_CMD_READ_NRF_MAC_ADDRESS</td><td><span class="badge badge-get">GET</span></td><td>None</td><td><code>[0-5]</code>: 6 bytes MAC address (big-endian)</td><td>Read BLE MAC address.</td></tr>
+<tr><td class="cmd-id">167</td><td class="cmd-name">APP_CMD_SERIALIZATION_SET_BLE_UUID</td><td><span class="badge badge-set">SET</span></td><td><code>p[1..N]</code>: UUID bytes</td><td>Default</td><td>Set custom BLE UUID.</td></tr>
+<tr><td class="cmd-id">168</td><td class="cmd-name">APP_CMD_SERIALIZATION_GET_BLE_UUID</td><td><span class="badge badge-get">GET</span></td><td>None</td><td>UUID bytes</td><td>Get custom BLE UUID.</td></tr>
+<tr><td class="cmd-id">191</td><td class="cmd-name">APP_CMD_GET_RESET_REASON</td><td><span class="badge badge-get">GET</span></td><td><code>p[1]</code>: get_reason (bool), <code>p[2]</code>: clear_reason (bool)</td><td><code>[0]</code>: reason, <code>[1]</code>: cleared flag, <code>[2]</code>: 0. 3 bytes.</td><td>Get/clear last reset reason.</td></tr>
+<tr><td class="cmd-id">197</td><td class="cmd-name">APP_CMD_GET_CPU_TEMPERATURE</td><td><span class="badge badge-get">GET</span></td><td>None</td><td><code>[0]</code>: error_code, <code>[1]</code>: temperature in degrees C (int8)</td><td>Get NRF52 chip temperature.</td></tr>
+</tbody></table></div>
+
+<!-- ============================================================ -->
+<!-- SENSOR READINGS -->
+<!-- ============================================================ -->
+<div class="section" id="cat-sensor">
+<h2>Sensor Readings</h2>
+<table>
+<thead><tr><th>ID</th><th>Command</th><th>Sub-param <code>p[1]</code></th><th>Response</th><th>Description</th></tr></thead>
+<tbody class="searchable">
+<tr><td class="cmd-id" rowspan="8">141</td><td class="cmd-name" rowspan="8">APP_CMD_GET_sensor_value</td>
+<td><code>0</code> - Temp1</td><td><code>[0-1]</code>: int16 LE (x100 &deg;C)</td><td>Calibrated temperature sensor 1 (TMP117 or LMT70).</td></tr>
+<tr><td><code>1</code> - Temp2</td><td><code>[0-1]</code>: int16 LE</td><td>Calibrated temperature sensor 2.</td></tr>
+<tr><td><code>2</code> - Heat Flux</td><td><code>[0-1]</code>: int16 LE</td><td>GreenTeg heat flux sensor value.</td></tr>
+<tr><td><code>3</code> - Temp1 raw</td><td><code>[0-1]</code>: int16 LE</td><td>Uncalibrated temperature 1.</td></tr>
+<tr><td><code>4</code> - Temp2 raw</td><td><code>[0-1]</code>: int16 LE</td><td>Uncalibrated temperature 2.</td></tr>
+<tr><td><code>10</code> - Accelerometer</td><td><code>[0-1]</code>: X int16, <code>[2-3]</code>: Y int16, <code>[4-5]</code>: Z int16. 6 bytes.</td><td>LIS2DW12 accelerometer reading (mg).</td></tr>
+<tr><td><code>20</code> - BioZ</td><td><code>[0-3]</code>: avg (uint32), <code>[4-7]</code>: std (uint32), <code>[8-11]</code>: zero_bias (uint32), <code>[12-13]</code>: open_offset (2 mid bytes). 14 bytes.</td><td>Bio-impedance measurement data.</td></tr>
+<tr><td><code>21</code> - ECG</td><td><code>[0-3]</code>: avg (uint32), <code>[4-7]</code>: std (uint32). 8 bytes.</td><td>ECG measurement data.</td></tr>
+
+<tr><td class="cmd-id">97</td><td class="cmd-name">APP_GET_CURRENT_HRM</td><td>None</td>
+<td><code>[0]</code>: heart rate (bpm), <code>[1]</code>: quality</td><td>Get last heart rate measurement.</td></tr>
+<tr><td class="cmd-id">98</td><td class="cmd-name">APP_GET_CURRENT_SLEEP_DURATION</td><td>None</td>
+<td><code>[0-1]</code>: duration (uint16 LE, minutes)</td><td>Get current sleep duration.</td></tr>
+<tr><td class="cmd-id">156</td><td class="cmd-name">APP_CMD_GET_BRACELET_STATUS</td><td>None</td>
+<td><code>[0]</code>: wearing state, <code>[1]</code>: sleep_active, <code>[2]</code>: battery%, <code>[3]</code>: charge flags, <code>[4]</code>: idle state, <code>[5]</code>: measurement started, <code>[6]</code>: signal quality. 7 bytes.</td><td>Get full bracelet status in one call.</td></tr>
+<tr><td class="cmd-id">198</td><td class="cmd-name">APP_CMD_GET_ACC_DATA</td><td>None</td>
+<td><code>[0]</code>: error, <code>[1-2]</code>: X, <code>[3-4]</code>: Y, <code>[5-6]</code>: Z (int16 LE each). 7 bytes.</td><td>Get scaled accelerometer data (mg, sqrt(x&sup2;+y&sup2;+z&sup2;) ~= 1000).</td></tr>
+<tr><td class="cmd-id">199</td><td class="cmd-name">APP_CMD_TEST_EXTERNAL_FLASH</td><td>None</td>
+<td><code>[0]</code>: error, <code>[1]</code>: test result (0=fail, 1=pass)</td><td>Test external flash memory.</td></tr>
+</tbody></table></div>
+
+<!-- ============================================================ -->
+<!-- ALARMS -->
+<!-- ============================================================ -->
+<div class="section" id="cat-alarm">
+<h2>Alarms</h2>
+<table>
+<thead><tr><th>ID</th><th>Command</th><th>Type</th><th>Parameters</th><th>Response</th><th>Description</th></tr></thead>
+<tbody class="searchable">
+<tr><td class="cmd-id">102</td><td class="cmd-name">APP_CMD_SET_ALARM</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: index, <code>p[2]</code>: hour (0-23), <code>p[3]</code>: minute (0-59), <code>p[4]</code>: daysOfWeek (bitmask), <code>p[5]</code>: isEnabled (0/1)</td><td>Default</td><td>Set alarm at specific index.</td></tr>
+<tr><td class="cmd-id">103</td><td class="cmd-name">APP_CMD_GET_ALARM</td><td><span class="badge badge-get">GET</span></td>
+<td><code>p[1]</code>: alarm index</td><td><code>[0]</code>: index, <code>[1]</code>: hour, <code>[2]</code>: minute, <code>[3]</code>: daysOfWeek, <code>[4]</code>: isEnabled, <code>[5-8]</code>: next trigger time (uint32 LE). 9 bytes. Returns 0x80 if not found.</td><td>Get alarm at index.</td></tr>
+<tr><td class="cmd-id">104</td><td class="cmd-name">APP_CMD_ADD_ALARM</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: hour, <code>p[2]</code>: minute, <code>p[3]</code>: daysOfWeek, <code>p[4]</code>: isEnabled</td><td>Default</td><td>Add a new alarm.</td></tr>
+<tr><td class="cmd-id">105</td><td class="cmd-name">APP_CMD_REMOVE_ALARM</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: alarm index</td><td>Default</td><td>Remove alarm at index.</td></tr>
+<tr><td class="cmd-id">106</td><td class="cmd-name">APP_CMD_GET_NO_ALARMS</td><td><span class="badge badge-get">GET</span></td>
+<td>None</td><td><code>[0]</code>: count. 1 byte.</td><td>Get number of active alarms.</td></tr>
+</tbody></table></div>
+
+<!-- ============================================================ -->
+<!-- BLE CONFIGURATION -->
+<!-- ============================================================ -->
+<div class="section" id="cat-ble">
+<h2>BLE Configuration</h2>
+<table>
+<thead><tr><th>ID</th><th>Command</th><th>Type</th><th>Parameters</th><th>Response</th><th>Description</th></tr></thead>
+<tbody class="searchable">
+<tr><td class="cmd-id">29</td><td class="cmd-name">APP_CMD_CHANGE_PHY</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: 0=1Mbps, 1=2Mbps</td><td>Default</td><td>Change BLE physical layer speed.</td></tr>
+<tr><td class="cmd-id">30</td><td class="cmd-name">APP_CMD_Get_BLE_Conn_Params</td><td><span class="badge badge-get">GET</span></td><td>None</td><td>Connection parameters structure (via Data Info characteristic)</td><td>Get GATT connection parameters.</td></tr>
+<tr><td class="cmd-id">110</td><td class="cmd-name">APP_GET_BLE_BONDING_STATE</td><td><span class="badge badge-get">GET</span></td><td>None</td><td><code>[0]</code>: 100=bonded, 101=not secure</td><td>Check if BLE link is secure/bonded.</td></tr>
+<tr><td class="cmd-id">128</td><td class="cmd-name">APP_SET_PACKET_SIZE</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: packet size (bytes)</td><td><code>[0]</code>: 100=ok, 1=error</td><td>Set BLE streaming packet size.</td></tr>
+<tr><td class="cmd-id">129</td><td class="cmd-name">APP_GET_PACKET_SIZE</td><td><span class="badge badge-get">GET</span></td><td>None</td><td><code>[0]</code>: current frame size</td><td>Get BLE streaming packet size.</td></tr>
+<tr><td class="cmd-id">203</td><td class="cmd-name">APP_CMD_GET_BLE_CONFIG</td><td><span class="badge badge-get">GET</span></td>
+<td><code>p[1]</code>: 1=TX conn power, 2=TX adv power</td><td><code>[0]</code>: param type, <code>[1]</code>: value (dBm)</td><td>Get BLE TX power configuration.</td></tr>
+<tr><td class="cmd-id">204</td><td class="cmd-name">APP_CMD_SET_BLE_CONFIG</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: 1=conn power, 2=adv power, 3=delete bonds, <code>p[2]</code>: value (dBm for 1/2, 3 for delete)</td><td>Default</td><td>Set BLE TX power or delete bonds. Power range: -40 to +8 dBm.</td></tr>
+<tr><td class="cmd-id">126</td><td class="cmd-name">APP_SET_WAKEUP_PING_PERIOD</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1-4]</code>: period uint32 LE (seconds)</td><td><code>[0]</code>: 100=ok, 1=error</td><td>Set BLE wakeup ping period.</td></tr>
+<tr><td class="cmd-id">127</td><td class="cmd-name">APP_GET_WAKEUP_PING_PERIOD</td><td><span class="badge badge-get">GET</span></td><td>None</td><td><code>[0-3]</code>: period uint32 LE</td><td>Get BLE wakeup ping period.</td></tr>
+<tr><td class="cmd-id">232</td><td class="cmd-name">APP_CMD_SET_CONTINOUS_SYNC</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: 1=enable, 3=disable, <code>p[2..15]</code>: file IDs to sync (up to 14)</td><td>Default</td><td>Enable/disable auto-sync and set file list.</td></tr>
+<tr><td class="cmd-id">233</td><td class="cmd-name">APP_CMD_GET_CONTINOUS_SYNC</td><td><span class="badge badge-get">GET</span></td><td>None</td><td><code>[0]</code>: 1=enabled, 3=disabled</td><td>Get auto-sync status.</td></tr>
+</tbody></table></div>
+
+<!-- ============================================================ -->
+<!-- PPG & OPTICAL -->
+<!-- ============================================================ -->
+<div class="section" id="cat-ppg">
+<h2>PPG &amp; Optical Configuration</h2>
+<table>
+<thead><tr><th>ID</th><th>Command</th><th>Type</th><th>Parameters</th><th>Response</th><th>Description</th></tr></thead>
+<tbody class="searchable">
+<tr><td class="cmd-id">133</td><td class="cmd-name">APP_CMD_SET_PPG_LED_POWER</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: power (0-100%), <code>p[2]</code>: LED index</td><td>Default</td><td>Set PPG LED power (mapped 0-1023 internally).</td></tr>
+<tr><td class="cmd-id">134</td><td class="cmd-name">APP_CMD_GET_PPG_LED_POWER</td><td><span class="badge badge-get">GET</span></td>
+<td><code>p[1]</code>: LED index</td><td><code>[0]</code>: power (0-100%)</td><td>Get PPG LED power.</td></tr>
+<tr><td class="cmd-id">135</td><td class="cmd-name">APP_CMD_SET_PPG_GAIN</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: param1, <code>p[2]</code>: param2, <code>p[3]</code>: gain value</td><td>Default</td><td>Set PPG gain.</td></tr>
+<tr><td class="cmd-id">136</td><td class="cmd-name">APP_CMD_GET_PPG_GAIN</td><td><span class="badge badge-get">GET</span></td>
+<td><code>p[1]</code>: param1, <code>p[2]</code>: param2</td><td><code>[0]</code>: gain value</td><td>Get PPG gain.</td></tr>
+<tr><td class="cmd-id">137</td><td class="cmd-name">APP_CMD_SET_PPG_CONTROL_LOOP_ENABLE</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: 1=enable, 2=disable</td><td>Default</td><td>Enable/disable PPG automatic gain control loop.</td></tr>
+<tr><td class="cmd-id">159</td><td class="cmd-name">APP_CMD_GET_PPG_CONTROL_LOOP_ENABLE</td><td><span class="badge badge-get">GET</span></td><td>None</td>
+<td><code>[0]</code>: 0/1 (enabled state)</td><td>Get control loop status.</td></tr>
+<tr><td class="cmd-id">202</td><td class="cmd-name">APP_CMD_SET_PPG2_SAMPLING_FREQ</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: frequency index (1-8)</td><td>Default</td><td>Set MAX86178 PPG sampling rate.</td></tr>
+<tr><td class="cmd-id">225</td><td class="cmd-name">APP_CMD_SET_ENABLE_PPG_SINGLE_CHANNELS</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: 1=disable, 3=enable</td><td>Default</td><td>Enable/disable 4-channel PPG recording.</td></tr>
+<tr><td class="cmd-id">226</td><td class="cmd-name">APP_CMD_GET_ENABLE_PPG_SINGLE_CHANNELS</td><td><span class="badge badge-get">GET</span></td><td>None</td>
+<td><code>[0]</code>: 1=enabled, 2=disabled</td><td>Get 4-channel PPG recording state.</td></tr>
+<tr><td class="cmd-id">206</td><td class="cmd-name">APP_CMD_SET_MEASUREMENT_CHANNELS_STATUS</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: G1, <code>p[2]</code>: G2, <code>p[3]</code>: R1, <code>p[4]</code>: R2, <code>p[5]</code>: IR1, <code>p[6]</code>: IR2, <code>p[7]</code>: AMB. Each: 1=disable, 3=enable.</td><td>Default</td><td>Enable/disable individual PPG measurement channels.</td></tr>
+<tr><td class="cmd-id">205</td><td class="cmd-name">APP_CMD_GET_MEASUREMENT_CHANNELS_STATUS</td><td><span class="badge badge-get">GET</span></td><td>None</td>
+<td><code>[0-6]</code>: G1, G2, R1, R2, IR1, IR2, AMB. Each: 1=disabled, 3=enabled. 7 bytes.</td><td>Get measurement channels status.</td></tr>
+</tbody></table></div>
+
+<!-- ============================================================ -->
+<!-- VITALS & MEASUREMENT -->
+<!-- ============================================================ -->
+<div class="section" id="cat-vitals">
+<h2>Vitals &amp; Measurement Configuration</h2>
+<table>
+<thead><tr><th>ID</th><th>Command</th><th>Type</th><th>Parameters</th><th>Response</th><th>Description</th></tr></thead>
+<tbody class="searchable">
+<tr><td class="cmd-id">149</td><td class="cmd-name">APP_CMD_SET_PLAN</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: plan ID, <code>p[2]</code>: PPG high freq (opt), <code>p[3]</code>: activity sampling rate (opt), <code>p[4]</code>: happitech (1=off, 3=on, opt)</td><td>Default</td><td>Set measurement plan. Controls PPG sampling, activity recording, and happitech.</td></tr>
+<tr><td class="cmd-id">150</td><td class="cmd-name">APP_CMD_GET_PLAN</td><td><span class="badge badge-get">GET</span></td><td>None</td>
+<td><code>[0]</code>: plan, <code>[1]</code>: PPG high freq, <code>[2]</code>: activity sampling, <code>[3]</code>: happitech enabled</td><td>Get current measurement plan.</td></tr>
+<tr><td class="cmd-id">192</td><td class="cmd-name">APP_CMD_SET_VITAL_PARAM</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: param type (1=BioZ, 2=ACC, 3=ACC+SpO2, 4=GreenTeg), <code>p[2]</code>: value1 (1=off/3=on), <code>p[3]</code>: value2 (for BioZ: raw plan)</td><td>Default</td><td>Configure vital sign parameters.</td></tr>
+<tr><td class="cmd-id">193</td><td class="cmd-name">APP_CMD_GET_VITAL_PARAM</td><td><span class="badge badge-get">GET</span></td>
+<td><code>p[1]</code>: param type (1-4)</td><td><code>[0]</code>: type, <code>[1]</code>: value1 (1=off/3=on), <code>[2]</code>: value2</td><td>Get vital sign parameters.</td></tr>
+<tr><td class="cmd-id">234</td><td class="cmd-name">APP_CMD_SET_Vitals_rate</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: vital type (1=Activity, 2=PulseRate, 3=BRPM, 4=SpO2, 5=Temp, 6=NIBP), <code>p[2-3]</code>: rate uint16 LE (seconds)</td><td>Default</td><td>Set reporting rate for a vital sign.</td></tr>
+<tr><td class="cmd-id">235</td><td class="cmd-name">APP_CMD_GET_Vitals_rate</td><td><span class="badge badge-get">GET</span></td>
+<td><code>p[1]</code>: vital type (1-6)</td><td><code>[0]</code>: type, <code>[1-2]</code>: rate uint16 LE</td><td>Get reporting rate for a vital sign.</td></tr>
+<tr><td class="cmd-id">230</td><td class="cmd-name">APP_CMD_SET_SKIN_TEMP_OFFSET</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: sign (0=positive, 1=negative), <code>p[2]</code>: offset (x10, 0-255 = 0.0-25.5 &deg;C)</td><td>Default</td><td>Set skin temperature calibration offset.</td></tr>
+<tr><td class="cmd-id">231</td><td class="cmd-name">APP_CMD_GET_SKIN_TEMP_OFFSET</td><td><span class="badge badge-get">GET</span></td><td>None</td>
+<td><code>[0]</code>: sign, <code>[1]</code>: offset (x10)</td><td>Get skin temperature offset.</td></tr>
+<tr><td class="cmd-id">243</td><td class="cmd-name">APP_CMD_SET_BP_CUFF_MEASUREMENT</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1-4]</code>: timestamp uint32 LE, <code>p[5]</code>: systolic, <code>p[6]</code>: diastolic, <code>p[7]</code>: value</td><td><code>[0-3]</code>: timestamp echo, <code>[4]</code>: short_model (100=ok), <code>[5]</code>: long_model (100=ok). 8 bytes.</td><td>Add a blood pressure cuff measurement for NIBP calibration.</td></tr>
+<tr><td class="cmd-id">244</td><td class="cmd-name">APP_CMD_SET_NIBP_COMMANDS</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: 1=erase model</td><td>Default</td><td>NIBP model commands.</td></tr>
+<tr><td class="cmd-id">245</td><td class="cmd-name">APP_CMD_GET_NIBP_PARAMS</td><td><span class="badge badge-get">GET</span></td>
+<td><code>p[1]</code>: 1=status</td><td><code>[0]</code>: 1, <code>[1]</code>: engine status, <code>[2]</code>: no_cuffs, <code>[3]</code>: trained, <code>[4-5]</code>: 48h_size, <code>[6-9]</code>: min_time, <code>[10-13]</code>: max_time. 14 bytes.</td><td>Get NIBP engine status and calibration info.</td></tr>
+<tr><td class="cmd-id">247</td><td class="cmd-name">APP_CMD_SET_VITAL_VALUE</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: vital type (4=SpO2), <code>p[2-3]</code>: value (uint16 LE, x10)</td><td>Default</td><td>Set a vital sign value externally (e.g., SpO2).</td></tr>
+</tbody></table></div>
+
+<!-- ============================================================ -->
+<!-- SPECIAL MODES & TESTS -->
+<!-- ============================================================ -->
+<div class="section" id="cat-special">
+<h2>Special Modes &amp; Tests</h2>
+<table>
+<thead><tr><th>ID</th><th>Command</th><th>Type</th><th>Parameters</th><th>Response</th><th>Description</th></tr></thead>
+<tbody class="searchable">
+<tr><td class="cmd-id">32</td><td class="cmd-name">APP_CMD_START_TEST1</td><td><span class="badge badge-action">Action</span></td><td>None</td><td>Default</td><td>Start optical test 1.</td></tr>
+<tr><td class="cmd-id">33</td><td class="cmd-name">APP_CMD_START_TEST2</td><td><span class="badge badge-action">Action</span></td><td>None</td><td>Default</td><td>Start optical test 2.</td></tr>
+<tr><td class="cmd-id">34</td><td class="cmd-name">APP_CMD_START_TEST3</td><td><span class="badge badge-action">Action</span></td><td><code>p[1]</code>: measurement type</td><td>Default</td><td>Start measurement (287-2B specific).</td></tr>
+<tr><td class="cmd-id">35</td><td class="cmd-name">APP_CMD_STOP_TEST</td><td><span class="badge badge-action">Action</span></td><td><code>p[1]</code>: 0=optical test, other=287-2B measurement</td><td>Default</td><td>Stop active test or measurement.</td></tr>
+<tr><td class="cmd-id">117</td><td class="cmd-name">APP_GET_RESULTS_OPTICAL_TEST1</td><td><span class="badge badge-get">GET</span></td>
+<td><code>p[1]</code>: channel index</td><td><code>[0-1]</code>: cross_talk (x100), <code>[2-3]</code>: noise (x100), <code>[4-5]</code>: PPG (x100), <code>[6-7]</code>: ambient. All uint16 LE. 8 bytes.</td><td>Get optical test 1 results (cross-talk, noise, PPG, ambient).</td></tr>
+<tr><td class="cmd-id">118</td><td class="cmd-name">APP_GET_RESULTS_OPTICAL_TEST2</td><td><span class="badge badge-get">GET</span></td>
+<td><code>p[1]</code>: channel index</td><td><code>[0-1]</code>: SNR, <code>[2-3]</code>: reflectance, <code>[4-5]</code>: STD, <code>[6-7]</code>: PPG, <code>[8-9]</code>: ambient. All uint16. 10 bytes.</td><td>Get optical test 2 results.</td></tr>
+<tr><td class="cmd-id">142</td><td class="cmd-name">APP_CMD_SET_START_AUTO_TEST</td><td><span class="badge badge-action">Action</span></td><td><code>p[1]</code>: test index</td><td>Default</td><td>Start self-test by index.</td></tr>
+<tr><td class="cmd-id">143</td><td class="cmd-name">APP_CMD_GET_TEST_RESULT</td><td><span class="badge badge-get">GET</span></td><td><code>p[1]</code>: test index</td><td><code>[0-1]</code>: result (uint16 LE)</td><td>Get self-test result.</td></tr>
+<tr><td class="cmd-id">216</td><td class="cmd-name">APP_CMD_START_SPECIAL_MODE</td><td><span class="badge badge-action">Action</span></td><td><code>p[1]</code>: mode type</td><td>Default</td><td>Start a special operating mode (strap optimization, cuff, etc.).</td></tr>
+<tr><td class="cmd-id">217</td><td class="cmd-name">APP_CMD_STOP_SPECIAL_MODE</td><td><span class="badge badge-action">Action</span></td><td><code>p[1]</code>: mode type</td><td>Default</td><td>Stop special operating mode.</td></tr>
+<tr><td class="cmd-id">219</td><td class="cmd-name">APP_CMD_GET_ECG_STATUS</td><td><span class="badge badge-get">GET</span></td><td>None</td>
+<td><code>[0]</code>: enabled, <code>[1-4]</code>: start time (uint32 LE), <code>[5]</code>: 0. 6 bytes.</td><td>Get ECG recording status and start time.</td></tr>
+<tr><td class="cmd-id">246</td><td class="cmd-name">APP_CMD_GET_SPECIAL_MODE</td><td><span class="badge badge-get">GET</span></td>
+<td><code>p[1]</code>: mode (1=strap, 2=cuff, 3=LED powers, 4=LED optimization)</td><td><code>[0]</code>: mode, <code>[1-5]</code>: status values (varies). 6 bytes.</td><td>Get status of special modes.</td></tr>
+<tr><td class="cmd-id">236</td><td class="cmd-name">APP_CMD_SET_INNSIGHTFUL</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: 1=start, 3=stop</td><td>Default</td><td>Start/stop Innsightful mode.</td></tr>
+<tr><td class="cmd-id">237</td><td class="cmd-name">APP_CMD_GET_INNSIGHTFUL</td><td><span class="badge badge-get">GET</span></td><td>None</td>
+<td><code>[0]</code>: 1=running, 3=stopped</td><td>Get Innsightful mode status.</td></tr>
+</tbody></table></div>
+
+<!-- ============================================================ -->
+<!-- FILE TRANSFER (Phone -> Watch) -->
+<!-- ============================================================ -->
+<div class="section" id="cat-files">
+<h2>File Transfer (Phone &rarr; Watch)</h2>
+<table>
+<thead><tr><th>ID</th><th>Command</th><th>Parameters</th><th>Response</th><th>Description</th></tr></thead>
+<tbody class="searchable">
+<tr><td class="cmd-id">130</td><td class="cmd-name">APP_CMD_START_SEND_FILE</td>
+<td><code>p[1]</code>: file_id, <code>p[2-5]</code>: timestamp (uint32 LE), <code>p[6-9]</code>: file_size (uint32 LE), <code>p[10-13]</code>: CRC32 (uint32 LE)</td>
+<td>uint16 LE: max chunk size</td><td>Start file transfer. Erases existing file, returns max chunk size for subsequent data packets.</td></tr>
+<tr><td class="cmd-id">131</td><td class="cmd-name">APP_CMD_STOP_SEND_FILE</td>
+<td>None</td><td>uint32 LE: final file size (0 if CRC mismatch, file deleted)</td><td>End file transfer. Validates CRC32 and file size.</td></tr>
+<tr><td class="cmd-id">132</td><td class="cmd-name">APP_CMD_SEND_FILE_DATA</td>
+<td><code>p[1..N]</code>: file data chunk</td><td>uint32 LE: current written size</td><td>Send one data chunk. Must be between START and STOP.</td></tr>
+</tbody></table></div>
+
+<!-- ============================================================ -->
+<!-- BRACELET PARAMS -->
+<!-- ============================================================ -->
+<div class="section" id="cat-bracelet">
+<h2>Bracelet Parameters</h2>
+<table>
+<thead><tr><th>ID</th><th>Command</th><th>Type</th><th>Parameters</th><th>Response</th><th>Description</th></tr></thead>
+<tbody class="searchable">
+<tr><td class="cmd-id">208</td><td class="cmd-name">APP_CMD_SET_BRACELET_PARAM</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: param type, <code>p[2]</code>: value (1=off, 3=on for booleans). Types: 1=wearing detection, 2=PPG quality LEDs, 3=PPG quality timeout (x30s), 4=ACC accuracy, 5=ECG params (<code>p[2-4]</code>), 6=ear temp (<code>p[2-3]</code>)</td><td>Default</td><td>Set various bracelet parameters.</td></tr>
+<tr><td class="cmd-id">207</td><td class="cmd-name">APP_CMD_GET_BRACELET_PARAM</td><td><span class="badge badge-get">GET</span></td>
+<td><code>p[1]</code>: param type (1-4)</td><td><code>[0]</code>: type, <code>[1]</code>: value (1=off, 3=on)</td><td>Get bracelet parameter value.</td></tr>
+<tr><td class="cmd-id">157</td><td class="cmd-name">APP_CMD_SET_BED_TIME_TOLERANCE</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: tolerance (minutes)</td><td>Default</td><td>Set bedtime detection tolerance.</td></tr>
+<tr><td class="cmd-id">158</td><td class="cmd-name">APP_CMD_GET_BED_TIME_TOLERANCE</td><td><span class="badge badge-get">GET</span></td><td>None</td><td><code>[0]</code>: tolerance</td><td>Get bedtime tolerance.</td></tr>
+<tr><td class="cmd-id">147</td><td class="cmd-name">APP_CMD_SET_RISE_TIME_TOLERANCE</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: tolerance (minutes)</td><td>Default</td><td>Set rise-time detection tolerance.</td></tr>
+<tr><td class="cmd-id">148</td><td class="cmd-name">APP_CMD_GET_RISE_TIME_TOLERANCE</td><td><span class="badge badge-get">GET</span></td><td>None</td><td><code>[0]</code>: tolerance</td><td>Get rise-time tolerance.</td></tr>
+<tr><td class="cmd-id">238</td><td class="cmd-name">APP_CMD_SET_FILE_ENABLE</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: file_id, <code>p[2]</code>: 1=enable, 3=disable</td><td>Default</td><td>Enable/disable a file.</td></tr>
+<tr><td class="cmd-id">239</td><td class="cmd-name">APP_CMD_GET_FILE_ENABLE</td><td><span class="badge badge-get">GET</span></td>
+<td><code>p[1]</code>: file_id</td><td><code>[0]</code>: file_id, <code>[1]</code>: 1=enabled, 3=disabled</td><td>Get file enable state.</td></tr>
+<tr><td class="cmd-id">240</td><td class="cmd-name">APP_CMD_SET_FILE_CAPACITY</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: file_id, <code>p[2-3]</code>: capacity (uint16 LE, KB)</td><td>Default</td><td>Set file max capacity.</td></tr>
+<tr><td class="cmd-id">241</td><td class="cmd-name">APP_CMD_GET_FILE_CAPACITY</td><td><span class="badge badge-get">GET</span></td>
+<td><code>p[1]</code>: file_id</td><td><code>[0]</code>: file_id, <code>[1-2]</code>: capacity uint16 LE</td><td>Get file capacity.</td></tr>
+<tr><td class="cmd-id">242</td><td class="cmd-name">APP_CMD_SET_APPLY_FILE_CHANGES</td><td><span class="badge badge-action">Action</span></td><td>None</td><td>Default</td><td>Apply file configuration changes (recalculate flash addresses).</td></tr>
+</tbody></table></div>
+
+<!-- ============================================================ -->
+<!-- ALERTS -->
+<!-- ============================================================ -->
+<div class="section" id="cat-alert">
+<h2>Alerts &amp; Notifications</h2>
+<table>
+<thead><tr><th>ID</th><th>Command</th><th>Type</th><th>Parameters</th><th>Response</th><th>Description</th></tr></thead>
+<tbody class="searchable">
+<tr><td class="cmd-id">114</td><td class="cmd-name">APP_SET_LED</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: LED type, <code>p[2]</code>: blinking (0/1), <code>p[3]</code>: duration (seconds)</td><td>Default</td><td>Control bracelet LED. Blink or solid for specified duration.</td></tr>
+<tr><td class="cmd-id">116</td><td class="cmd-name">APP_SET_VIBRATOR</td><td><span class="badge badge-action">Action</span></td><td>None</td><td>Default</td><td>Trigger vibration motor (3 seconds).</td></tr>
+<tr><td class="cmd-id">119</td><td class="cmd-name">APP_SET_ALERT_ENABLE</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: AlertType (TPI_HRM, TPI_ACTIVITY, TPI_SYSTEM, TPI_SOCIAL), <code>p[2]</code>: enable (bool)</td><td>Default</td><td>Enable/disable an alert type.</td></tr>
+<tr><td class="cmd-id">120</td><td class="cmd-name">APP_GET_ALERT_ENABLE</td><td><span class="badge badge-get">GET</span></td>
+<td><code>p[1]</code>: AlertType</td><td><code>[0]</code>: type, <code>[1]</code>: enabled (0/1). 2 bytes.</td><td>Get alert enable state.</td></tr>
+<tr><td class="cmd-id">121</td><td class="cmd-name">APP_SET_ALERT_TIME_PERIOD</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: AlertType, <code>p[2]</code>: startHour, <code>p[3]</code>: startMinute, <code>p[4]</code>: endHour, <code>p[5]</code>: endMinute</td><td>Default</td><td>Set alert active time window.</td></tr>
+<tr><td class="cmd-id">122</td><td class="cmd-name">APP_GET_ALERT_TIME_PERIOD</td><td><span class="badge badge-get">GET</span></td>
+<td><code>p[1]</code>: AlertType</td><td><code>[0]</code>: type, <code>[1]</code>: startH, <code>[2]</code>: startM, <code>[3]</code>: endH, <code>[4]</code>: endM. 5 bytes.</td><td>Get alert time period.</td></tr>
+<tr><td class="cmd-id">123</td><td class="cmd-name">APP_SET_HR_ALERT_THRESHOLD</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: HrAlertType, <code>p[2]</code>: threshold (bpm)</td><td>Default</td><td>Set heart rate alert threshold.</td></tr>
+<tr><td class="cmd-id">124</td><td class="cmd-name">APP_GET_HR_ALERT_THRESHOLD</td><td><span class="badge badge-get">GET</span></td>
+<td><code>p[1]</code>: HrAlertType</td><td><code>[0]</code>: threshold (bpm)</td><td>Get heart rate alert threshold.</td></tr>
+<tr><td class="cmd-id">164</td><td class="cmd-name">APP_CMD_SET_ALERT_VIBRATION_ENABLE</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: AlertType, <code>p[2]</code>: enable (bool)</td><td>Default</td><td>Enable/disable vibration for alert type.</td></tr>
+<tr><td class="cmd-id">165</td><td class="cmd-name">APP_CMD_GET_ALERT_VIBRATION_ENABLE</td><td><span class="badge badge-get">GET</span></td>
+<td><code>p[1]</code>: AlertType</td><td><code>[0]</code>: type, <code>[1]</code>: enabled, <code>[2-5]</code>: timestamp (uint32 LE). 6 bytes.</td><td>Get vibration enable state and last change timestamp.</td></tr>
+<tr><td class="cmd-id">187</td><td class="cmd-name">APP_CMD_SET_ACTIVE_ALERT_DATA</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: 2 (activity), <code>p[2-3]</code>: threshold (uint16 LE)</td><td><code>[0]</code>: error_code. 1 byte.</td><td>Set activity alert threshold.</td></tr>
+<tr><td class="cmd-id">188</td><td class="cmd-name">APP_CMD_GET_ACTIVE_ALERT_DATA</td><td><span class="badge badge-get">GET</span></td><td>None</td>
+<td><code>[0]</code>: 2, <code>[1-2]</code>: threshold (uint16 LE). 3 bytes.</td><td>Get activity alert threshold.</td></tr>
+<tr><td class="cmd-id">220</td><td class="cmd-name">APP_SET_PING_REALTIME_ENABLE</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1]</code>: 1=enable, 3=disable</td><td>Default</td><td>Enable/disable real-time BLE alert pings.</td></tr>
+<tr><td class="cmd-id">221</td><td class="cmd-name">APP_GET_PING_REALTIME_ENABLE</td><td><span class="badge badge-get">GET</span></td><td>None</td>
+<td><code>[0]</code>: 1=enabled, 3=disabled</td><td>Get real-time ping status.</td></tr>
+<tr><td class="cmd-id">223</td><td class="cmd-name">APP_SET_PING_REALTIME_PERIOD</td><td><span class="badge badge-set">SET</span></td>
+<td><code>p[1-4]</code>: period uint32 LE (seconds)</td><td><code>[0]</code>: 100=ok, 1=error</td><td>Set real-time ping period.</td></tr>
+<tr><td class="cmd-id">224</td><td class="cmd-name">APP_GET_PING_REALTIME_PERIOD</td><td><span class="badge badge-get">GET</span></td><td>None</td>
+<td><code>[0-3]</code>: period uint32 LE</td><td>Get real-time ping period.</td></tr>
+</tbody></table></div>
+
+<!-- ============================================================ -->
+<!-- MISCELLANEOUS -->
+<!-- ============================================================ -->
+<div class="section" id="cat-misc">
+<h2>Miscellaneous</h2>
+<table>
+<thead><tr><th>ID</th><th>Command</th><th>Type</th><th>Parameters</th><th>Response</th><th>Description</th></tr></thead>
+<tbody class="searchable">
+<tr><td class="cmd-id">58</td><td class="cmd-name">APP_CMD_GET_CURRENT_FILE</td><td><span class="badge badge-get">GET</span></td><td>None</td><td><code>[0]</code>: file_id</td><td>Get currently active file for streaming.</td></tr>
+<tr><td class="cmd-id">59</td><td class="cmd-name">APP_CMD_GET_STREAMING_STATE</td><td><span class="badge badge-get">GET</span></td><td>None</td><td><code>[0]</code>: 0/1</td><td>Get streaming active state.</td></tr>
+<tr><td class="cmd-id">60</td><td class="cmd-name">APP_CMD_GET_LAST_ERROR</td><td><span class="badge badge-get">GET</span></td><td>None</td><td><code>[0]</code>: 0 (TODO)</td><td>Get last error (not yet implemented).</td></tr>
+<tr><td class="cmd-id">151</td><td class="cmd-name">APP_CMD_GET_PREVIOUS_BLE_COMMAND</td><td><span class="badge badge-get">GET</span></td><td>None</td><td><code>[0]</code>: last cmd ID, <code>[1-4]</code>: last response bytes. 5 bytes.</td><td>Get previous BLE command and its response (for debugging).</td></tr>
+<tr><td class="cmd-id">152</td><td class="cmd-name">APP_CMD_GET_SESSION_STATUS</td><td><span class="badge badge-get">GET</span></td><td><code>p[1]</code>: mode</td><td>Session info structure</td><td>Get session status for a mode.</td></tr>
+<tr><td class="cmd-id">153</td><td class="cmd-name">APP_CMD_SET_WORKOUT_MAX_TIME</td><td><span class="badge badge-set">SET</span></td><td><code>p[1-2]</code>: max time uint16 LE (minutes)</td><td>Default</td><td>Set workout auto-stop timeout.</td></tr>
+<tr><td class="cmd-id">154</td><td class="cmd-name">APP_CMD_GET_WORKOUT_MAX_TIME</td><td><span class="badge badge-get">GET</span></td><td>None</td><td><code>[0-1]</code>: max time uint16 LE. 2 bytes.</td><td>Get workout auto-stop timeout.</td></tr>
+<tr><td class="cmd-id">163</td><td class="cmd-name">APP_CMD_SET_UNITS_SYSTEM</td><td><span class="badge badge-set">SET</span></td><td><code>p[1]</code>: US_METRIC or US_IMPERIAL</td><td>Default</td><td>Set measurement units system.</td></tr>
+<tr><td class="cmd-id">176</td><td class="cmd-name">APP_CMD_GET_UNITS_SYSTEM</td><td><span class="badge badge-get">GET</span></td><td>None</td><td><code>[0]</code>: units system. 1 byte.</td><td>Get units system.</td></tr>
+<tr><td class="cmd-id">183</td><td class="cmd-name">APP_CMD_SET_DEMO_ENABLE</td><td><span class="badge badge-set">SET</span></td><td><code>p[1]</code>: enable (bool)</td><td>Default</td><td>Enable/disable demo mode.</td></tr>
+<tr><td class="cmd-id">184</td><td class="cmd-name">APP_CMD_GET_DEMO_ENABLE</td><td><span class="badge badge-get">GET</span></td><td>None</td><td><code>[0]</code>: 0/1. 1 byte.</td><td>Get demo mode state.</td></tr>
+<tr><td class="cmd-id">186</td><td class="cmd-name">APP_CMD_DEBUG</td><td><span class="badge badge-action">Action</span></td><td><code>p[1]</code>: action (1=shipping, 2=enable NIBP, 3=disable NIBP)</td><td>Default</td><td>Debug/development commands.</td></tr>
+<tr><td class="cmd-id">189</td><td class="cmd-name">APP_SET_PREV_USER_STATUS</td><td><span class="badge badge-set">SET</span></td><td><code>p[1]</code>: status</td><td>Default</td><td>Set preventicus user status.</td></tr>
+<tr><td class="cmd-id">190</td><td class="cmd-name">APP_GET_PREV_USER_STATUS</td><td><span class="badge badge-get">GET</span></td><td>None</td><td><code>[0]</code>: 100=5min, 101=30min. 1 byte.</td><td>Get preventicus 5min/30min mode.</td></tr>
+</tbody></table></div>
+
+</div><!-- container -->
+
+<script>
+function filterTable() {
+  const query = document.getElementById('search').value.toLowerCase();
+  document.querySelectorAll('.searchable tr').forEach(row => {
+    const text = row.textContent.toLowerCase();
+    row.classList.toggle('hidden', query.length > 0 && !text.includes(query));
+  });
+}
+</script>
+</body>
+</html>
