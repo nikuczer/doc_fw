@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CardioWatch 287-2B — Boot Self-Test Plan</title>
+<style>
+:root {
+  --bg: #f5f7fa;
+  --card: #ffffff;
+  --accent: #1a73e8;
+  --accent-light: #e8f0fe;
+  --text: #202124;
+  --text2: #5f6368;
+  --border: #dadce0;
+  --green: #0d652d;
+  --green-bg: #e6f4ea;
+  --orange: #e37400;
+  --orange-bg: #fef7e0;
+  --red: #c5221f;
+  --red-bg: #fce8e6;
+  --blue: #1967d2;
+  --blue-bg: #e8f0fe;
+  --navy: #1a237e;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+header { background: linear-gradient(135deg, #1a237e 0%, #1565c0 100%); color: #fff; padding: 36px 40px 28px; }
+header h1 { font-size: 28px; font-weight: 600; }
+header .sub { color: #bbdefb; margin-top: 6px; font-size: 14px; }
+header .meta { display: flex; gap: 24px; margin-top: 14px; flex-wrap: wrap; }
+header .meta span { background: rgba(255,255,255,.15); padding: 4px 14px; border-radius: 16px; font-size: 12px; font-weight: 500; }
+
+.tab-bar { display: flex; flex-wrap: wrap; gap: 0; background: #fff; border-bottom: 2px solid var(--border); padding: 0 20px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 4px rgba(0,0,0,.06); overflow-x: auto; }
+.tab-btn { padding: 12px 18px; font-size: 13px; font-weight: 500; color: var(--text2); background: none; border: none; border-bottom: 3px solid transparent; cursor: pointer; white-space: nowrap; transition: all .15s; }
+.tab-btn:hover { color: var(--accent); background: var(--accent-light); }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+.tab-content { display: none; padding: 32px 40px; max-width: 1200px; margin: 0 auto; }
+.tab-content.active { display: block; }
+
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 28px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+.card h2 { font-size: 20px; color: var(--accent); margin-bottom: 4px; }
+.card h3 { font-size: 16px; color: var(--text); margin: 20px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+.card p { margin: 8px 0; font-size: 14px; color: var(--text2); }
+
+.badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-right: 4px; }
+.badge-critical { background: var(--red-bg); color: var(--red); }
+.badge-major { background: var(--orange-bg); color: var(--orange); }
+.badge-minor { background: var(--blue-bg); color: var(--blue); }
+.badge-info { background: #f1f3f4; color: var(--text2); }
+.badge-pass { background: var(--green-bg); color: var(--green); }
+.badge-file { background: var(--blue-bg); color: var(--blue); }
+
+table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+table th { background: var(--accent-light); color: var(--accent); text-align: left; padding: 10px 12px; font-weight: 600; position: sticky; top: 50px; }
+table td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+table tr:hover { background: #f8f9fa; }
+table tr:last-child td { border-bottom: none; }
+
+code { background: #f1f3f4; padding: 2px 6px; border-radius: 4px; font-size: 12px; font-family: 'Consolas', 'Fira Code', monospace; }
+pre { background: #1e1e1e; color: #d4d4d4; padding: 16px 20px; border-radius: 8px; overflow-x: auto; font-size: 13px; line-height: 1.5; margin: 12px 0; }
+pre .kw { color: #569cd6; }
+pre .fn { color: #dcdcaa; }
+pre .str { color: #ce9178; }
+pre .num { color: #b5cea8; }
+pre .cmt { color: #6a9955; }
+pre .type { color: #4ec9b0; }
+
+.pipeline { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 12px 0; }
+.pipeline .step { background: var(--accent-light); color: var(--accent); padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 500; }
+.pipeline .arrow { color: var(--text2); font-size: 16px; }
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
+
+.bit-table td:first-child { font-family: 'Consolas', monospace; font-weight: 600; text-align: center; width: 50px; }
+.bit-table .fail-bit { background: var(--red-bg); }
+.bit-table .pass-bit { background: var(--green-bg); }
+
+.timeline { position: relative; padding-left: 30px; }
+.timeline::before { content: ''; position: absolute; left: 12px; top: 0; bottom: 0; width: 2px; background: var(--border); }
+.timeline-item { position: relative; margin-bottom: 16px; }
+.timeline-item::before { content: ''; position: absolute; left: -24px; top: 6px; width: 12px; height: 12px; border-radius: 50%; background: var(--accent); border: 2px solid #fff; box-shadow: 0 0 0 2px var(--accent); }
+.timeline-item.critical::before { background: var(--red); box-shadow: 0 0 0 2px var(--red); }
+.timeline-item .time { font-size: 11px; color: var(--text2); font-weight: 600; }
+.timeline-item .desc { font-size: 13px; }
+
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin: 16px 0; }
+.stat-box { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; text-align: center; }
+.stat-box .num { font-size: 28px; font-weight: 700; color: var(--accent); }
+.stat-box .label { font-size: 12px; color: var(--text2); margin-top: 4px; }
+.stat-box.critical .num { color: var(--red); }
+.stat-box.success .num { color: var(--green); }
+.stat-box.warn .num { color: var(--orange); }
+
+footer { background: #263238; color: #90a4ae; padding: 20px 40px; font-size: 12px; text-align: center; margin-top: 40px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>CardioWatch 287-2B &mdash; Boot Self-Test Plan</h1>
+  <div class="sub">Comprehensive validation of the boot auto-test sequence for the MMT287-2B_MultiColor firmware</div>
+  <div class="meta">
+    <span>Platform: nRF52840 Cortex-M4F</span>
+    <span>Document Rev 1.0</span>
+    <span>Date: 2026-02-07</span>
+    <span>43 Test Cases</span>
+    <span>8 Categories</span>
+  </div>
+</header>
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="showTab('overview')">Overview</button>
+  <button class="tab-btn" onclick="showTab('boot-seq')">Boot Sequence</button>
+  <button class="tab-btn" onclick="showTab('fds')">FDS Test</button>
+  <button class="tab-btn" onclick="showTab('selftest')">Self-Test Bitmask</button>
+  <button class="tab-btn" onclick="showTab('alu')">ALU/FPU</button>
+  <button class="tab-btn" onclick="showTab('timing')">Boot Timing</button>
+  <button class="tab-btn" onclick="showTab('hw')">HW Init</button>
+  <button class="tab-btn" onclick="showTab('cycles')">Reboot Cycles</button>
+  <button class="tab-btn" onclick="showTab('tooling')">Tooling</button>
+</div>
+
+<!-- ============================================================ -->
+<!-- TAB: Overview                                                  -->
+<!-- ============================================================ -->
+<div id="overview" class="tab-content active">
+  <div class="card">
+    <h2>1. Test Plan Scope</h2>
+    <p>This test plan validates the <strong>boot-time self-test and initialization sequence</strong> of the CardioWatch 287-2B bracelet firmware.
+       During every power-on or reset, the firmware executes a deterministic sequence of hardware initializations and self-diagnostic checks
+       before entering the main application loop. This plan defines <strong>43 test cases</strong> across <strong>8 categories</strong> to certify
+       correct boot behavior.</p>
+
+    <div class="stat-grid">
+      <div class="stat-box"><div class="num">43</div><div class="label">Total Tests</div></div>
+      <div class="stat-box critical"><div class="num">20</div><div class="label">Critical</div></div>
+      <div class="stat-box warn"><div class="num">12</div><div class="label">Major</div></div>
+      <div class="stat-box"><div class="num">8</div><div class="label">Minor</div></div>
+      <div class="stat-box"><div class="num">3</div><div class="label">Info</div></div>
+    </div>
+
+    <h3>Test Categories</h3>
+    <table>
+      <tr><th>#</th><th>Category</th><th>Tests</th><th>Severity</th><th>Source Files</th><th>Description</th></tr>
+      <tr>
+        <td>1</td><td><strong>Boot Sequence</strong></td><td>16</td>
+        <td><span class="badge badge-critical">CRITICAL</span></td>
+        <td><code>main.c</code></td>
+        <td>Validates ordered presence of all initialization log markers</td>
+      </tr>
+      <tr>
+        <td>2</td><td><strong>FDS Integrity</strong></td><td>3</td>
+        <td><span class="badge badge-critical">CRITICAL</span></td>
+        <td><code>mmt_fds_simple.c</code>, <code>main.c</code></td>
+        <td>Flash Data Storage write/read integrity (5 iterations)</td>
+      </tr>
+      <tr>
+        <td>3</td><td><strong>Self-Test Bitmask</strong></td><td>9</td>
+        <td><span class="badge badge-critical">CRITICAL</span> <span class="badge badge-major">MAJOR</span></td>
+        <td><code>mmt_selftest.c</code></td>
+        <td>Hardware diagnostics: temperature, PPG, accelerometer, timing</td>
+      </tr>
+      <tr>
+        <td>4</td><td><strong>ALU/FPU Benchmark</strong></td><td>7</td>
+        <td><span class="badge badge-minor">MINOR</span></td>
+        <td><code>mmt_test_ALU_FPU.c</code></td>
+        <td>Processor arithmetic performance (int32, float, double)</td>
+      </tr>
+      <tr>
+        <td>5</td><td><strong>Boot Timing</strong></td><td>2</td>
+        <td><span class="badge badge-major">MAJOR</span></td>
+        <td><code>main.c</code>, <code>mmt_tasks.c</code></td>
+        <td>Initialization phase and sleep mode transition timing</td>
+      </tr>
+      <tr>
+        <td>6</td><td><strong>Temperature Init</strong></td><td>2</td>
+        <td><span class="badge badge-major">MAJOR</span></td>
+        <td><code>main.c</code></td>
+        <td>Temperature sensor readings at boot within valid range</td>
+      </tr>
+      <tr>
+        <td>7</td><td><strong>Hardware Init</strong></td><td>1</td>
+        <td><span class="badge badge-minor">MINOR</span></td>
+        <td><code>main.c</code></td>
+        <td>TMP117 I2C sensor detection</td>
+      </tr>
+      <tr>
+        <td>8</td><td><strong>Firmware Info</strong></td><td>3</td>
+        <td><span class="badge badge-info">INFO</span></td>
+        <td><code>main.c</code>, <code>FW_info.c</code></td>
+        <td>FW version, serial number, reset reason logging</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>2. Test Environment</h2>
+    <div class="grid-2">
+      <div>
+        <h3>Hardware</h3>
+        <table>
+          <tr><td><strong>MCU</strong></td><td>Nordic nRF52840 &mdash; ARM Cortex-M4F @ 64 MHz</td></tr>
+          <tr><td><strong>Flash</strong></td><td>1 MB internal + 32 MB external (MT25QU256 via QSPI)</td></tr>
+          <tr><td><strong>RAM</strong></td><td>256 KB</td></tr>
+          <tr><td><strong>BLE Stack</strong></td><td>S140 SoftDevice v7.x</td></tr>
+          <tr><td><strong>Accelerometer</strong></td><td>LIS2DW12 (I2C)</td></tr>
+          <tr><td><strong>PPG Sensor</strong></td><td>MAX86178 (SPI, multicolor 7-channel)</td></tr>
+          <tr><td><strong>Temp Sensors</strong></td><td>LMT70 (analog) + TMP117 (I2C)</td></tr>
+          <tr><td><strong>Ext. Flash</strong></td><td>MT25QU256 (QSPI, 32 MB)</td></tr>
+        </table>
+      </div>
+      <div>
+        <h3>Test Setup</h3>
+        <table>
+          <tr><td><strong>Debug Probe</strong></td><td>Segger J-Link or nRF52840-DK</td></tr>
+          <tr><td><strong>Log Interface</strong></td><td>Segger RTT (Real-Time Transfer) or UART</td></tr>
+          <tr><td><strong>Log Tool</strong></td><td>J-Link RTT Viewer or terminal emulator</td></tr>
+          <tr><td><strong>Validator</strong></td><td><code>test/boot_test_validator.py</code></td></tr>
+          <tr><td><strong>Golden Data</strong></td><td><code>test/golden_data/boot_sequence_golden.json</code></td></tr>
+          <tr><td><strong>Excel Matrix</strong></td><td><code>doc/287-2B_Boot_Test_Matrix.xlsx</code></td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>3. Test Execution Workflow</h2>
+    <div class="pipeline">
+      <div class="step">1. Connect J-Link</div><div class="arrow">&rarr;</div>
+      <div class="step">2. Start RTT Logger</div><div class="arrow">&rarr;</div>
+      <div class="step">3. Power-on / Reset</div><div class="arrow">&rarr;</div>
+      <div class="step">4. Capture boot log</div><div class="arrow">&rarr;</div>
+      <div class="step">5. Save to .txt</div><div class="arrow">&rarr;</div>
+      <div class="step">6. Run validator</div><div class="arrow">&rarr;</div>
+      <div class="step">7. Review report</div>
+    </div>
+    <pre><span class="cmt"># Step 1: Capture boot log (via RTT Viewer or save RTT to file)</span>
+<span class="cmt"># Step 2: Run the automated validator</span>
+<span class="kw">cd</span> test/
+<span class="kw">python</span> boot_test_validator.py logs/my_boot_log.txt
+
+<span class="cmt"># Or generate an example log first:</span>
+<span class="kw">python</span> boot_test_validator.py --example
+<span class="kw">python</span> boot_test_validator.py logs/example_boot_log.txt</pre>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- TAB: Boot Sequence                                             -->
+<!-- ============================================================ -->
+<div id="boot-seq" class="tab-content">
+  <div class="card">
+    <h2>Boot Sequence Validation</h2>
+    <p>The firmware outputs specific log markers at each initialization phase. This test validates that <strong>all 16 markers
+       appear in the correct order</strong>. Missing or out-of-order markers indicate a boot failure or hang at a specific phase.</p>
+
+    <h3>Boot Timeline</h3>
+    <div class="timeline">
+      <div class="timeline-item critical">
+        <div class="time">T+0 ms</div>
+        <div class="desc"><strong>BOOT_START</strong> &mdash; <code>MMT application started at 0x40000, reset reason X</code><br>
+          MCU starts, reads <code>NRF_POWER->RESETREAS</code>, signals/tasks init, GPIO default state</div>
+      </div>
+      <div class="timeline-item">
+        <div class="time">T+~10 ms</div>
+        <div class="desc"><strong>INIT_PHASE_1</strong> &mdash; <code>init 1.</code><br>
+          Log subsystem, app timers, power management initialized</div>
+      </div>
+      <div class="timeline-item">
+        <div class="time">T+~20 ms</div>
+        <div class="desc"><strong>INIT_PHASE_2</strong> &mdash; <code>init 2.</code><br>
+          DCDC mode enabled, watchdog started, DFU bootloader async SVCI init</div>
+      </div>
+      <div class="timeline-item">
+        <div class="time">T+~30 ms</div>
+        <div class="desc"><strong>INIT_PHASE_3</strong> &mdash; <code>init 3.</code><br>
+          GPIOTE driver initialized (interrupts for accelerometer, pusher button)</div>
+      </div>
+      <div class="timeline-item">
+        <div class="time">T+~50 ms</div>
+        <div class="desc"><strong>INIT_PHASE_4</strong> &mdash; <code>init 4.</code><br>
+          Full BLE stack initialized (S140 SoftDevice, GATT, advertising)</div>
+      </div>
+      <div class="timeline-item">
+        <div class="time">T+~60 ms</div>
+        <div class="desc"><strong>INIT_PHASE_41-44</strong> &mdash; State machine, QSPI, I2C, SPI<br>
+          All bus peripherals operational; TMP117 detection attempted</div>
+      </div>
+      <div class="timeline-item critical">
+        <div class="time">T+~100 ms</div>
+        <div class="desc"><strong>FDS_TEST</strong> &mdash; <code>#### TEsting FDS: mmt_fds_test</code><br>
+          Flash Data Storage integrity: 5x write/read cycle with pattern verification</div>
+      </div>
+      <div class="timeline-item">
+        <div class="time">T+~200 ms</div>
+        <div class="desc"><strong>DFU_WAIT</strong> &mdash; <code>waiting for potential DFU</code><br>
+          1-second window: LEDs flash green+orange, watchdog fed 10x, signals processed.<br>
+          Allows OTA-DFU if firmware is corrupted.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="time">T+~1200 ms</div>
+        <div class="desc"><strong>INIT_PHASE_6</strong> &mdash; External flash log system initialized<br>
+          <code>mmt_log_init()</code> called, flash enabled</div>
+      </div>
+      <div class="timeline-item">
+        <div class="time">T+~1500 ms</div>
+        <div class="desc"><strong>APP_RUNNING</strong> &mdash; <code>Running the app ...</code><br>
+          Clock, battery, wearing detection, sensors all initialized</div>
+      </div>
+      <div class="timeline-item critical">
+        <div class="time">T+~5550 ms</div>
+        <div class="desc"><strong>STOP_INITIALIZATION</strong> (task)<br>
+          <code>MMT_TASK_STOP_INITIALIZATION</code> fires &mdash; initialization phase flag cleared</div>
+      </div>
+      <div class="timeline-item critical">
+        <div class="time">T+~6050 ms</div>
+        <div class="desc"><strong>SWITCH_TO_SLEEP</strong> (task)<br>
+          <code>MMT_TASK_SWITCH_TO_SLEEP</code> fires &mdash; device enters low-power sleep mode</div>
+      </div>
+    </div>
+
+    <h3>Log Marker Validation Matrix</h3>
+    <table>
+      <tr>
+        <th>Order</th><th>Marker ID</th><th>Expected Pattern</th><th>Mandatory</th><th>Phase</th><th>Failure Impact</th>
+      </tr>
+      <tr><td>1</td><td>BOOT_START</td><td><code>MMT application started at 0x40000</code></td><td><span class="badge badge-critical">YES</span></td><td>Power-On</td><td>Device not booting</td></tr>
+      <tr><td>2</td><td>INIT_PHASE_1</td><td><code>init 1.</code></td><td><span class="badge badge-critical">YES</span></td><td>Core HW</td><td>Log/Timer/Power init failed</td></tr>
+      <tr><td>3</td><td>INIT_PHASE_2</td><td><code>init 2.</code></td><td><span class="badge badge-critical">YES</span></td><td>Watchdog</td><td>Watchdog or DCDC init failed</td></tr>
+      <tr><td>4</td><td>INIT_PHASE_3</td><td><code>init 3.</code></td><td><span class="badge badge-critical">YES</span></td><td>GPIOTE</td><td>Interrupt system not ready</td></tr>
+      <tr><td>5</td><td>INIT_PHASE_4</td><td><code>init 4.</code></td><td><span class="badge badge-critical">YES</span></td><td>BLE</td><td>BLE stack init failed</td></tr>
+      <tr><td>6</td><td>INIT_PHASE_41</td><td><code>init 41.</code></td><td><span class="badge badge-critical">YES</span></td><td>State Machine</td><td>State machine/LEDs failed</td></tr>
+      <tr><td>7</td><td>INIT_PHASE_42</td><td><code>init 42.</code></td><td><span class="badge badge-critical">YES</span></td><td>QSPI</td><td>External flash not accessible</td></tr>
+      <tr><td>8</td><td>INIT_PHASE_43</td><td><code>init 43.</code></td><td><span class="badge badge-critical">YES</span></td><td>I2C</td><td>I2C bus failed (ACC, TMP117)</td></tr>
+      <tr><td>9</td><td>INIT_PHASE_44</td><td><code>init 44.</code></td><td><span class="badge badge-critical">YES</span></td><td>SPI</td><td>SPI bus failed (PPG sensor)</td></tr>
+      <tr><td>10</td><td>FDS_TEST_START</td><td><code>#### TEsting FDS</code></td><td><span class="badge badge-critical">YES</span></td><td>Flash Test</td><td>FDS test not executed</td></tr>
+      <tr><td>11</td><td>FDS_TEST_RESULT</td><td><code>FDS Test OK|NOK</code></td><td><span class="badge badge-critical">YES</span></td><td>Flash Test</td><td>Flash integrity unknown</td></tr>
+      <tr><td>12</td><td>DFU_WAIT</td><td><code>waiting for potential DFU</code></td><td><span class="badge badge-critical">YES</span></td><td>DFU Window</td><td>OTA update window skipped</td></tr>
+      <tr><td>13</td><td>INIT_PHASE_6</td><td><code>init 6.</code></td><td><span class="badge badge-critical">YES</span></td><td>Flash Log</td><td>Data logging unavailable</td></tr>
+      <tr><td>14</td><td>APP_RUNNING</td><td><code>Running the app</code></td><td><span class="badge badge-critical">YES</span></td><td>App Start</td><td>App layer not ready</td></tr>
+      <tr><td>15</td><td>FW_VERSION</td><td><code>MMT 287-B2 STARTED FW_V</code></td><td><span class="badge badge-critical">YES</span></td><td>FW Info</td><td>FW identity not logged</td></tr>
+      <tr><td>16</td><td>MAIN_LOOP</td><td><code>MAIN LOOP STARTED</code></td><td><span class="badge badge-critical">YES</span></td><td>Main Loop</td><td>Boot incomplete</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- TAB: FDS Test                                                  -->
+<!-- ============================================================ -->
+<div id="fds" class="tab-content">
+  <div class="card">
+    <h2>FDS (Flash Data Storage) Integrity Test</h2>
+    <p>Executed at every boot in <code>main.c:502-509</code>. The test verifies the Nordic FDS subsystem (built on top of the internal flash)
+       can reliably write and read back structured data.</p>
+
+    <h3>Test Mechanism</h3>
+    <p>Source: <code>mmt_fds_simple.c:700-720</code></p>
+    <pre><span class="type">typedef struct</span> __attribute__((aligned(<span class="num">4</span>))) __attribute__((packed)) {
+    <span class="type">uint16_t</span> i;
+    <span class="type">unsigned char</span> st[<span class="num">10</span>];
+} <span class="type">testing_data_type</span>;
+
+<span class="type">bool</span> <span class="fn">mmt_fds_test</span>(<span class="type">void</span>) {
+    <span class="type">int</span> no_errors = <span class="num">0</span>;
+    <span class="kw">for</span> (<span class="type">int</span> test_value = <span class="num">0</span>; test_value &lt; <span class="num">5</span>; test_value++) {
+        d_write.i = test_value;
+        <span class="fn">strcpy</span>((<span class="type">char</span> *)d_write.st, <span class="str">"MMT_FDS\0"</span>);
+        <span class="fn">mmt_write_fds</span>(<span class="num">0x8123</span>, <span class="num">0x7234</span>, &amp;d_write, <span class="kw">sizeof</span>(<span class="type">testing_data_type</span>));
+        <span class="type">ret_code_t</span> rc = <span class="fn">mmt_read_fds</span>(<span class="num">0x8123</span>, <span class="num">0x7234</span>, &amp;d_read, <span class="kw">sizeof</span>(<span class="type">testing_data_type</span>));
+        <span class="kw">if</span> (d_read.i != d_write.i || rc != NRF_SUCCESS)
+            no_errors++;
+    }
+    <span class="kw">return</span> (no_errors == <span class="num">0</span>);
+}</pre>
+
+    <h3>Golden Data</h3>
+    <table>
+      <tr><th>Iteration</th><th>Write (i)</th><th>Write (st)</th><th>File ID</th><th>File Key</th><th>Expected Read (i)</th><th>Expected rc</th></tr>
+      <tr><td>1</td><td>0</td><td>MMT_FDS</td><td>0x8123</td><td>0x7234</td><td>0</td><td>NRF_SUCCESS (0)</td></tr>
+      <tr><td>2</td><td>1</td><td>MMT_FDS</td><td>0x8123</td><td>0x7234</td><td>1</td><td>NRF_SUCCESS (0)</td></tr>
+      <tr><td>3</td><td>2</td><td>MMT_FDS</td><td>0x8123</td><td>0x7234</td><td>2</td><td>NRF_SUCCESS (0)</td></tr>
+      <tr><td>4</td><td>3</td><td>MMT_FDS</td><td>0x8123</td><td>0x7234</td><td>3</td><td>NRF_SUCCESS (0)</td></tr>
+      <tr><td>5</td><td>4</td><td>MMT_FDS</td><td>0x8123</td><td>0x7234</td><td>4</td><td>NRF_SUCCESS (0)</td></tr>
+    </table>
+
+    <h3>Pass/Fail Criteria</h3>
+    <table>
+      <tr><th>Test ID</th><th>Criteria</th><th>Severity</th></tr>
+      <tr><td>BT-FDS-017</td><td>FDS test marker <code>"TEsting FDS"</code> appears in boot log</td><td><span class="badge badge-critical">CRITICAL</span></td></tr>
+      <tr><td>BT-FDS-018</td><td>All 5 write/read cycles return matching values with <code>NRF_SUCCESS</code></td><td><span class="badge badge-critical">CRITICAL</span></td></tr>
+      <tr><td>BT-FDS-019</td><td><code>"FDS Test OK"</code> logged (no errors in any iteration)</td><td><span class="badge badge-critical">CRITICAL</span></td></tr>
+    </table>
+
+    <h3>Failure Analysis</h3>
+    <p>If the FDS test fails (<code>"FDS Test NOK"</code>):</p>
+    <ul style="margin-left: 20px; font-size: 14px; color: var(--text2);">
+      <li>Internal flash may be corrupted or worn out</li>
+      <li>FDS garbage collection may have failed</li>
+      <li>SoftDevice flash operations may be blocked</li>
+      <li><strong>Impact:</strong> Device settings, calibration data, BLE parameters may be unreliable</li>
+      <li><strong>Note:</strong> The device continues booting regardless of FDS test result (non-fatal)</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- TAB: Self-Test Bitmask                                         -->
+<!-- ============================================================ -->
+<div id="selftest" class="tab-content">
+  <div class="card">
+    <h2>Self-Test Bitmask (mmt_selftest.c)</h2>
+    <p>The self-test module checks all critical hardware subsystems and encodes the result as a <strong>16-bit bitmask</strong>.
+       A value of <code>0</code> means all tests passed. Each set bit indicates a specific sensor or subsystem failure.</p>
+
+    <h3>Bitmask Definition</h3>
+    <table class="bit-table">
+      <tr>
+        <th>Bit</th><th>Mask</th><th>Name</th><th>Sensor / Module</th>
+        <th>Pass Condition</th><th>Valid Range</th><th>Failure Impact</th>
+      </tr>
+      <tr>
+        <td class="pass-bit">b0</td><td><code>0x01</code></td><td>TEMP_SENSOR_1</td>
+        <td>LMT70 T1 (analog)</td>
+        <td>1000 &le; T1 &le; 4100</td><td>10.00&deg;C &mdash; 41.00&deg;C</td>
+        <td>T1 temperature monitoring unavailable</td>
+      </tr>
+      <tr>
+        <td class="pass-bit">b1</td><td><code>0x02</code></td><td>TEMP_SENSOR_2</td>
+        <td>LMT70 T2 (analog)</td>
+        <td>1000 &le; T2 &le; 4100</td><td>10.00&deg;C &mdash; 41.00&deg;C</td>
+        <td>T2 temperature monitoring unavailable</td>
+      </tr>
+      <tr>
+        <td class="pass-bit">b2</td><td><code>0x04</code></td><td>EXT_FLASH</td>
+        <td>MT25QU256 (QSPI)</td>
+        <td><em>Reserved &mdash; tested via FDS test</em></td><td>N/A</td>
+        <td>Covered by FDS integrity test</td>
+      </tr>
+      <tr>
+        <td class="pass-bit">b3</td><td><code>0x08</code></td><td>PPG_INIT</td>
+        <td>Philips PSP/FXI (MAX86178)</td>
+        <td><code>mmt_fxi_process_is_initialized()</code> = true</td><td>Boolean</td>
+        <td>No HR, SpO2, respiration processing</td>
+      </tr>
+      <tr>
+        <td class="pass-bit">b4</td><td><code>0x10</code></td><td>PPG_READ</td>
+        <td>PPG wearing detection</td>
+        <td>50 &le; PPG &le; 65000</td><td>50 &mdash; 65000 ADC counts</td>
+        <td>Wearing detection impaired</td>
+      </tr>
+      <tr>
+        <td class="pass-bit">b5</td><td><code>0x20</code></td><td>ACC_STARTED</td>
+        <td>LIS2DW12 (I2C)</td>
+        <td><code>LIS2DW12_is_started()</code> = true</td><td>Boolean</td>
+        <td>No motion data, no step counting</td>
+      </tr>
+      <tr>
+        <td class="pass-bit">b6</td><td><code>0x40</code></td><td>ACC_RANGE</td>
+        <td>LIS2DW12 data quality</td>
+        <td>|X|+|Y|+|Z| &ge; 50 AND NOT all &gt; 20000</td><td>See condition</td>
+        <td>Accelerometer dead or saturated</td>
+      </tr>
+      <tr>
+        <td class="pass-bit">b7</td><td><code>0x80</code></td><td>PPG_TIMING</td>
+        <td>Sensor data freshness</td>
+        <td>now - last_measurement &le; 180s</td><td>&le; 3 minutes</td>
+        <td>Scheduling / timing issue</td>
+      </tr>
+    </table>
+
+    <h3>Self-Test Code Flow</h3>
+    <pre><span class="type">void</span> <span class="fn">mmt_selftest_start</span>(<span class="type">uint8_t</span> test_number) {
+    test_result = <span class="num">0x00</span>;                  <span class="cmt">// Clear all bits</span>
+
+    <span class="cmt">// 1. Temperature sensors (b0, b1)</span>
+    <span class="type">int16_t</span> t1 = <span class="fn">mmt_LMT70_Get_Last_Temperature</span>(T1, <span class="kw">false</span>);
+    <span class="type">int16_t</span> t2 = <span class="fn">mmt_LMT70_Get_Last_Temperature</span>(T2, <span class="kw">false</span>);
+    <span class="kw">if</span> (t1 &lt; <span class="num">1000</span> || t1 &gt; <span class="num">4100</span>) test_result |= <span class="num">0x01</span>;
+    <span class="kw">if</span> (t2 &lt; <span class="num">1000</span> || t2 &gt; <span class="num">4100</span>) test_result |= <span class="num">0x02</span>;
+
+    <span class="cmt">// 2. PPG initialization (b3)</span>
+    <span class="kw">if</span> (!<span class="fn">mmt_fxi_process_is_initialized</span>()) test_result |= <span class="num">0x08</span>;
+
+    <span class="cmt">// 3. PPG data reading (b4) + ACC data (b6)</span>
+    <span class="fn">mmt_wearing_get_latest_measurement</span>(&amp;ppg, &amp;AccX, &amp;AccY, &amp;AccZ, &amp;time);
+    <span class="kw">if</span> (ppg &lt; <span class="num">50</span> || ppg &gt; <span class="num">65000</span>) test_result |= <span class="num">0x10</span>;
+
+    <span class="cmt">// 4. Accelerometer started (b5)</span>
+    <span class="kw">if</span> (!<span class="fn">LIS2DW12_is_started</span>()) test_result |= <span class="num">0x20</span>;
+
+    <span class="cmt">// 5. Accelerometer range (b6)</span>
+    <span class="kw">if</span> (abs(AccX)+abs(AccY)+abs(AccZ) &lt; <span class="num">50</span>
+        || (abs(AccX)&gt;<span class="num">20000</span> &amp;&amp; abs(AccY)&gt;<span class="num">20000</span> &amp;&amp; abs(AccZ)&gt;<span class="num">20000</span>))
+        test_result |= <span class="num">0x40</span>;
+
+    <span class="cmt">// 6. Data freshness (b7)</span>
+    <span class="kw">if</span> (time_now - time &gt; <span class="num">3</span>*<span class="num">60</span>) test_result |= <span class="num">0x80</span>;
+}</pre>
+
+    <h3>Interpretation Examples</h3>
+    <table>
+      <tr><th>Result</th><th>Binary</th><th>Meaning</th></tr>
+      <tr><td><code>0</code></td><td><code>0b00000000</code></td><td><span class="badge badge-pass">ALL PASS</span> &mdash; All hardware nominal</td></tr>
+      <tr><td><code>1</code></td><td><code>0b00000001</code></td><td>T1 sensor out of range</td></tr>
+      <tr><td><code>3</code></td><td><code>0b00000011</code></td><td>Both temperature sensors out of range</td></tr>
+      <tr><td><code>40</code></td><td><code>0b00101000</code></td><td>PPG not initialized + ACC not started</td></tr>
+      <tr><td><code>255</code></td><td><code>0b11111111</code></td><td><span class="badge badge-critical">ALL FAIL</span> &mdash; Major hardware failure</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- TAB: ALU/FPU                                                   -->
+<!-- ============================================================ -->
+<div id="alu" class="tab-content">
+  <div class="card">
+    <h2>ALU/FPU Performance Benchmark</h2>
+    <p>Source: <code>mmt_test_ALU_FPU.c</code>. This benchmark validates that the processor's arithmetic units
+       are functioning correctly and within expected performance bounds. The nRF52840's Cortex-M4 has a hardware
+       FPU for <strong>single-precision (float)</strong> only; double-precision uses software emulation.</p>
+    <p><strong>Note:</strong> This test is currently <em>commented out</em> in <code>main.c:749</code> (<code>// mmt_test_ALU_FPU();</code>).
+       It must be re-enabled for benchmark validation.</p>
+
+    <h3>Test Configuration</h3>
+    <table>
+      <tr><td><strong>CPU</strong></td><td>ARM Cortex-M4F @ 64 MHz</td></tr>
+      <tr><td><strong>FPU</strong></td><td>FPv4-SP-D16 (single-precision hardware)</td></tr>
+      <tr><td><strong>Iterations</strong></td><td>30,000 per test</td></tr>
+      <tr><td><strong>Operations/Iteration</strong></td><td>10 (to reduce loop overhead)</td></tr>
+      <tr><td><strong>Total Operations</strong></td><td>300,000 per test</td></tr>
+    </table>
+
+    <h3>Expected Performance</h3>
+    <table>
+      <tr><th>Test</th><th>Data Type</th><th>Operations</th><th>HW Support</th><th>Max Time (ms)</th><th>Rationale</th></tr>
+      <tr>
+        <td>int32_add_sub</td><td>int32_t</td><td>ADD / SUB</td>
+        <td><span class="badge badge-pass">ALU native</span></td>
+        <td><strong>50</strong></td><td>Single-cycle ALU ops</td>
+      </tr>
+      <tr>
+        <td>int32_mul_div</td><td>int32_t</td><td>MUL / DIV</td>
+        <td><span class="badge badge-pass">ALU + HW MUL</span></td>
+        <td><strong>150</strong></td><td>HW multiply, multi-cycle divide</td>
+      </tr>
+      <tr>
+        <td>float_add_sub</td><td>float</td><td>FADD / FSUB</td>
+        <td><span class="badge badge-pass">FPU hardware</span></td>
+        <td><strong>50</strong></td><td>Native FPU single-precision</td>
+      </tr>
+      <tr>
+        <td>float_mul_div</td><td>float</td><td>FMUL / FDIV</td>
+        <td><span class="badge badge-pass">FPU hardware</span></td>
+        <td><strong>150</strong></td><td>FPU with 14-cycle FDIV</td>
+      </tr>
+      <tr>
+        <td>double_add_sub</td><td>double</td><td>DADD / DSUB</td>
+        <td><span class="badge badge-critical">SW emulation</span></td>
+        <td><strong>500</strong></td><td>No double FPU, ~10x slower</td>
+      </tr>
+      <tr>
+        <td>double_mul_div</td><td>double</td><td>DMUL / DDIV</td>
+        <td><span class="badge badge-critical">SW emulation</span></td>
+        <td><strong>1500</strong></td><td>Slowest operation, full software path</td>
+      </tr>
+    </table>
+
+    <h3>Validation Logic</h3>
+    <p>Performance exceeding the max time threshold by &gt;2x may indicate:</p>
+    <ul style="margin-left: 20px; font-size: 14px; color: var(--text2);">
+      <li>FPU disabled or misconfigured (check compiler flags: <code>-mfloat-abi=hard -mfpu=fpv4-sp-d16</code>)</li>
+      <li>CPU running at reduced clock speed (power management interference)</li>
+      <li>Interrupt storm during test execution</li>
+      <li>Compiler optimization level changed (expected: <code>-Os</code> for release)</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- TAB: Boot Timing                                               -->
+<!-- ============================================================ -->
+<div id="timing" class="tab-content">
+  <div class="card">
+    <h2>Boot Timing Validation</h2>
+    <p>The boot sequence uses the <strong>task scheduler</strong> (<code>mmt_tasks.c</code>) to schedule post-initialization
+       actions at precise delays. The timing is based on a 32.768 kHz tick clock.</p>
+
+    <h3>Task Scheduler Boot Tasks</h3>
+    <table>
+      <tr><th>Task ID</th><th>Task Name</th><th>Delay (ms)</th><th>Ticks (@32.768kHz)</th><th>Description</th><th>Critical Path</th></tr>
+      <tr><td>50</td><td><code>MMT_TASK_RUN_ACC</code></td><td>10</td><td>328</td><td>Start accelerometer (LIS2DW12)</td><td>No</td></tr>
+      <tr><td>95</td><td><code>MMT_TASK_SET_HRM_MODE</code></td><td>50</td><td>1,638</td><td>Start heart rate monitoring (Philips PSP)</td><td>No</td></tr>
+      <tr><td>128</td><td><code>MMT_TASK_BIOZ_START_CALIBRATION_1</code></td><td>70</td><td>2,294</td><td>Start BioZ impedance calibration</td><td>No</td></tr>
+      <tr><td>139</td><td><code>MMT_TASK_STOP_INITIALIZATION</code></td><td>5,550</td><td>181,862</td><td>End initialization phase</td><td><span class="badge badge-critical">YES</span></td></tr>
+      <tr><td>80</td><td><code>MMT_TASK_SWITCH_TO_SLEEP</code></td><td>6,050</td><td>198,245</td><td>Enter low-power sleep mode</td><td><span class="badge badge-critical">YES</span></td></tr>
+    </table>
+
+    <h3>Timing Constraints</h3>
+    <table>
+      <tr><th>Parameter</th><th>Value</th><th>Source</th></tr>
+      <tr><td>Init phase duration</td><td><strong>5,550 ms</strong></td><td><code>main.c:775</code></td></tr>
+      <tr><td>Time to sleep mode</td><td><strong>6,050 ms</strong></td><td><code>main.c:776</code></td></tr>
+      <tr><td>DFU wait window</td><td><strong>~1,000 ms</strong> (10 x 100ms)</td><td><code>main.c:514-522</code></td></tr>
+      <tr><td>Watchdog timeout</td><td>Configured via <code>System_task_initWatchdog()</code></td><td><code>main.c:432</code></td></tr>
+      <tr><td>Tick resolution</td><td>30.5 &micro;s (1/32768 Hz)</td><td>nRF52840 RTC</td></tr>
+    </table>
+
+    <h3>Tick Conversion Formula</h3>
+    <pre>exec_time = TICK_NOW() + (<span class="type">uint32_t</span>)((<span class="type">double</span>)(ms) * <span class="num">32.768</span>)
+<span class="cmt">// Example: 5550 ms = 5550 * 32.768 = 181,862 ticks</span></pre>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- TAB: HW Init                                                   -->
+<!-- ============================================================ -->
+<div id="hw" class="tab-content">
+  <div class="card">
+    <h2>Hardware Initialization Checklist</h2>
+    <p>Complete list of hardware modules initialized during boot, in execution order.
+       Each module must initialize without triggering <code>APP_ERROR_CHECK</code> assertions.</p>
+
+    <table>
+      <tr><th>#</th><th>Module</th><th>Init Function</th><th>Interface</th><th>Verification</th><th>Critical</th></tr>
+      <tr><td>1</td><td>GPIO Default</td><td><code>mmt_disable_all_gpio_pins()</code></td><td>GPIO</td><td>All pins set to default (power saving)</td><td><span class="badge badge-major">YES</span></td></tr>
+      <tr><td>2</td><td>Sleep GPIO</td><td><code>mmt_sleep_gpio_pins()</code></td><td>GPIO</td><td>Charger CMD + ACC interrupt + pusher pin</td><td><span class="badge badge-major">YES</span></td></tr>
+      <tr><td>3</td><td>Power Mode</td><td><code>sd_power_mode_set(LOWPWR)</code></td><td>SoftDevice</td><td>Low power mode activated</td><td><span class="badge badge-major">YES</span></td></tr>
+      <tr><td>4</td><td>NRF Log</td><td><code>log_init()</code></td><td>Internal</td><td><code>NRF_LOG_INIT</code> returns <code>NRF_SUCCESS</code></td><td><span class="badge badge-major">YES</span></td></tr>
+      <tr><td>5</td><td>App Timers</td><td><code>timers_init()</code></td><td>Internal</td><td><code>app_timer_init</code> returns <code>NRF_SUCCESS</code></td><td><span class="badge badge-critical">CRITICAL</span></td></tr>
+      <tr><td>6</td><td>Power Mgmt</td><td><code>power_management_init()</code></td><td>Internal</td><td><code>nrf_pwr_mgmt_init</code> returns <code>NRF_SUCCESS</code></td><td><span class="badge badge-critical">CRITICAL</span></td></tr>
+      <tr><td>7</td><td>DCDC Mode</td><td><code>sd_power_dcdc_mode_set(ENABLE)</code></td><td>SoftDevice</td><td>DCDC converter enabled for low power</td><td><span class="badge badge-major">YES</span></td></tr>
+      <tr><td>8</td><td>Watchdog</td><td><code>System_task_initWatchdog()</code></td><td>WDT</td><td>Watchdog timer active</td><td><span class="badge badge-critical">CRITICAL</span></td></tr>
+      <tr><td>9</td><td>Task Scheduler</td><td><code>mmt_tasks_init()</code></td><td>Internal</td><td>30-task queue cleared and ready</td><td><span class="badge badge-critical">CRITICAL</span></td></tr>
+      <tr><td>10</td><td>GPIOTE</td><td><code>nrf_drv_gpiote_init()</code></td><td>GPIOTE</td><td>Returns <code>NRF_SUCCESS</code></td><td><span class="badge badge-critical">CRITICAL</span></td></tr>
+      <tr><td>11</td><td>FDS</td><td><code>mmt_fds_init()</code></td><td>Internal Flash</td><td>FDS subsystem ready for read/write</td><td><span class="badge badge-critical">CRITICAL</span></td></tr>
+      <tr><td>12</td><td>BLE Stack</td><td><code>mmt_ble_all_init()</code></td><td>S140</td><td>GAP, GATT, advertising ready</td><td><span class="badge badge-critical">CRITICAL</span></td></tr>
+      <tr><td>13</td><td>State Machine</td><td><code>mmt_state_machine_init()</code></td><td>Internal</td><td>Power mode FSM initialized</td><td><span class="badge badge-major">YES</span></td></tr>
+      <tr><td>14</td><td>LEDs</td><td><code>mmt_LEDS_init()</code></td><td>GPIO</td><td>Green, orange, blue LEDs controllable</td><td><span class="badge badge-minor">NO</span></td></tr>
+      <tr><td>15</td><td>QSPI Flash</td><td><code>qspi_init()</code></td><td>QSPI (Ch.2)</td><td>MT25QU256 external flash accessible</td><td><span class="badge badge-critical">CRITICAL</span></td></tr>
+      <tr><td>16</td><td>I2C Bus</td><td><code>i2c_init()</code></td><td>I2C</td><td><code>mmt_i2c_master_init</code> returns <code>NRF_SUCCESS</code></td><td><span class="badge badge-critical">CRITICAL</span></td></tr>
+      <tr><td>17</td><td>SPI Bus</td><td><code>spi_init()</code></td><td>SPI (Ch.1)</td><td>Sensor SPI channel operational</td><td><span class="badge badge-critical">CRITICAL</span></td></tr>
+      <tr><td>18</td><td>TMP117</td><td><code>mmt_TMP117_init()</code></td><td>I2C</td><td>Returns detection boolean</td><td><span class="badge badge-minor">NO</span></td></tr>
+      <tr><td>19</td><td>FPU IRQ</td><td><code>NVIC_SetPriority(FPU_IRQn, HIGH)</code></td><td>NVIC</td><td>FPU exception handler registered</td><td><span class="badge badge-major">YES</span></td></tr>
+      <tr><td>20</td><td>Flash Log</td><td><code>mmt_log_init()</code></td><td>QSPI</td><td>Returns bool, retries once on failure</td><td><span class="badge badge-critical">CRITICAL</span></td></tr>
+      <tr><td>21</td><td>RTC Clock</td><td><code>mmt_clock_init()</code></td><td>RTC</td><td>1-second callback registered</td><td><span class="badge badge-critical">CRITICAL</span></td></tr>
+      <tr><td>22</td><td>Battery Mgmt</td><td><code>mmt_battery_mgmt_Init()</code></td><td>ADC/GPIO</td><td>Battery monitoring active</td><td><span class="badge badge-major">YES</span></td></tr>
+      <tr><td>23</td><td>Wearing Detect</td><td><code>mmt_wearing_init()</code></td><td>Mixed</td><td>Wearing detection algorithm ready</td><td><span class="badge badge-major">YES</span></td></tr>
+      <tr><td>24</td><td>ACC Interrupt</td><td><code>ACC_init()</code></td><td>GPIOTE</td><td>Data-ready interrupt on ACC pin</td><td><span class="badge badge-critical">CRITICAL</span></td></tr>
+      <tr><td>25</td><td>GreenTeg</td><td><code>mmt_GreenTeg_init()</code></td><td>SPI</td><td>Thermal sensor module ready</td><td><span class="badge badge-major">YES</span></td></tr>
+      <tr><td>26</td><td>NIBP</td><td><code>mmt_nibp_init()</code></td><td>Internal</td><td>Blood pressure module ready</td><td><span class="badge badge-minor">NO</span></td></tr>
+      <tr><td>27</td><td>Cardiac Arrest</td><td><code>corsano_cardiac_arrest_init()</code></td><td>Internal</td><td>Cardiac arrest detection ready</td><td><span class="badge badge-major">YES</span></td></tr>
+      <tr><td>28</td><td>Idle Detection</td><td><code>mmt_idle_detection_init(true, 9)</code></td><td>Internal</td><td>Idle period = 9 x 3.2s = 28.8s</td><td><span class="badge badge-minor">NO</span></td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- TAB: Reboot Cycles                                             -->
+<!-- ============================================================ -->
+<div id="cycles" class="tab-content">
+  <div class="card">
+    <h2>Reboot Cycle Times by Error Scenario</h2>
+    <p>When an error occurs during boot, the device may enter a reboot loop. This table details
+       the <strong>time per cycle</strong> (from reset to next reset) for each failure scenario,
+       allowing estimation of battery drain and recovery windows.</p>
+
+    <h3>Key Timing Parameters</h3>
+    <table>
+      <tr><th>Parameter</th><th>Value</th><th>Source</th></tr>
+      <tr><td>Watchdog timeout (WDT)</td><td><strong>20,000 ms</strong> (20 s)</td><td><code>sdk_config.h:4531</code> &mdash; <code>NRFX_WDT_CONFIG_RELOAD_VALUE = 20000</code></td></tr>
+      <tr><td>WDT behaviour</td><td><code>RUN_SLEEP</code></td><td><code>mmt_watchdog.c:173</code> &mdash; Active in both run and sleep modes</td></tr>
+      <tr><td>Normal boot to sleep</td><td><strong>~6,050 ms</strong></td><td><code>main.c:776</code> &mdash; <code>MMT_TASK_SWITCH_TO_SLEEP</code></td></tr>
+      <tr><td>DFU wait window</td><td><strong>~1,000 ms</strong></td><td><code>main.c:514-522</code> &mdash; 10 x 100 ms + watchdog feed</td></tr>
+      <tr><td>FXI init retry loop</td><td><strong>~1,500 ms</strong> (10 x 150 ms)</td><td><code>mmt_process_fxi.c:4531-4547</code> &mdash; 10 retries x (50 + 50 + 50) ms</td></tr>
+      <tr><td>Flash init retry interval</td><td><strong>2,000 ms</strong></td><td><code>mmt_tasks.c:898</code> &mdash; <code>MMT_TASK_INIT_FLASH</code> rescheduled at 2s</td></tr>
+      <tr><td>Restart task chain</td><td><strong>1,250 ms</strong></td><td><code>mmt_tasks.c:1033-1054</code> &mdash; RESTART (50ms + persist) &rarr; RESTART2 (1200ms) &rarr; <code>NVIC_SystemReset</code></td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Reboot Cycle Time Matrix</h3>
+    <table>
+      <tr>
+        <th>Scenario</th>
+        <th>Error Point</th>
+        <th>Time to Error (ms)</th>
+        <th>Recovery Action</th>
+        <th>Reset Delay (ms)</th>
+        <th>Total Cycle (ms)</th>
+        <th>Reset Type</th>
+        <th>Continuous?</th>
+      </tr>
+
+      <tr style="background: var(--green-bg);">
+        <td><strong>Normal boot</strong></td>
+        <td>&mdash; (no error)</td>
+        <td>~6,050</td>
+        <td>Enters sleep mode</td>
+        <td>N/A</td>
+        <td><strong>~6,050</strong> (one-shot)</td>
+        <td>&mdash;</td>
+        <td>No</td>
+      </tr>
+
+      <tr>
+        <td><strong>WDT: Hang during early init</strong><br><span style="font-size:11px;color:var(--text2)">Before <code>init 3.</code> (GPIOTE)</span></td>
+        <td><code>main.c:397-450</code></td>
+        <td>~30</td>
+        <td>Watchdog not fed &rarr; WDT timeout</td>
+        <td>20,000</td>
+        <td><strong>~20,030</strong></td>
+        <td>WDT Reset</td>
+        <td style="color:var(--red);font-weight:600">YES &mdash; infinite loop</td>
+      </tr>
+
+      <tr>
+        <td><strong>WDT: Hang during BLE init</strong><br><span style="font-size:11px;color:var(--text2)"><code>mmt_ble_all_init()</code> blocks</span></td>
+        <td><code>main.c:459</code></td>
+        <td>~50</td>
+        <td>Watchdog not fed &rarr; WDT timeout</td>
+        <td>20,000</td>
+        <td><strong>~20,050</strong></td>
+        <td>WDT Reset</td>
+        <td style="color:var(--red);font-weight:600">YES &mdash; infinite loop</td>
+      </tr>
+
+      <tr>
+        <td><strong>WDT: Hang during FDS test</strong><br><span style="font-size:11px;color:var(--text2)"><code>mmt_fds_test()</code> blocks on flash</span></td>
+        <td><code>main.c:504</code></td>
+        <td>~100</td>
+        <td>Watchdog not fed &rarr; WDT timeout</td>
+        <td>20,000</td>
+        <td><strong>~20,100</strong></td>
+        <td>WDT Reset</td>
+        <td style="color:var(--red);font-weight:600">YES &mdash; infinite loop</td>
+      </tr>
+
+      <tr>
+        <td><strong>WDT: Hang after DFU window</strong><br><span style="font-size:11px;color:var(--text2)">Post-DFU init stalls</span></td>
+        <td><code>main.c:523-535</code></td>
+        <td>~1,200</td>
+        <td>Watchdog not fed &rarr; WDT timeout</td>
+        <td>20,000</td>
+        <td><strong>~21,200</strong></td>
+        <td>WDT Reset</td>
+        <td style="color:var(--red);font-weight:600">YES &mdash; infinite loop</td>
+      </tr>
+
+      <tr>
+        <td><strong>WDT: Hang in main loop</strong><br><span style="font-size:11px;color:var(--text2)">Task blocks in <code>mmt_tasks_process()</code></span></td>
+        <td><code>main.c:808-818</code></td>
+        <td>~6,050+</td>
+        <td>Second timer stops feeding WDT &rarr; timeout</td>
+        <td>20,000</td>
+        <td><strong>~26,050</strong></td>
+        <td>WDT Reset</td>
+        <td style="color:var(--red);font-weight:600">YES &mdash; infinite loop</td>
+      </tr>
+
+      <tr style="background: var(--orange-bg);">
+        <td><strong>FXI/PSP init failure</strong><br><span style="font-size:11px;color:var(--text2)">PPG sensor (MAX86178) not responding</span></td>
+        <td><code>mmt_process_fxi.c:4548-4553</code></td>
+        <td>~3,000 <span style="font-size:11px">(boot to HRM task)</span></td>
+        <td>10 retries (10x150ms) then <code>NVIC_SystemReset()</code> after 1000ms</td>
+        <td>1,500 + 1,000 = 2,500</td>
+        <td><strong>~5,500</strong></td>
+        <td>SW Reset</td>
+        <td style="color:var(--red);font-weight:600">YES &mdash; infinite loop</td>
+      </tr>
+
+      <tr style="background: var(--orange-bg);">
+        <td><strong>APP_ERROR_CHECK fault</strong><br><span style="font-size:11px;color:var(--text2)">Non-fatal: reset is <em>commented out</em></span></td>
+        <td><code>mmt_app_error_287N.c:13-68</code></td>
+        <td>Variable</td>
+        <td>Error logged, execution <strong>continues</strong>.<br>May eventually trigger WDT if state is corrupted.</td>
+        <td>0 (or 20,000 if WDT)</td>
+        <td><strong>N/A</strong> (continues) or <strong>~20,000+</strong> (if WDT)</td>
+        <td>None / WDT</td>
+        <td>Maybe</td>
+      </tr>
+
+      <tr>
+        <td><strong>FDS test failure</strong><br><span style="font-size:11px;color:var(--text2)"><code>mmt_fds_test()</code> returns false</span></td>
+        <td><code>main.c:504-509</code></td>
+        <td>~100</td>
+        <td>"FDS Test NOK" logged, boot <strong>continues normally</strong></td>
+        <td>N/A</td>
+        <td><strong>~6,050</strong> (normal boot)</td>
+        <td>&mdash;</td>
+        <td>No (non-fatal)</td>
+      </tr>
+
+      <tr>
+        <td><strong>TMP117 not detected</strong><br><span style="font-size:11px;color:var(--text2)">I2C sensor absent or bus error</span></td>
+        <td><code>main.c:477-491</code></td>
+        <td>~80</td>
+        <td>Re-init QSPI + I2C + SPI, fallback to LMT70. Boot <strong>continues</strong>.</td>
+        <td>~200 (re-init)</td>
+        <td><strong>~6,250</strong> (normal boot + re-init)</td>
+        <td>&mdash;</td>
+        <td>No (non-fatal)</td>
+      </tr>
+
+      <tr>
+        <td><strong>Flash log init failure</strong><br><span style="font-size:11px;color:var(--text2)"><code>mmt_log_init()</code> returns false</span></td>
+        <td><code>main.c:524, 755-759</code></td>
+        <td>~1,200</td>
+        <td>Retry once, then schedule <code>MMT_TASK_INIT_FLASH</code> every 2s (up to 10 retries).<br>
+            After ~300s: shutdown to shipping mode.</td>
+        <td>2,000 per retry</td>
+        <td><strong>~6,050</strong> (boot) + 10 x <strong>2,000</strong> (retries) &rarr; <strong>shutdown</strong></td>
+        <td>Shipping mode</td>
+        <td>No (gives up after ~5 min)</td>
+      </tr>
+
+      <tr>
+        <td><strong>BLE command: APP_CMD_RESET</strong><br><span style="font-size:11px;color:var(--text2)">App requests device restart</span></td>
+        <td><code>mmt_ble_manage.c:3549-3552</code></td>
+        <td>N/A (runtime)</td>
+        <td><code>MMT_TASK_RESTART</code> &rarr; persist FDS &rarr; <code>MMT_TASK_RESTART2</code> &rarr; <code>NVIC_SystemReset</code></td>
+        <td>50 + 1,200 = 1,250</td>
+        <td><strong>~7,300</strong> (1,250 + boot)</td>
+        <td>SW Reset</td>
+        <td>No (one-shot)</td>
+      </tr>
+
+      <tr>
+        <td><strong>DFU update complete</strong><br><span style="font-size:11px;color:var(--text2)">OTA firmware update reboot</span></td>
+        <td><code>mmt_ble_manage.c:5583-5584</code></td>
+        <td>N/A (runtime)</td>
+        <td>BLE disconnect &rarr; <code>NVIC_SystemReset</code></td>
+        <td>~50</td>
+        <td><strong>~6,100</strong> (50 + boot)</td>
+        <td>SW Reset</td>
+        <td>No (one-shot)</td>
+      </tr>
+
+      <tr>
+        <td><strong>Shutdown: battery critical</strong><br><span style="font-size:11px;color:var(--text2)">Battery below threshold</span></td>
+        <td><code>mmt_tasks.c:2128-2134</code></td>
+        <td>N/A (runtime)</td>
+        <td><code>MODE_SHIPPING</code> &rarr; <code>SHUTDOWN_EXECUTE</code> (3s) &rarr; STBC02 shipping mode</td>
+        <td>5,000 + 3,000</td>
+        <td><strong>N/A</strong> (enters SYSOFF, no reboot)</td>
+        <td>Shipping</td>
+        <td>No (shutdown)</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Reboot Loop Diagram</h3>
+    <p>Visual representation of cyclic time for the most critical continuous reboot scenarios:</p>
+    <div style="font-family: Consolas, monospace; font-size: 12px; background: #1e1e1e; color: #d4d4d4; padding: 20px; border-radius: 8px; overflow-x: auto; line-height: 1.8;">
+<span style="color:#6a9955;">--- Normal Boot (no error) ---</span>
+<span style="color:#569cd6;">|</span> RESET <span style="color:#569cd6;">|---</span> Init (6.05s) <span style="color:#569cd6;">--->|</span> SLEEP <span style="color:#569cd6;">|</span>     <span style="color:#b5cea8;">[One-shot, 6.05s]</span>
+
+<span style="color:#6a9955;">--- WDT Timeout (early hang) ---</span>
+<span style="color:#569cd6;">|</span> RESET <span style="color:#569cd6;">|--</span> Init (~30ms) <span style="color:#ce9178;">--X HANG X--</span> WDT (20s) <span style="color:#569cd6;">--|</span> RESET <span style="color:#569cd6;">|</span>   <span style="color:#ce9178;">[~20.03s/cycle]</span>
+<span style="color:#569cd6;">|</span> RESET <span style="color:#569cd6;">|--</span> Init (~30ms) <span style="color:#ce9178;">--X HANG X--</span> WDT (20s) <span style="color:#569cd6;">--|</span> RESET <span style="color:#569cd6;">|</span>   <span style="color:#d16969;">INFINITE LOOP</span>
+
+<span style="color:#6a9955;">--- WDT Timeout (main loop hang) ---</span>
+<span style="color:#569cd6;">|</span> RESET <span style="color:#569cd6;">|---</span> Full Init (6s) <span style="color:#569cd6;">---|</span> LOOP <span style="color:#ce9178;">--X HANG X--</span> WDT (20s) <span style="color:#569cd6;">--|</span> RESET <span style="color:#569cd6;">|</span>   <span style="color:#ce9178;">[~26s/cycle]</span>
+
+<span style="color:#6a9955;">--- FXI/PSP Failure (PPG sensor) ---</span>
+<span style="color:#569cd6;">|</span> RESET <span style="color:#569cd6;">|---</span> Boot (3s) <span style="color:#569cd6;">---|</span> FXI retry x10 (1.5s) <span style="color:#ce9178;">--X FAIL--</span> delay (1s) <span style="color:#569cd6;">--|</span> RESET <span style="color:#569cd6;">|</span>   <span style="color:#ce9178;">[~5.5s/cycle]</span>
+<span style="color:#569cd6;">|</span> RESET <span style="color:#569cd6;">|---</span> Boot (3s) <span style="color:#569cd6;">---|</span> FXI retry x10 (1.5s) <span style="color:#ce9178;">--X FAIL--</span> delay (1s) <span style="color:#569cd6;">--|</span> RESET <span style="color:#569cd6;">|</span>   <span style="color:#d16969;">INFINITE LOOP</span>
+
+<span style="color:#6a9955;">--- Flash Init Failure (graceful degradation) ---</span>
+<span style="color:#569cd6;">|</span> RESET <span style="color:#569cd6;">|---</span> Boot (6s) <span style="color:#569cd6;">---|</span> retry x10 (20s) <span style="color:#ce9178;">--X FAIL--</span> 5min timeout <span style="color:#569cd6;">--></span> SHIPPING MODE
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Battery Drain Estimation (reboot loops)</h3>
+    <p>Average current consumption during active boot: <strong>~8-15 mA</strong> (with BLE, sensors, flash active).<br>
+       Average in WDT wait state (CPU halted): <strong>~3-5 mA</strong> (WDT + RTC + SoftDevice idle).</p>
+    <table>
+      <tr><th>Scenario</th><th>Cycle Time</th><th>Cycles/Hour</th><th>Avg Current</th><th>mAh/Hour</th><th>Battery Life (typ. 100mAh)</th></tr>
+      <tr>
+        <td>Normal (sleep after boot)</td>
+        <td>N/A</td><td>N/A</td>
+        <td>~15 &micro;A (sleep)</td>
+        <td>0.015</td>
+        <td><strong>~278 days</strong></td>
+      </tr>
+      <tr style="background: var(--red-bg);">
+        <td>WDT loop (early hang)</td>
+        <td>20.03 s</td><td>~180</td>
+        <td>~4 mA avg (brief boot + long WDT idle)</td>
+        <td>4.0</td>
+        <td><strong>~25 hours</strong></td>
+      </tr>
+      <tr style="background: var(--red-bg);">
+        <td>WDT loop (main loop hang)</td>
+        <td>26.05 s</td><td>~138</td>
+        <td>~7 mA avg (long boot + WDT idle)</td>
+        <td>7.0</td>
+        <td><strong>~14 hours</strong></td>
+      </tr>
+      <tr style="background: var(--orange-bg);">
+        <td>FXI/PSP failure loop</td>
+        <td>5.5 s</td><td>~655</td>
+        <td>~12 mA avg (active boot, sensor retry)</td>
+        <td>12.0</td>
+        <td><strong>~8 hours</strong></td>
+      </tr>
+      <tr>
+        <td>Flash failure (then shipping)</td>
+        <td>~5 min total</td><td>N/A</td>
+        <td>~10 mA (active) then ~1 &micro;A (shipping)</td>
+        <td>~0.8 then ~0</td>
+        <td><strong>Months</strong> (once in shipping)</td>
+      </tr>
+    </table>
+    <p style="font-size:12px; color:var(--text2); margin-top:8px;">
+      Current estimates are approximate. Actual values depend on BLE advertising state, sensor configuration,
+      and DCDC converter efficiency. Measure with a power profiler (Nordic PPK2) for precise values.
+    </p>
+  </div>
+
+  <div class="card">
+    <h3>Error Recovery &amp; Reset Reason Codes</h3>
+    <p>After a reboot, the firmware reads <code>NRF_POWER->RESETREAS</code> to determine the cause.
+       This is logged as the first line: <code>"MMT application started at 0x40000, reset reason X"</code></p>
+    <table>
+      <tr><th>RESETREAS Code</th><th>Enum</th><th>Cause</th><th>Typical Scenario</th></tr>
+      <tr><td><code>0x00000000</code></td><td><code>RR_UNKNOWN</code></td><td>Power-On Reset (POR)</td><td>First boot, battery inserted</td></tr>
+      <tr><td><code>0x00000001</code> (bit 0)</td><td><code>RR_PIN_RESET</code></td><td>Pin Reset</td><td>Debug probe reset, external pin</td></tr>
+      <tr><td><code>0x00000002</code> (bit 1)</td><td><code>RR_WATCHDOG</code></td><td>Watchdog Reset</td><td>WDT timeout &mdash; <strong>indicates hang/freeze</strong></td></tr>
+      <tr><td><code>0x00000004</code> (bit 2)</td><td><code>RR_SOFT_RESET</code></td><td>Software Reset</td><td><code>NVIC_SystemReset()</code> call (FXI fail, BLE cmd, DFU)</td></tr>
+      <tr><td><code>0x00000010</code> (bit 4)</td><td>&mdash;</td><td>CPU Lockup</td><td>Hard fault, unrecoverable exception</td></tr>
+      <tr><td><code>0x00010000</code> (bit 16)</td><td>&mdash;</td><td>GPIO Wakeup</td><td>Wake from SYSOFF via GPIO (pusher from shipping)</td></tr>
+    </table>
+    <p>For <strong>watchdog resets</strong>, the firmware also captures the PC (program counter) before the reset
+       via the retained RAM area (<code>mmt_watchdog.c:38-39</code>), enabling post-mortem analysis of where the hang occurred.</p>
+    <pre><span class="cmt">// Log output after WDT reset:</span>
+<span class="str">"Pc address before watchdog reset 0x4A3F2."</span>
+<span class="str">"reset reason 2, pc: 0x2, 0x4A3F2."</span>
+
+<span class="cmt">// Decode with:</span>
+arm-none-eabi-addr2line -e build/release/firmware.elf <span class="num">0x4A3F2</span></pre>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- TAB: Tooling                                                   -->
+<!-- ============================================================ -->
+<div id="tooling" class="tab-content">
+  <div class="card">
+    <h2>Test Tooling &amp; Automation</h2>
+    <p>The test framework consists of Python scripts that parse device boot logs and validate them against golden reference data.</p>
+
+    <h3>Directory Structure</h3>
+    <pre>test/
+  boot_test_validator.py          <span class="cmt"># Main validator — parses RTT/UART log &amp; validates</span>
+  generate_test_matrix.py         <span class="cmt"># Generates Excel test matrix</span>
+  golden_data/
+    boot_sequence_golden.json     <span class="cmt"># Golden reference data (markers, ranges, thresholds)</span>
+  logs/
+    example_boot_log.txt          <span class="cmt"># Example log for testing the validator</span>
+  results/
+    boot_test_results.json        <span class="cmt"># Machine-readable test results</span>
+
+doc/
+  test_plan_boot.html             <span class="cmt"># This document</span>
+  287-2B_Boot_Test_Matrix.xlsx    <span class="cmt"># Excel test matrix (8 sheets)</span></pre>
+
+    <h3>Quick Start</h3>
+    <pre><span class="cmt"># 1. Generate example log</span>
+<span class="kw">cd</span> test/
+<span class="kw">python</span> boot_test_validator.py --example
+
+<span class="cmt"># 2. Run validation on example log</span>
+<span class="kw">python</span> boot_test_validator.py logs/example_boot_log.txt
+
+<span class="cmt"># 3. Run validation on real device boot log</span>
+<span class="kw">python</span> boot_test_validator.py logs/device_boot_2026-02-07.txt
+
+<span class="cmt"># 4. Generate/update Excel test matrix</span>
+<span class="kw">python</span> generate_test_matrix.py</pre>
+
+    <h3>Validator Output</h3>
+    <pre>========================================================================
+  BOOT TEST REPORT - CardioWatch 287-2B
+  Firmware:  V1.2.3
+  Serial:    AB123456
+========================================================================
+
+  [Boot Sequence]
+    [OK] Marker 'BOOT_START' present and in order
+    [OK] Marker 'INIT_PHASE_1' present and in order
+    ...
+  [FDS Test]
+    [OK] FDS test executed during boot
+    [OK] FDS write/read integrity
+  [Self-Test]
+    [OK] Self-test overall result
+    ...
+------------------------------------------------------------------------
+  SUMMARY: 38/43 PASS | 0 FAIL | 2 WARN | 3 SKIP
+  VERDICT: PASS (88.4%)
+========================================================================</pre>
+
+    <h3>Golden Data Format</h3>
+    <p>The golden data file (<code>boot_sequence_golden.json</code>) contains:</p>
+    <ul style="margin-left: 20px; font-size: 14px; color: var(--text2);">
+      <li><strong>boot_log_markers</strong>: Ordered list of expected log patterns with regex support</li>
+      <li><strong>fds_test</strong>: Expected FDS test parameters (file_id, key, iterations, test string)</li>
+      <li><strong>selftest_bitmask</strong>: Complete bit-by-bit definition with valid ranges</li>
+      <li><strong>alu_fpu_benchmark</strong>: Performance thresholds per operation type</li>
+      <li><strong>boot_timing</strong>: Initialization phase timing constraints</li>
+      <li><strong>task_scheduler_boot_sequence</strong>: Expected task scheduling during boot</li>
+      <li><strong>hardware_init_checklist</strong>: All HW modules with init functions and checks</li>
+    </ul>
+
+    <h3>Excel Test Matrix</h3>
+    <p>The generated Excel file contains <strong>8 sheets</strong>:</p>
+    <table>
+      <tr><th>Sheet</th><th>Content</th></tr>
+      <tr><td>Summary</td><td>Project info, category overview, test counts</td></tr>
+      <tr><td>Test Matrix</td><td>Full 43-test matrix with pass criteria, golden values, source references</td></tr>
+      <tr><td>Boot Sequence</td><td>16 boot markers with phases and descriptions</td></tr>
+      <tr><td>Self-Test Bitmask</td><td>8-bit bitmask detail with ranges, impacts, sensors</td></tr>
+      <tr><td>FDS Test</td><td>5-iteration write/read golden data</td></tr>
+      <tr><td>ALU-FPU Benchmark</td><td>6 performance tests with HW support and thresholds</td></tr>
+      <tr><td>HW Init Checklist</td><td>28-module initialization checklist</td></tr>
+      <tr><td>Task Scheduler</td><td>5 boot tasks with timing and tick values</td></tr>
+    </table>
+  </div>
+</div>
+
+<footer>
+  CardioWatch 287-2B &mdash; Boot Self-Test Plan &mdash; Rev 1.0 &mdash; 2026-02-07 &mdash; MMT / Corsano Health
+</footer>
+
+<script>
+function showTab(id) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>
