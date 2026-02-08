@@ -40,7 +40,7 @@ header p { color: #bbdefb; margin-top: 6px; font-size: 15px; }
 .btn-primary:hover { background: #1557b0; box-shadow: 0 2px 8px rgba(26,115,232,.3); }
 .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
 
-.content { padding: 32px 40px; max-width: 1400px; margin: 0 auto; }
+.content { padding: 32px 40px; margin: 0 auto; }
 
 .description-card { background: var(--orange-bg); border: 1px solid var(--orange); border-left: 4px solid var(--orange); border-radius: 10px; padding: 20px 24px; margin-bottom: 24px; }
 .description-card h2 { font-size: 18px; color: var(--orange); margin-bottom: 8px; font-weight: 600; }
@@ -53,7 +53,7 @@ header p { color: #bbdefb; margin-top: 6px; font-size: 15px; }
 
 .graph-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 24px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
 .graph-card .header { background: var(--accent-light); color: var(--accent); padding: 14px 20px; font-weight: 600; font-size: 16px; border-bottom: 2px solid var(--border); }
-.graph-card .body { padding: 0; }
+.graph-card .body { padding: 0; width: 100%; }
 
 .loading { text-align: center; padding: 60px 20px; }
 .loading .spinner { width: 48px; height: 48px; border: 4px solid var(--accent-light); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px; }
@@ -88,7 +88,7 @@ footer { text-align: center; padding: 32px 20px; color: var(--text2); font-size:
   <p>Interactive Signal Analysis &bull; 40 Clinical Scenarios &bull; Simulator Test Suite</p>
 </header>
 
-<div style="background: white; border-bottom: 1px solid var(--border); padding: 32px 40px;">
+<div id="pipelineSection" style="background: white; border-bottom: 1px solid var(--border); padding: 32px 40px;">
   <div style="max-width: 1200px; margin: 0 auto;">
     <h2 style="font-size: 20px; font-weight: 600; color: var(--text); margin-bottom: 16px;">🔬 Firmware Validation Pipeline</h2>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-top: 20px;">
@@ -357,12 +357,13 @@ async function loadScenario() {
     return;
   }
 
-  // Show loading
+  // Show loading, hide pipeline
   document.getElementById('loading').style.display = 'block';
   document.getElementById('error').style.display = 'none';
   document.getElementById('graphs').style.display = 'none';
   document.getElementById('description').style.display = 'none';
   document.getElementById('stats').style.display = 'none';
+  document.getElementById('pipelineSection').style.display = 'none';
 
   try {
     // Load JSON data (for GitHub Pages compatibility)
@@ -635,6 +636,7 @@ function plotSpO2(records) {
 }
 
 function generateAIAnalysis(activityRecords, ppgGreen, ppgRed, ppgIR, acc, scenario) {
+  // Deep statistical analysis
   const hrValues = activityRecords.map(r => parseInt(r.bpm)).filter(v => v > 0);
   const spo2Values = activityRecords.map(r => parseInt(r.spo2)).filter(v => v > 0);
   const hrQuality = activityRecords.map(r => parseInt(r.bpm_q));
@@ -643,6 +645,8 @@ function generateAIAnalysis(activityRecords, ppgGreen, ppgRed, ppgIR, acc, scena
   const avgHR = hrValues.length > 0 ? Math.round(hrValues.reduce((a, b) => a + b) / hrValues.length) : 0;
   const minHR = hrValues.length > 0 ? Math.min(...hrValues) : 0;
   const maxHR = hrValues.length > 0 ? Math.max(...hrValues) : 0;
+  const stdHR = hrValues.length > 1 ? Math.sqrt(hrValues.map(v => (v - avgHR)**2).reduce((a,b) => a+b) / hrValues.length).toFixed(1) : 0;
+
   const avgSpO2 = spo2Values.length > 0 ? Math.round(spo2Values.reduce((a, b) => a + b) / spo2Values.length) : 0;
   const minSpO2 = spo2Values.length > 0 ? Math.min(...spo2Values) : 0;
   const maxSpO2 = spo2Values.length > 0 ? Math.max(...spo2Values) : 0;
@@ -652,131 +656,284 @@ function generateAIAnalysis(activityRecords, ppgGreen, ppgRed, ppgIR, acc, scena
   const hrQualityRate = activityRecords.length > 0 ? (hrQ3_4 / activityRecords.length * 100).toFixed(1) : 0;
   const spo2QualityRate = activityRecords.length > 0 ? (spo2Q3_4 / activityRecords.length * 100).toFixed(1) : 0;
 
+  // PPG raw signal analysis
+  const greenValues = ppgGreen.map(r => parseInt(r.value));
+  const redValues = ppgRed.map(r => parseInt(r.value));
+  const irValues = ppgIR.map(r => parseInt(r.value));
+
+  const avgGreen = greenValues.length > 0 ? Math.round(greenValues.reduce((a,b) => a+b) / greenValues.length) : 0;
+  const avgRed = redValues.length > 0 ? Math.round(redValues.reduce((a,b) => a+b) / redValues.length) : 0;
+  const avgIR = irValues.length > 0 ? Math.round(irValues.reduce((a,b) => a+b) / irValues.length) : 0;
+
+  // Calculate estimated AC component (simple peak-to-peak / 2)
+  const greenMax = greenValues.length > 0 ? Math.max(...greenValues) : 0;
+  const greenMin = greenValues.length > 0 ? Math.min(...greenValues) : 0;
+  const redMax = redValues.length > 0 ? Math.max(...redValues) : 0;
+  const redMin = redValues.length > 0 ? Math.min(...redValues) : 0;
+  const irMax = irValues.length > 0 ? Math.max(...irValues) : 0;
+  const irMin = irValues.length > 0 ? Math.min(...irValues) : 0;
+
+  const acGreen = (greenMax - greenMin) / 2;
+  const acRed = (redMax - redMin) / 2;
+  const acIR = (irMax - irMin) / 2;
+
+  const dcGreen = avgGreen;
+  const dcRed = avgRed;
+  const dcIR = avgIR;
+
+  // Calculate R ratio for SpO2
+  const rRatio = (dcRed > 0 && dcIR > 0 && acIR > 0) ? ((acRed / dcRed) / (acIR / dcIR)).toFixed(3) : null;
+  const estimatedSpO2 = rRatio ? Math.round(108.49 - 30.09 * rRatio - 0.03 * rRatio * rRatio) : null;
+
+  // ACC analysis
   const accX = acc.map(r => parseInt(r.accX));
   const accY = acc.map(r => parseInt(r.accY));
   const accZ = acc.map(r => parseInt(r.accZ));
   const accMag = acc.map((r, i) => Math.sqrt(accX[i]**2 + accY[i]**2 + accZ[i]**2));
   const avgAccMag = accMag.length > 0 ? (accMag.reduce((a, b) => a + b) / accMag.length).toFixed(1) : 0;
+  const maxAccMag = accMag.length > 0 ? Math.max(...accMag).toFixed(1) : 0;
+  const minAccMag = accMag.length > 0 ? Math.min(...accMag).toFixed(1) : 0;
 
-  let analysis = `<div style="margin-bottom: 20px;"><strong style="font-size: 16px; color: var(--blue);">📊 Measured Statistics</strong></div>`;
+  // Build detailed analysis
+  let analysis = `<div style="margin-bottom: 24px;"><strong style="font-size: 18px; color: var(--blue);">🔬 Deep Firmware Analysis</strong></div>`;
 
-  analysis += `<div style="margin-bottom: 16px;">`;
-  analysis += `<strong>Heart Rate:</strong> Avg ${avgHR} bpm (range: ${minHR}-${maxHR} bpm), Quality Q≥3: ${hrQualityRate}% of records<br>`;
-  analysis += `<strong>SpO2:</strong> Avg ${avgSpO2}% (range: ${minSpO2}-${maxSpO2}%), Quality Q≥3: ${spo2QualityRate}% of records<br>`;
-  analysis += `<strong>Motion:</strong> ACC magnitude avg ${avgAccMag} counts (1g ≈ 1024 counts)<br>`;
-  analysis += `<strong>Data Volume:</strong> ${activityRecords.length} activity records (1/min), ${ppgGreen.length} PPG samples (~1Hz downsampled)`;
+  // === RAW SIGNAL ANALYSIS ===
+  analysis += `<div style="background: var(--bg); padding: 20px; border-radius: 8px; margin-bottom: 20px;">`;
+  analysis += `<div style="font-weight: 600; font-size: 15px; margin-bottom: 12px; color: var(--text);">📊 Raw PPG Signal Measurements</div>`;
+  analysis += `<div style="font-family: 'Courier New', monospace; font-size: 13px; line-height: 1.8;">`;
+  analysis += `Green PPG: DC=${dcGreen.toLocaleString()} ADC, AC≈${acGreen.toFixed(0)} (pk-pk=${greenMax-greenMin}), AC/DC=${(acGreen/dcGreen*100).toFixed(2)}%<br>`;
+  analysis += `Red PPG:   DC=${dcRed.toLocaleString()} ADC, AC≈${acRed.toFixed(0)} (pk-pk=${redMax-redMin}), AC/DC=${(acRed/dcRed*100).toFixed(2)}%<br>`;
+  analysis += `IR PPG:    DC=${dcIR.toLocaleString()} ADC, AC≈${acIR.toFixed(0)} (pk-pk=${irMax-irMin}), AC/DC=${(acIR/dcIR*100).toFixed(2)}%<br>`;
+  if (rRatio) {
+    analysis += `<strong>R ratio = (AC_Red/DC_Red)/(AC_IR/DC_IR) = ${rRatio}</strong><br>`;
+    analysis += `<strong>Estimated SpO2 = 108.49 - 30.09×${rRatio} - 0.03×${rRatio}² = ${estimatedSpO2}%</strong>`;
+  }
+  analysis += `</div>`;
   analysis += `</div>`;
 
-  analysis += `<div style="margin: 24px 0; border-top: 2px solid var(--border); padding-top: 20px;"><strong style="font-size: 16px; color: var(--blue);">🔍 Algorithm Performance Analysis</strong></div>`;
+  // === ACTIVITY RECORDS ANALYSIS ===
+  analysis += `<div style="background: var(--bg); padding: 20px; border-radius: 8px; margin-bottom: 20px;">`;
+  analysis += `<div style="font-weight: 600; font-size: 15px; margin-bottom: 12px; color: var(--text);">📈 Algorithm Output (activity_records.csv)</div>`;
+  analysis += `<div style="font-family: 'Courier New', monospace; font-size: 13px; line-height: 1.8;">`;
+  analysis += `HR:   Avg=${avgHR} bpm, Range=[${minHR}-${maxHR}], StdDev=${stdHR} bpm, Quality≥3: ${hrQualityRate}%<br>`;
+  analysis += `SpO2: Avg=${avgSpO2}%, Range=[${minSpO2}-${maxSpO2}], Quality≥3: ${spo2QualityRate}%<br>`;
+  analysis += `ACC:  Magnitude avg=${avgAccMag} counts (${(avgAccMag/1024).toFixed(2)}g), range=[${minAccMag}-${maxAccMag}]<br>`;
+  analysis += `Records: ${activityRecords.length} samples (1/min), Duration: ${activityRecords.length} minutes`;
+  analysis += `</div>`;
 
-  // Scenario-specific analysis
+  // Sample first 3 records
+  if (activityRecords.length > 0) {
+    analysis += `<div style="margin-top: 12px; padding: 12px; background: white; border-left: 3px solid var(--blue); font-size: 12px; font-family: monospace;">`;
+    analysis += `<strong>Sample records (first 3):</strong><br>`;
+    for (let i = 0; i < Math.min(3, activityRecords.length); i++) {
+      const r = activityRecords[i];
+      analysis += `[${i}] t=${r.timestamp}s: HR=${r.bpm} (Q=${r.bpm_q}), SpO2=${r.spo2} (Q=${r.spo2_q}), steps=${r.steps || 0}<br>`;
+    }
+    analysis += `</div>`;
+  }
+  analysis += `</div>`;
+
+  // === CRITICAL ANALYSIS ===
+  analysis += `<div style="margin: 24px 0; border-top: 2px solid var(--border); padding-top: 20px;"><strong style="font-size: 16px; color: var(--blue);">🔍 Critical Algorithm Analysis</strong></div>`;
+
   const scenarioName = scenario.name.toLowerCase();
+  let issues = [];
+  let insights = [];
 
-  if (scenarioName.includes('normal') || scenarioName.includes('rest')) {
-    analysis += `<div style="margin-bottom: 12px;"><strong>✓ Expected:</strong> Stable HR 60-80 bpm, SpO2 96-100%, minimal motion (<0.02g)</div>`;
-    if (avgHR >= 60 && avgHR <= 80) {
-      analysis += `<div style="color: var(--green);">✓ HR is within expected range for resting state</div>`;
-    } else {
-      analysis += `<div style="color: var(--orange);">⚠ HR ${avgHR} bpm is outside expected 60-80 bpm range. Possible causes: (1) synthetic signal generation parameters, (2) individual variation, (3) algorithm tuning needed</div>`;
-    }
-    if (avgSpO2 >= 96) {
-      analysis += `<div style="color: var(--green);">✓ SpO2 is within expected range for healthy subject</div>`;
-    } else if (avgSpO2 === 0) {
-      analysis += `<div style="color: var(--red);">✗ SpO2 = 0 indicates algorithm failure. Possible causes: (1) movement detection too strict, (2) R ratio out of calibration range, (3) signal quality rejection threshold too high</div>`;
+  // === SpO2 ANALYSIS ===
+  if (avgSpO2 === 0 && estimatedSpO2 !== null) {
+    issues.push({
+      severity: 'critical',
+      title: 'SpO2 Algorithm Rejection Despite Valid R Ratio',
+      details: `RAW DATA shows R ratio = ${rRatio}, which yields SpO2 ≈ ${estimatedSpO2}% using the polynomial.<br>
+      However, <strong>FIRMWARE OUTPUT = 0% in ALL ${activityRecords.length} records</strong>.<br><br>
+      <strong>Root cause diagnosis:</strong><br>
+      Looking at the data flow: PPG signals are present (Green DC=${dcGreen}, Red DC=${dcRed}, IR DC=${dcIR}),
+      R ratio is calculable and in valid range [0.4-3.4], yet mmt_spo2.c is rejecting all measurements.<br><br>
+      <strong>Most likely causes (in order of probability):</strong><br>
+      1. <code>mmt_idle_detection</code> state > ALMOST_IDLE (1): If movement detection returns ACTIVE (4),
+      mmt_spo2.c line ~350 will reject SpO2. Check if ACC data is being fed via mmt_idle_detection_feed_acc().<br>
+      2. Signal quality flags: Even with good R ratio, if AC amplitude < threshold or DC saturation detected,
+      algorithm may reject. Green AC/DC = ${(acGreen/dcGreen*100).toFixed(2)}% (expect 1-3% for good signal).<br>
+      3. Reporting rate issue: Default mmt_process_fxi uses 30-min reporting. With 1-hour test, you get max 2 reports.
+      Solution: call mmt_process_fxi_set_reporting_rate_spo2(60) for 1-min reports.`
+    });
+  } else if (avgSpO2 > 0 && estimatedSpO2 !== null && Math.abs(avgSpO2 - estimatedSpO2) > 5) {
+    insights.push({
+      title: 'SpO2 Measurement vs Raw R Ratio Discrepancy',
+      details: `Firmware reports avg SpO2 = ${avgSpO2}%, but raw R ratio ${rRatio} suggests ~${estimatedSpO2}%.<br>
+      Difference: ${Math.abs(avgSpO2 - estimatedSpO2).toFixed(1)}%.<br><br>
+      This is <strong>${Math.abs(avgSpO2 - estimatedSpO2) > 10 ? 'ABNORMAL' : 'acceptable'}</strong>.
+      Firmware likely applies additional filtering, perfusion quality checks, and temporal averaging
+      that aren't visible in this 1Hz-downsampled view. Original 32Hz data may show more variability.`
+    });
+  }
+
+  // === MOTION ANALYSIS ===
+  const isMotionScenario = scenarioName.includes('walking') || scenarioName.includes('running') || scenarioName.includes('movement');
+  if (isMotionScenario) {
+    const motionLevel = avgAccMag > 1500 ? 'INTENSE' : avgAccMag > 1200 ? 'MODERATE' : 'MILD';
+    insights.push({
+      title: `Motion Artifact Analysis: ${motionLevel} Activity Detected`,
+      details: `ACC magnitude: avg=${avgAccMag} (${(avgAccMag/1024).toFixed(2)}g), peak=${maxAccMag} (${(maxAccMag/1024).toFixed(2)}g).<br><br>
+      <strong>HR algorithm performance:</strong> ${hrQualityRate}% good quality (Q≥3).<br>
+      ${hrQualityRate > 50
+        ? `✓ GOOD tolerance to motion. Algorithm is likely using ACC signal for motion artifact subtraction
+           or spectral filtering. This is expected behavior for mmt_hrm_process with motion compensation enabled.`
+        : `⚠ POOR motion tolerance. HR quality degrades significantly during movement.
+           Walking cadence (1.8-2.2 Hz) overlaps with HR band (1-3 Hz), making separation difficult.
+           Algorithm may need better ACC-based filtering or FFT spectral subtraction.`}<br><br>
+      <strong>SpO2 algorithm performance:</strong> ${spo2QualityRate}% good quality.<br>
+      ${spo2QualityRate < 30
+        ? `✓ CORRECT rejection during motion. SpO2 is unreliable with motion artifacts because Red and IR
+           are affected unequally, corrupting the R ratio. Algorithm correctly rejects contaminated data.`
+        : `⚠ Unexpectedly HIGH SpO2 quality during motion. Either: (1) motion is milder than expected,
+           (2) algorithm motion detection threshold is too lenient (may produce false readings),
+           (3) test data doesn't accurately simulate motion artifacts.`}`
+    });
+  }
+
+  // === HR VARIABILITY ANALYSIS ===
+  if (stdHR > 0) {
+    const cvHR = (stdHR / avgHR * 100).toFixed(1);
+    if (scenarioName.includes('af') || scenarioName.includes('fibrillation')) {
+      insights.push({
+        title: 'Atrial Fibrillation: Rhythm Irregularity Detected',
+        details: `HR variability (std dev) = ${stdHR} bpm, CV = ${cvHR}%.<br><br>
+        For AF, coefficient of variation >15-20% is pathognomonic of irregular ventricular response.
+        Current CV = ${cvHR}%.<br>
+        ${parseFloat(cvHR) > 15
+          ? `✓ HIGH variability confirms irregular rhythm consistent with AF. Algorithm is correctly
+             detecting the chaotic RR intervals. Each beat's amplitude should also vary with preceding RR
+             (short RR → low amplitude, long RR → high amplitude due to varying diastolic filling).`
+          : `⚠ LOW variability for AF scenario. Expected CV >15%. Possible causes:<br>
+             1. Synthetic signal generation isn't producing enough RR variability<br>
+             2. Algorithm is over-smoothing/averaging, masking true irregularity<br>
+             3. 1-minute averaging in activity records conceals beat-to-beat chaos`}`
+      });
+    } else if (!scenarioName.includes('walking') && !scenarioName.includes('running') && parseFloat(cvHR) > 15) {
+      issues.push({
+        severity: 'warning',
+        title: 'Unexpectedly High HR Variability in Non-AF Scenario',
+        details: `HR std dev = ${stdHR} bpm, CV = ${cvHR}% (>15% suggests arrhythmia).<br><br>
+        In a ${scenario.name} scenario, such high variability is unusual unless:<br>
+        1. Scenario includes premature beats (PVCs/SVPCs) causing intermittent HR jumps<br>
+        2. Signal quality is poor, causing false detections<br>
+        3. Algorithm is unstable (oscillating between different peak detection thresholds)<br><br>
+        Check individual records for outliers or systematic patterns.`
+      });
     }
   }
 
-  if (scenarioName.includes('hypoxia')) {
-    if (scenarioName.includes('mild')) {
-      analysis += `<div style="margin-bottom: 12px;"><strong>✓ Expected:</strong> SpO2 90-95%, compensatory tachycardia 80-100 bpm</div>`;
-      if (avgSpO2 >= 90 && avgSpO2 <= 95) {
-        analysis += `<div style="color: var(--green);">✓ SpO2 correctly reflects mild hypoxia state</div>`;
-      }
-    } else if (scenarioName.includes('moderate')) {
-      analysis += `<div style="margin-bottom: 12px;"><strong>✓ Expected:</strong> SpO2 80-90%, tachycardia 100-130 bpm, possible AC amplitude reduction</div>`;
-    } else if (scenarioName.includes('severe')) {
-      analysis += `<div style="margin-bottom: 12px;"><strong>✓ Expected:</strong> SpO2 <80%, severe tachycardia 130-160+ bpm, very low AC amplitude</div>`;
-    }
-    if (avgSpO2 === 0) {
-      analysis += `<div style="color: var(--red);">✗ SpO2 = 0 in hypoxia scenario indicates algorithm failure. The R ratio polynomial may not be calibrated for extreme values (R > 1.5)</div>`;
-    }
-  }
-
-  if (scenarioName.includes('walking') || scenarioName.includes('running') || scenarioName.includes('movement')) {
-    analysis += `<div style="margin-bottom: 12px;"><strong>✓ Expected:</strong> Large motion artifacts, degraded signal quality, SpO2 unreliable during motion</div>`;
-    if (avgAccMag > 1200) {
-      analysis += `<div style="color: var(--green);">✓ ACC shows significant motion (${avgAccMag} counts > 1g baseline)</div>`;
-    }
-    if (spo2QualityRate < 30) {
-      analysis += `<div style="color: var(--green);">✓ Low SpO2 quality (${spo2QualityRate}%) is expected during motion - algorithm correctly rejects contaminated data</div>`;
-    }
-    if (hrQualityRate > 50) {
-      analysis += `<div style="color: var(--green);">✓ HR algorithm shows good motion tolerance (${hrQualityRate}% good quality) - likely using ACC for motion artifact rejection</div>`;
-    }
-  }
-
-  if (scenarioName.includes('cardiac arrest') || scenarioName.includes('vf') || scenarioName.includes('asystole')) {
-    analysis += `<div style="margin-bottom: 12px;"><strong>✓ Expected:</strong> Complete loss of pulsatile signal, HR = 0, flat PPG</div>`;
+  // === CARDIAC ARREST DETECTION ===
+  if (scenarioName.includes('cardiac arrest') || scenarioName.includes('vf') || scenarioName.includes('asystole') || scenarioName.includes('pea')) {
     if (avgHR === 0 || hrValues.length === 0) {
-      analysis += `<div style="color: var(--green);">✓ Algorithm correctly detects absence of pulse (cardiac arrest)</div>`;
+      insights.push({
+        title: 'Cardiac Arrest: Correct Pulseless Detection',
+        details: `✓ Algorithm correctly detects absence of mechanical pulse.<br>
+        HR output = 0 bpm across all ${activityRecords.length} records.<br><br>
+        PPG signal analysis:<br>
+        • Green AC component ≈ ${acGreen.toFixed(0)} (peak-to-peak ${greenMax-greenMin})<br>
+        • Expected in VF/asystole: AC < 1% of normal (typically <500 ADC counts)<br>
+        ${acGreen < 500
+          ? `✓ AC amplitude is near-zero, confirming flat signal (no pulsatile component).`
+          : `⚠ AC amplitude seems higher than expected for cardiac arrest. Possible causes:<br>
+             (1) Residual coarse VF oscillations in early phase<br>
+             (2) Noise artifacts being interpreted as residual signal<br>
+             (3) Synthetic data may not accurately model complete signal loss`}<br><br>
+        <strong>Clinical requirement:</strong> Alarm should trigger after >40s of no detectable pulse.
+        Test duration: ${activityRecords.length * 60}s. Algorithm must maintain 0 HR throughout.`
+      });
     } else {
-      analysis += `<div style="color: var(--red);">✗ HR = ${avgHR} bpm detected during cardiac arrest - false detection. Algorithm may be picking up noise artifacts as pulses. Requires stricter detection thresholds.</div>`;
+      issues.push({
+        severity: 'critical',
+        title: 'FALSE PULSE DETECTION DURING CARDIAC ARREST',
+        details: `<strong style="color: var(--red);">CRITICAL BUG:</strong> Algorithm reports HR = ${avgHR} bpm during cardiac arrest scenario.<br><br>
+        This is a <strong>life-threatening false negative</strong>. In real use, this would prevent cardiac arrest alarm
+        from triggering, delaying CPR and reducing survival odds.<br><br>
+        <strong>Evidence from data:</strong><br>
+        • PPG AC component: Green=${acGreen.toFixed(0)}, Red=${acRed.toFixed(0)}, IR=${acIR.toFixed(0)}<br>
+        • If AC > noise floor, algorithm may be detecting artifacts as cardiac pulses<br><br>
+        <strong>Root cause hypothesis:</strong><br>
+        1. Peak detection threshold too lenient (picking up noise as beats)<br>
+        2. Synthetic cardiac arrest data doesn't model signal loss correctly (AC should be <100)<br>
+        3. Algorithm lacks "consecutive missed beats" counter (should trigger alarm after 40-60s no pulse)<br><br>
+        <strong>Required fix:</strong> Implement stricter pulse validation. Check:<br>
+        • mmt_hrm_process.c: minimum AC amplitude threshold<br>
+        • Consecutive beat timeout logic<br>
+        • Firmware should output HR=0 if no valid beats detected for >10 seconds`
+      });
     }
   }
 
-  if (scenarioName.includes('af') || scenarioName.includes('fibrillation')) {
-    analysis += `<div style="margin-bottom: 12px;"><strong>✓ Expected:</strong> Completely irregular RR intervals, variable pulse amplitude, chaotic rhythm</div>`;
-    const rrStd = hrValues.length > 2 ? Math.sqrt(hrValues.map(h => (h - avgHR)**2).reduce((a,b) => a+b) / hrValues.length).toFixed(1) : 0;
-    analysis += `<div style="color: var(--blue);">ℹ HR variability (std dev): ${rrStd} bpm. High variability expected in AF (>15 bpm typical)</div>`;
+  // === PERFUSION ANALYSIS ===
+  const perfusionIndex = dcGreen > 0 ? (acGreen / dcGreen * 100).toFixed(2) : 0;
+  if (parseFloat(perfusionIndex) < 0.4) {
+    issues.push({
+      severity: 'warning',
+      title: 'Low Perfusion Index Detected',
+      details: `Perfusion Index (PI) = AC/DC = ${perfusionIndex}% (normal >1%).<br><br>
+      <strong>Signal characteristics:</strong><br>
+      • Green DC = ${dcGreen.toLocaleString()} ADC (baseline absorption)<br>
+      • Green AC ≈ ${acGreen.toFixed(0)} ADC (pulsatile component)<br>
+      • AC/DC ratio = ${perfusionIndex}%<br><br>
+      Low PI indicates poor peripheral perfusion. Common in:<br>
+      1. <strong>Vasoconstriction:</strong> Hypothermia, shock, or hypovolemia scenarios<br>
+      2. <strong>Low cardiac output:</strong> Heart failure, cardiac arrest<br>
+      3. <strong>Poor sensor contact:</strong> But this is synthetic data, so unlikely<br><br>
+      <strong>Impact on algorithms:</strong><br>
+      • Low SNR makes pulse detection harder → reduced HR quality<br>
+      • SpO2 may be rejected due to insufficient AC amplitude<br>
+      • Firmware may compensate by increasing LED power (check led% in PPG data)<br><br>
+      For scenario "${scenario.name}", this ${scenarioName.includes('hypothermia') || scenarioName.includes('shock') || scenarioName.includes('heart failure')
+        ? 'IS EXPECTED and correctly modeled'
+        : 'may indicate over-aggressive vasoconstriction in synthetic signal generation'}.`
+    });
   }
 
-  analysis += `<div style="margin: 24px 0; border-top: 2px solid var(--border); padding-top: 20px;"><strong style="font-size: 16px; color: var(--blue);">💡 Common Discrepancy Causes</strong></div>`;
+  // === RENDER ISSUES AND INSIGHTS ===
+  analysis += `<div style="margin-top: 24px;">`;
 
-  analysis += `<div style="line-height: 1.9;">`;
-  analysis += `<strong>Why SpO2 might be 0:</strong><br>`;
-  analysis += `• <strong>Movement rejection:</strong> idle_detection state > ALMOST_IDLE (1) causes SpO2 rejection. Solution: feed real ACC data to mmt_idle_detection_feed_acc()<br>`;
-  analysis += `• <strong>R ratio out of range:</strong> Polynomial SpO2 = 108.49 - 30.09×R - 0.03×R² only valid for R ∈ [0.4, 3.4]. Extreme values rejected<br>`;
-  analysis += `• <strong>Signal quality:</strong> PPG amplitude too low (low perfusion), AC/DC ratio <0.4%, or quality flags indicate unreliable signal<br>`;
-  analysis += `• <strong>Reporting rate:</strong> Default 30-min intervals means no output during 1-hour test. Use mmt_process_fxi_set_reporting_rate_spo2(60) for 1-min rate<br><br>`;
+  if (issues.length > 0) {
+    issues.forEach(issue => {
+      const bgColor = issue.severity === 'critical' ? 'var(--red-bg)' : 'var(--orange-bg)';
+      const borderColor = issue.severity === 'critical' ? 'var(--red)' : 'var(--orange)';
+      const icon = issue.severity === 'critical' ? '🔴' : '⚠️';
 
-  analysis += `<strong>Why HR quality varies:</strong><br>`;
-  analysis += `• <strong>Motion artifacts:</strong> Walking/running cadence (1.8-3.5 Hz) overlaps HR band (1-2.7 Hz = 60-160 bpm), requires ACC-based separation<br>`;
-  analysis += `• <strong>Low amplitude:</strong> Vasoconstriction in shock/hypothermia reduces AC component, increases noise sensitivity<br>`;
-  analysis += `• <strong>Arrhythmias:</strong> Irregular rhythms (AF, PVCs) may confuse peak detection, reduce quality scores<br><br>`;
+      analysis += `<div style="background: ${bgColor}; border-left: 4px solid ${borderColor}; padding: 20px; margin-bottom: 16px; border-radius: 8px;">`;
+      analysis += `<div style="font-weight: 600; font-size: 15px; margin-bottom: 10px; color: ${borderColor};">${icon} ${issue.title}</div>`;
+      analysis += `<div style="font-size: 13px; line-height: 1.8; color: var(--text);">${issue.details}</div>`;
+      analysis += `</div>`;
+    });
+  }
 
-  analysis += `<strong>Data quality indicators:</strong><br>`;
-  analysis += `• <strong>Q=0 (gray):</strong> No quality / not measured<br>`;
-  analysis += `• <strong>Q=1-2 (red/yellow):</strong> Low/medium quality - unreliable for clinical use, but algorithm attempting measurement<br>`;
-  analysis += `• <strong>Q=3-4 (green/cyan):</strong> Good/excellent quality - clinically reliable measurements<br>`;
-  analysis += `</div>`;
+  if (insights.length > 0) {
+    insights.forEach(insight => {
+      analysis += `<div style="background: var(--blue-bg); border-left: 4px solid var(--blue); padding: 20px; margin-bottom: 16px; border-radius: 8px;">`;
+      analysis += `<div style="font-weight: 600; font-size: 15px; margin-bottom: 10px; color: var(--blue);">💡 ${insight.title}</div>`;
+      analysis += `<div style="font-size: 13px; line-height: 1.8; color: var(--text);">${insight.details}</div>`;
+      analysis += `</div>`;
+    });
+  }
 
-  analysis += `<div style="margin: 24px 0; border-top: 2px solid var(--border); padding-top: 20px;"><strong style="font-size: 16px; color: var(--blue);">🎯 Firmware Algorithm Status</strong></div>`;
-
-  analysis += `<div style="background: var(--green-bg); border-left: 4px solid var(--green); padding: 16px; margin-bottom: 12px; border-radius: 6px;">`;
-  analysis += `<strong style="color: var(--green);">✓ Working Algorithms:</strong><br>`;
-  analysis += `• Heart Rate (mmt_hrm_process): ${hrQualityRate}% good quality<br>`;
-  analysis += `• Movement Detection (mmt_idle_detection): Real implementation with ACC feed<br>`;
-  analysis += `• Activity Records: Generating 1-minute reports correctly`;
-  analysis += `</div>`;
-
-  if (avgSpO2 > 0) {
-    analysis += `<div style="background: var(--green-bg); border-left: 4px solid var(--green); padding: 16px; margin-bottom: 12px; border-radius: 6px;">`;
-    analysis += `<strong style="color: var(--green);">✓ SpO2 Algorithm:</strong> Producing measurements (avg ${avgSpO2}%), ${spo2QualityRate}% good quality`;
-    analysis += `</div>`;
-  } else {
-    analysis += `<div style="background: var(--orange-bg); border-left: 4px solid var(--orange); padding: 16px; margin-bottom: 12px; border-radius: 6px;">`;
-    analysis += `<strong style="color: var(--orange);">⚠ SpO2 Algorithm:</strong> Not producing measurements (all zeros). Check: (1) movement detection state, (2) R ratio range, (3) reporting rate configuration`;
+  if (issues.length === 0 && insights.length === 0) {
+    analysis += `<div style="background: var(--green-bg); border-left: 4px solid var(--green); padding: 20px; border-radius: 8px;">`;
+    analysis += `<div style="font-weight: 600; font-size: 15px; margin-bottom: 10px; color: var(--green);">✓ No Critical Issues Detected</div>`;
+    analysis += `<div style="font-size: 13px; color: var(--text);">Algorithm outputs appear consistent with scenario expectations and raw signal measurements.</div>`;
     analysis += `</div>`;
   }
 
-  analysis += `<div style="background: var(--blue-bg); border-left: 4px solid var(--blue); padding: 16px; border-radius: 6px;">`;
-  analysis += `<strong style="color: var(--blue);">ℹ Simulation Architecture:</strong><br>`;
-  analysis += `• Simulator reads synthetic CSV data (PPG + ACC at 32 Hz)<br>`;
-  analysis += `• Feeds data to REAL firmware algorithms (not stubs)<br>`;
-  analysis += `• Minimal stubs only for hardware HAL (nRF52840, sensors)<br>`;
-  analysis += `• Output: activity_records.csv with 1-minute vital signs<br>`;
-  analysis += `• This viewer: downsampled to 1 Hz for web display (GitHub Pages compatible)`;
   analysis += `</div>`;
+
+  // === SUMMARY ===
+  analysis += `<div style="margin-top: 24px; padding: 20px; background: linear-gradient(135deg, #f5f7fa 0%, #e8f0fe 100%); border-radius: 8px; border: 1px solid var(--border);">`;
+  analysis += `<div style="font-weight: 600; margin-bottom: 12px; color: var(--text);">📋 Analysis Summary</div>`;
+  analysis += `<div style="font-size: 13px; line-height: 1.8; color: var(--text2);">`;
+  analysis += `This analysis examined ${activityRecords.length} activity records, ${ppgGreen.length} PPG samples, and ${acc.length} ACC samples.<br>`;
+  analysis += `Raw PPG signals show R ratio = ${rRatio || 'N/A'} → estimated SpO2 ≈ ${estimatedSpO2 || 'N/A'}%.<br>`;
+  analysis += `Firmware output: HR avg ${avgHR} bpm, SpO2 avg ${avgSpO2}%.<br>`;
+  analysis += `<strong>${issues.length} critical issue${issues.length !== 1 ? 's' : ''}</strong> and <strong>${insights.length} insight${insights.length !== 1 ? 's' : ''}</strong> identified.`;
+  analysis += `</div></div>`;
 
   return analysis;
 }
