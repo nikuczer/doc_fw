@@ -411,11 +411,15 @@ async function loadScenario() {
     document.getElementById('stats').style.display = 'grid';
     document.getElementById('viewControls').style.display = 'flex';
 
-    // Set time range sliders max value based on data duration
-    const maxTime = Math.max(...currentData.activityRecords.map(r => parseInt(r.timestamp)));
+    // Set time range sliders max value based on DURATION (not absolute timestamp)
+    const t0 = currentData.activityRecords.length > 0 ? parseInt(currentData.activityRecords[0].timestamp) : 0;
+    const maxTime = currentData.activityRecords.length > 0
+      ? Math.max(...currentData.activityRecords.map(r => parseInt(r.timestamp) - t0))
+      : 3600;
     document.getElementById('timeStart').max = maxTime;
     document.getElementById('timeEnd').max = maxTime;
     document.getElementById('timeEnd').value = maxTime;
+    document.getElementById('timeStartLabel').textContent = '0s';
     document.getElementById('timeEndLabel').textContent = maxTime + 's';
 
   } catch (error) {
