@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CardioWatch 287-2B — Firmware Documentation</title>
+<style>
+:root {
+  --bg: #f5f7fa;
+  --card: #ffffff;
+  --accent: #1a73e8;
+  --accent-light: #e8f0fe;
+  --text: #202124;
+  --text2: #5f6368;
+  --border: #dadce0;
+  --green: #0d652d;
+  --green-bg: #e6f4ea;
+  --orange: #e37400;
+  --orange-bg: #fef7e0;
+  --blue: #1967d2;
+  --blue-bg: #e8f0fe;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; min-height: 100vh; }
+header { background: linear-gradient(135deg, #1a237e 0%, #1565c0 100%); color: #fff; padding: 48px 40px 40px; }
+header h1 { font-size: 30px; font-weight: 600; }
+header p { color: #bbdefb; margin-top: 8px; font-size: 15px; }
+.container { max-width: 900px; margin: 0 auto; padding: 40px 40px 60px; }
+.doc-grid { display: grid; gap: 20px; }
+.doc-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 28px 32px;
+  text-decoration: none;
+  color: inherit;
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  align-items: center;
+  gap: 24px;
+  transition: box-shadow .2s, border-color .2s, transform .15s;
+}
+.doc-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 4px 16px rgba(26, 115, 232, .12);
+  transform: translateY(-2px);
+}
+.doc-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+.doc-icon.algo { background: var(--blue-bg); }
+.doc-icon.ble { background: var(--green-bg); }
+.doc-icon.plans { background: var(--orange-bg); }
+.doc-info h2 { font-size: 18px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.doc-info p { font-size: 14px; color: var(--text2); margin: 0; }
+.doc-arrow { color: var(--accent); font-size: 22px; opacity: 0; transition: opacity .2s, transform .2s; }
+.doc-card:hover .doc-arrow { opacity: 1; transform: translateX(4px); }
+.badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+.badge-blue { background: var(--blue-bg); color: var(--blue); }
+.badge-green { background: var(--green-bg); color: var(--green); }
+.badge-orange { background: var(--orange-bg); color: var(--orange); }
+footer { text-align: center; color: var(--text2); font-size: 13px; margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--border); }
+@media(max-width: 640px) {
+  header { padding: 28px 20px; }
+  header h1 { font-size: 22px; }
+  .container { padding: 24px 16px; }
+  .doc-card { grid-template-columns: 44px 1fr; padding: 20px; gap: 16px; }
+  .doc-icon { width: 44px; height: 44px; font-size: 20px; }
+  .doc-arrow { display: none; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>CardioWatch 287-2B &mdash; Firmware Documentation</h1>
+  <p>Platform: nRF52840 (Cortex-M4F) &bull; Target: MMT287-2B_MultiColor &bull; Corsano Health</p>
+</header>
+
+<div class="container">
+  <div class="doc-grid">
+
+    <a class="doc-card" href="algorithms.html">
+      <div class="doc-icon algo">&#x1F9E0;</div>
+      <div class="doc-info">
+        <h2>Firmware Algorithm Documentation</h2>
+        <p>SpO2, Pulse Rate, Respiration, Blood Pressure, ECG, Gait Analysis, Step Counter, Fall Detection, Cardiac Arrest, Wearing Detection, Sleep Staging &amp; Power Plans.</p>
+        <div class="badges">
+          <span class="badge badge-blue">12 algorithms</span>
+          <span class="badge badge-blue">Processing pipelines</span>
+        </div>
+      </div>
+      <div class="doc-arrow">&#x2192;</div>
+    </a>
+
+    <a class="doc-card" href="ble_commands.html">
+      <div class="doc-icon ble">&#x1F4E1;</div>
+      <div class="doc-info">
+        <h2>BLE Commands Reference</h2>
+        <p>Complete Bluetooth Low Energy command set for the MMT 287-2B MultiColor bracelet &mdash; characteristic UUIDs, packet formats, read/write/notify operations.</p>
+        <div class="badges">
+          <span class="badge badge-green">BLE protocol</span>
+          <span class="badge badge-green">Command reference</span>
+        </div>
+      </div>
+      <div class="doc-arrow">&#x2192;</div>
+    </a>
+
+    <a class="doc-card" href="doc_plans.html">
+      <div class="doc-icon plans">&#x26A1;</div>
+      <div class="doc-info">
+        <h2>Power Plans &amp; Vital Parameters</h2>
+        <p>Configuration of measurement plans, sensor scheduling, sampling rates and power management profiles for battery optimization.</p>
+        <div class="badges">
+          <span class="badge badge-orange">Power plans</span>
+          <span class="badge badge-orange">Sensor config</span>
+        </div>
+      </div>
+      <div class="doc-arrow">&#x2192;</div>
+    </a>
+
+    <a class="doc-card" href="golden_data_viewer.html">
+      <div class="doc-icon" style="background: #fef7e0;">&#x1F4CA;</div>
+      <div class="doc-info">
+        <h2>Golden Data Viewer &mdash; Interactive Signal Analysis</h2>
+        <p>Interactive visualization of 40 clinical test scenarios with synchronized PPG, ACC, HR and SpO2 graphs. Zoom/pan synchronization, quality highlighting, event markers.</p>
+        <div class="badges">
+          <span class="badge badge-orange">40 scenarios</span>
+          <span class="badge badge-orange">Interactive graphs</span>
+          <span class="badge badge-blue">Simulator</span>
+        </div>
+      </div>
+      <div class="doc-arrow">&#x2192;</div>
+    </a>
+
+    <a class="doc-card" href="test_plan_boot.html">
+      <div class="doc-icon" style="background: #e6f4ea;">&#x2705;</div>
+      <div class="doc-info">
+        <h2>Boot Test Plan</h2>
+        <p>System initialization and boot sequence test plan for firmware validation.</p>
+        <div class="badges">
+          <span class="badge badge-green">Test plan</span>
+          <span class="badge badge-green">Boot sequence</span>
+        </div>
+      </div>
+      <div class="doc-arrow">&#x2192;</div>
+    </a>
+
+  </div>
+
+  <footer>
+    CardioWatch 287-2B Documentation &bull; Corsano Health &bull; 2026
+  </footer>
+</div>
+
+</body>
+</html>
