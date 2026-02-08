@@ -139,6 +139,20 @@ footer { text-align: center; padding: 32px 20px; color: var(--text2); font-size:
     </select>
     <button class="btn btn-primary" id="loadBtn" onclick="loadScenario()">Load Data</button>
   </div>
+  <div id="viewControls" class="control-row" style="display:none; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border);">
+    <label style="min-width: auto; margin-right: 20px;">
+      <input type="checkbox" id="removeDC" onchange="updateGraphs()" style="margin-right: 6px;">
+      Remove DC offset (ACC)
+    </label>
+    <label style="flex: 1; display: flex; align-items: center; gap: 10px;">
+      <span style="min-width: 80px;">Time range:</span>
+      <input type="range" id="timeStart" min="0" max="3600" value="0" step="1" style="flex: 1;" oninput="updateTimeRange()">
+      <span id="timeStartLabel" style="min-width: 50px;">0s</span>
+      <span>to</span>
+      <input type="range" id="timeEnd" min="0" max="3600" value="3600" step="1" style="flex: 1;" oninput="updateTimeRange()">
+      <span id="timeEndLabel" style="min-width: 50px;">3600s</span>
+    </label>
+  </div>
 </div>
 
 <div class="content">
@@ -395,6 +409,14 @@ async function loadScenario() {
     document.getElementById('loading').style.display = 'none';
     document.getElementById('graphs').style.display = 'block';
     document.getElementById('stats').style.display = 'grid';
+    document.getElementById('viewControls').style.display = 'flex';
+
+    // Set time range sliders max value based on data duration
+    const maxTime = Math.max(...currentData.activityRecords.map(r => parseInt(r.timestamp)));
+    document.getElementById('timeStart').max = maxTime;
+    document.getElementById('timeEnd').max = maxTime;
+    document.getElementById('timeEnd').value = maxTime;
+    document.getElementById('timeEndLabel').textContent = maxTime + 's';
 
   } catch (error) {
     document.getElementById('loading').style.display = 'none';
@@ -402,6 +424,35 @@ async function loadScenario() {
     document.getElementById('errorText').textContent = error.message;
     console.error(error);
   }
+}
+
+function updateGraphs() {
+  if (!currentData) return;
+  plotAllGraphs();
+}
+
+function updateTimeRange() {
+  const start = parseInt(document.getElementById('timeStart').value);
+  const end = parseInt(document.getElementById('timeEnd').value);
+
+  // Update labels
+  document.getElementById('timeStartLabel').textContent = start + 's';
+  document.getElementById('timeEndLabel').textContent = end + 's';
+
+  // Ensure start < end
+  if (start >= end) {
+    document.getElementById('timeEnd').value = start + 10;
+    document.getElementById('timeEndLabel').textContent = (start + 10) + 's';
+    return;
+  }
+
+  // Update all graphs with new time range
+  const graphIds = ['ppgGraph', 'accGraph', 'bpmGraph', 'spo2Graph'];
+  graphIds.forEach(id => {
+    Plotly.relayout(id, {
+      'xaxis.range': [start, end]
+    });
+  });
 }
 
 function updateStats(activityRecords) {
@@ -484,27 +535,38 @@ function plotACC(acc) {
   // Normalize time to start from 0
   const t0 = acc.length > 0 ? parseInt(acc[0].timestamp) / 1000 : 0;
 
+  // Get ACC values
+  const accX = acc.map(r => parseInt(r.accX));
+  const accY = acc.map(r => parseInt(r.accY));
+  const accZ = acc.map(r => parseInt(r.accZ));
+
+  // Calculate DC offset (mean)
+  const removeDC = document.getElementById('removeDC') && document.getElementById('removeDC').checked;
+  const dcX = removeDC && accX.length > 0 ? accX.reduce((a,b) => a+b) / accX.length : 0;
+  const dcY = removeDC && accY.length > 0 ? accY.reduce((a,b) => a+b) / accY.length : 0;
+  const dcZ = removeDC && accZ.length > 0 ? accZ.reduce((a,b) => a+b) / accZ.length : 0;
+
   const traces = [
     {
       x: acc.map(r => parseInt(r.timestamp) / 1000 - t0),
-      y: acc.map(r => parseInt(r.accX)),
-      name: 'ACC X',
+      y: accX.map(v => v - dcX),
+      name: `ACC X${removeDC ? ' (DC removed)' : ''}`,
       type: 'scatter',
       mode: 'lines',
       line: {color: '#ff6b6b', width: 1}
     },
     {
       x: acc.map(r => parseInt(r.timestamp) / 1000 - t0),
-      y: acc.map(r => parseInt(r.accY)),
-      name: 'ACC Y',
+      y: accY.map(v => v - dcY),
+      name: `ACC Y${removeDC ? ' (DC removed)' : ''}`,
       type: 'scatter',
       mode: 'lines',
       line: {color: '#4ecdc4', width: 1}
     },
     {
       x: acc.map(r => parseInt(r.timestamp) / 1000 - t0),
-      y: acc.map(r => parseInt(r.accZ)),
-      name: 'ACC Z',
+      y: accZ.map(v => v - dcZ),
+      name: `ACC Z${removeDC ? ' (DC removed)' : ''}`,
       type: 'scatter',
       mode: 'lines',
       line: {color: '#45b7d1', width: 1}
@@ -513,7 +575,7 @@ function plotACC(acc) {
 
   const layout = {
     xaxis: {title: 'Time (seconds)'},
-    yaxis: {title: 'Acceleration (counts)'},
+    yaxis: {title: `Acceleration (counts${removeDC ? ', DC removed' : ''})`},
     height: 350,
     margin: {l: 60, r: 30, t: 10, b: 50},
     hovermode: 'x unified',
