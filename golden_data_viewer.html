@@ -88,6 +88,49 @@ footer { text-align: center; padding: 32px 20px; color: var(--text2); font-size:
   <p>Interactive Signal Analysis &bull; 40 Clinical Scenarios &bull; Simulator Test Suite</p>
 </header>
 
+<div style="background: white; border-bottom: 1px solid var(--border); padding: 32px 40px;">
+  <div style="max-width: 1200px; margin: 0 auto;">
+    <h2 style="font-size: 20px; font-weight: 600; color: var(--text); margin-bottom: 16px;">🔬 Firmware Validation Pipeline</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-top: 20px;">
+
+      <div style="background: var(--blue-bg); padding: 20px; border-radius: 10px; border-left: 4px solid var(--blue);">
+        <div style="font-weight: 600; color: var(--blue); margin-bottom: 8px; font-size: 15px;">📊 1. Golden Data Generation</div>
+        <div style="font-size: 13px; line-height: 1.6; color: var(--text);">
+          Python script (<code>generate.py</code>) generates 40 clinical scenarios with synthetic PPG (Green/Red/IR) and ACC signals at 32 Hz. Each scenario simulates specific physiological conditions (rest, hypoxia, arrhythmias, cardiac arrest, etc.) based on clinical signal guide specifications.
+        </div>
+      </div>
+
+      <div style="background: var(--green-bg); padding: 20px; border-radius: 10px; border-left: 4px solid var(--green);">
+        <div style="font-weight: 600; color: var(--green); margin-bottom: 8px; font-size: 15px;">⚙️ 2. C Simulator Execution</div>
+        <div style="font-size: 13px; line-height: 1.6; color: var(--text);">
+          C simulator (<code>sim_api.c</code>) reads CSV data and feeds it to REAL firmware algorithms. Uses minimal stubs only for hardware HAL (nRF52840, MAX86178, LIS2DW12). Algorithms like SpO2, HR detection, movement detection run with actual production code.
+        </div>
+      </div>
+
+      <div style="background: var(--orange-bg); padding: 20px; border-radius: 10px; border-left: 4px solid var(--orange);">
+        <div style="font-weight: 600; color: var(--orange); margin-bottom: 8px; font-size: 15px;">🔧 3. Stub Architecture</div>
+        <div style="font-size: 13px; line-height: 1.6; color: var(--text);">
+          Philosophy: Keep REAL implementations, stub ONLY what's necessary. Real algorithms: <code>mmt_spo2.c</code>, <code>mmt_hrm_process.c</code>, <code>mmt_idle_detection.c</code>. Stubbed: hardware drivers, BLE, flash storage. This validates actual firmware behavior, not fake logic.
+        </div>
+      </div>
+
+      <div style="background: var(--accent-light); padding: 20px; border-radius: 10px; border-left: 4px solid var(--accent);">
+        <div style="font-weight: 600; color: var(--accent); margin-bottom: 8px; font-size: 15px;">📈 4. Output & Visualization</div>
+        <div style="font-size: 13px; line-height: 1.6; color: var(--text);">
+          Simulator outputs <code>activity_records.csv</code> (1-minute vital signs: HR, SpO2, quality scores). Python script downsamples data (32Hz→1Hz) and converts to JSON for GitHub Pages. This viewer provides interactive analysis with synchronized graphs and AI insights.
+        </div>
+      </div>
+
+    </div>
+
+    <div style="margin-top: 20px; padding: 16px 20px; background: linear-gradient(135deg, #f5f7fa 0%, #e8f0fe 100%); border-radius: 8px; border: 1px solid var(--border);">
+      <div style="font-size: 13px; line-height: 1.7; color: var(--text2);">
+        <strong style="color: var(--text);">Key Design Principle:</strong> The simulator runs production firmware algorithms against synthetic clinical data to validate correctness across 40 physiological scenarios. This approach catches algorithm bugs early (SpO2 calibration, movement rejection, arrhythmia detection) before hardware testing. Results are version-controlled and web-accessible for continuous validation.
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="controls">
   <div class="control-row">
     <label for="scenarioSelect">Clinical Scenario:</label>
