@@ -40,7 +40,7 @@ header p { color: #bbdefb; margin-top: 6px; font-size: 15px; }
 .btn-primary:hover { background: #1557b0; box-shadow: 0 2px 8px rgba(26,115,232,.3); }
 .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
 
-.content { padding: 32px 40px; margin: 0 auto; max-width: 1800px; }
+.content { padding: 32px 40px; margin: 0 auto; width: 100%; box-sizing: border-box; }
 
 .description-card { background: var(--orange-bg); border: 1px solid var(--orange); border-left: 4px solid var(--orange); border-radius: 10px; padding: 20px 24px; margin-bottom: 24px; }
 .description-card h2 { font-size: 18px; color: var(--orange); margin-bottom: 8px; font-weight: 600; }
@@ -546,9 +546,9 @@ function plotACC(acc) {
   const t0 = acc.length > 0 ? parseInt(acc[0].timestamp) / 1000 : 0;
 
   // Get ACC values
-  const accX = acc.map(r => parseInt(r.accX));
-  const accY = acc.map(r => parseInt(r.accY));
-  const accZ = acc.map(r => parseInt(r.accZ));
+  const accX = acc.map(r => parseInt(r.x));
+  const accY = acc.map(r => parseInt(r.y));
+  const accZ = acc.map(r => parseInt(r.z));
 
   // Calculate DC offset (mean)
   const removeDC = document.getElementById('removeDC') && document.getElementById('removeDC').checked;
