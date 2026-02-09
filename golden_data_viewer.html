@@ -40,7 +40,7 @@ header p { color: #bbdefb; margin-top: 6px; font-size: 15px; }
 .btn-primary:hover { background: #1557b0; box-shadow: 0 2px 8px rgba(26,115,232,.3); }
 .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
 
-.content { padding: 32px 40px; margin: 0 auto; }
+.content { padding: 32px 40px; margin: 0 auto; max-width: 1800px; }
 
 .description-card { background: var(--orange-bg); border: 1px solid var(--orange); border-left: 4px solid var(--orange); border-radius: 10px; padding: 20px 24px; margin-bottom: 24px; }
 .description-card h2 { font-size: 18px; color: var(--orange); margin-bottom: 8px; font-weight: 600; }
@@ -677,11 +677,27 @@ function plotSpO2(records) {
       type: 'scatter',
       mode: 'markers+lines',
       marker: {
-        color: filtered.map(r => qualityColors[parseInt(r.spo2_q) || 0]),
+        color: filtered.map(r => {
+          const q = parseInt(r.spo2_q) || 0;
+          // Clamp quality to valid range 0-4
+          return qualityColors[Math.min(Math.max(q, 0), 4)];
+        }),
         size: 6
       },
       line: {color: '#888888', width: 1},
       showlegend: false
+    });
+  } else {
+    // Show "No data" message
+    traces.push({
+      x: [1800],
+      y: [90],
+      text: ['SpO2 data not available for this scenario<br>(accumulation period required)'],
+      mode: 'text',
+      textposition: 'middle center',
+      textfont: {size: 14, color: '#999'},
+      showlegend: false,
+      hoverinfo: 'skip'
     });
   }
 
@@ -735,11 +751,27 @@ function plotResp(records) {
       type: 'scatter',
       mode: 'markers+lines',
       marker: {
-        color: filtered.map(r => qualityColors[parseInt(r.resp_q) || 0]),
+        color: filtered.map(r => {
+          const q = parseInt(r.resp_q) || 0;
+          // Clamp quality to valid range 0-4
+          return qualityColors[Math.min(Math.max(q, 0), 4)];
+        }),
         size: 6
       },
       line: {color: '#888888', width: 1},
       showlegend: false
+    });
+  } else {
+    // Show "No data" message
+    traces.push({
+      x: [1800],
+      y: [20],
+      text: ['Respiration data not available yet<br>(requires 30min accumulation period)'],
+      mode: 'text',
+      textposition: 'middle center',
+      textfont: {size: 14, color: '#999'},
+      showlegend: false,
+      hoverinfo: 'skip'
     });
   }
 
