@@ -409,13 +409,14 @@ async function loadScenario() {
     // Calculate stats
     updateStats(currentData.activityRecords);
 
-    // Plot graphs
-    plotAllGraphs();
-
+    // Show containers BEFORE plotting so Plotly can compute correct width
     document.getElementById('loading').style.display = 'none';
     document.getElementById('graphs').style.display = 'block';
     document.getElementById('stats').style.display = 'grid';
     document.getElementById('viewControls').style.display = 'flex';
+
+    // Plot graphs (container must be visible for correct width)
+    plotAllGraphs();
 
     // Set time range sliders max value based on DURATION (not absolute timestamp)
     const t0 = currentData.activityRecords.length > 0 ? parseInt(currentData.activityRecords[0].timestamp) : 0;
