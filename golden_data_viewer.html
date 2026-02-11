@@ -397,6 +397,7 @@ async function loadScenario() {
       ppgIR: data.ppg_ir || [],
       acc: data.acc || [],
       activityRecords: data.activity_records || [],
+      precomputedAnalysis: data.analysis || null,
       scenario: scenarios[scenario]
     };
 
@@ -486,16 +487,19 @@ function plotAllGraphs() {
   plotResp(currentData.activityRecords);
   synchronizeGraphs();
 
-  // Generate AI analysis
-  const analysisHTML = generateAIAnalysis(
-    currentData.activityRecords,
-    currentData.ppgGreen,
-    currentData.ppgRed,
-    currentData.ppgIR,
-    currentData.acc,
-    currentData.scenario
-  );
-  document.getElementById('aiAnalysis').innerHTML = analysisHTML;
+  // Show pre-computed analysis from JSON if available, else generate client-side
+  if (currentData.precomputedAnalysis) {
+    document.getElementById('aiAnalysis').innerHTML =
+      '<div style="margin-bottom:16px;"><strong style="font-size:16px;color:#1a237e;">Firmware Simulation Analysis (from logs &amp; output)</strong></div>'
+      + currentData.precomputedAnalysis
+      + '<hr style="margin:24px 0;border:none;border-top:2px solid #dadce0;">'
+      + '<div style="margin-bottom:16px;"><strong style="font-size:16px;color:var(--blue);">Raw Signal Analysis (client-side)</strong></div>'
+      + generateAIAnalysis(currentData.activityRecords, currentData.ppgGreen, currentData.ppgRed, currentData.ppgIR, currentData.acc, currentData.scenario);
+  } else {
+    document.getElementById('aiAnalysis').innerHTML = generateAIAnalysis(
+      currentData.activityRecords, currentData.ppgGreen, currentData.ppgRed,
+      currentData.ppgIR, currentData.acc, currentData.scenario);
+  }
 }
 
 function plotPPG(green, red, ir) {

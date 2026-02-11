@@ -1,0 +1,1759 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CardioWatch 287-2B - Analyse Golden Data</title>
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<style>
+:root {
+  --bg: #f5f7fa; --card: #ffffff; --accent: #1a73e8; --accent-light: #e8f0fe;
+  --text: #202124; --text2: #5f6368; --border: #dadce0;
+  --green: #0d652d; --green-bg: #e6f4ea;
+  --orange: #e37400; --orange-bg: #fef7e0;
+  --red: #c5221f; --red-bg: #fce8e6;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+header { background: linear-gradient(135deg, #1a237e 0%, #1565c0 100%); color: #fff; padding: 32px 40px; }
+header h1 { font-size: 28px; font-weight: 600; }
+header p { color: #bbdefb; margin-top: 6px; font-size: 15px; }
+.content { max-width: 1400px; margin: 0 auto; padding: 24px 40px; }
+.summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 24px 0; }
+.summary-card { background: var(--card); border-radius: 12px; padding: 20px; text-align: center; border: 1px solid var(--border); }
+.summary-card .number { font-size: 36px; font-weight: 700; }
+.summary-card .label { font-size: 14px; color: var(--text2); margin-top: 4px; }
+.filter-bar { background: var(--card); border-radius: 10px; padding: 16px 20px; margin-bottom: 24px; border: 1px solid var(--border); display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.filter-bar label { font-weight: 500; font-size: 14px; color: var(--text2); }
+.filter-bar select, .filter-bar input { padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
+table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
+th { background: #f8f9fa; padding: 12px 16px; text-align: left; font-size: 13px; font-weight: 600; color: var(--text2); border-bottom: 2px solid var(--border); cursor: pointer; white-space: nowrap; }
+th:hover { background: #e8eaed; }
+td { padding: 10px 16px; border-bottom: 1px solid #f1f3f4; font-size: 13px; }
+tr:hover { background: #f8f9fa; }
+.badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+.badge-pass { background: var(--green-bg); color: var(--green); }
+.badge-ok { background: #e8f5e9; color: #2e7d32; }
+.badge-warn { background: var(--orange-bg); color: var(--orange); }
+.badge-fail { background: var(--red-bg); color: var(--red); }
+.badge-na { background: #f1f3f4; color: var(--text2); }
+.scenario-detail { background: var(--card); border: 1px solid var(--border); border-radius: 12px; margin: 16px 0; overflow: hidden; }
+.scenario-header { padding: 16px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+.scenario-header:hover { background: #f8f9fa; }
+.scenario-body { padding: 0 20px 20px; display: none; }
+.scenario-body.open { display: block; }
+.deviation { padding: 8px 12px; margin: 4px 0; border-radius: 6px; font-size: 13px; }
+.deviation-critique { background: var(--red-bg); border-left: 3px solid var(--red); }
+.deviation-warn { background: var(--orange-bg); border-left: 3px solid var(--orange); }
+.deviation-info { background: var(--accent-light); border-left: 3px solid var(--accent); }
+.deviation-log { background: #fce8e6; border-left: 3px solid #e57373; }
+.timeline-chart { width: 100%; height: 200px; margin: 12px 0; }
+.category-section { margin: 32px 0; }
+.category-section h2 { font-size: 20px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); }
+.metrics-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 12px 0; }
+.metric { background: #f8f9fa; border-radius: 8px; padding: 12px; text-align: center; }
+.metric .value { font-size: 20px; font-weight: 700; }
+.metric .label { font-size: 11px; color: var(--text2); }
+.tab-bar { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 2px solid var(--border); padding-bottom: 0; }
+.tab { padding: 10px 20px; cursor: pointer; font-size: 14px; font-weight: 500; color: var(--text2); border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all .15s; }
+.tab:hover { color: var(--accent); }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+</style>
+</head>
+<body>
+<header>
+  <h1>CardioWatch 287-2B &mdash; Analyse Golden Data</h1>
+  <p>Rapport automatique &middot; 40 scenarios &middot; Genere par analyze_golden_results.py</p>
+</header>
+<div class="content">
+
+<!-- Summary -->
+<div class="summary-grid">
+  <div class="summary-card">
+    <div class="number" style="color:var(--text)">40</div>
+    <div class="label">Scenarios</div>
+  </div>
+  <div class="summary-card">
+    <div class="number" style="color:var(--green)">22</div>
+    <div class="label">PASS</div>
+  </div>
+  <div class="summary-card">
+    <div class="number" style="color:var(--orange)">7</div>
+    <div class="label">WARN</div>
+  </div>
+  <div class="summary-card">
+    <div class="number" style="color:var(--red)">11</div>
+    <div class="label">FAIL</div>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="tab-bar">
+  <div class="tab active" onclick="switchTab('overview')">Vue d'ensemble</div>
+  <div class="tab" onclick="switchTab('details')">Details par scenario</div>
+  <div class="tab" onclick="switchTab('deviations')">Deviations</div>
+</div>
+
+<!-- Tab: Overview -->
+<div id="tab-overview" class="tab-content active">
+<h2 style="margin:16px 0">Tableau recapitulatif</h2>
+<div class="filter-bar">
+  <label>Categorie:</label>
+  <select id="filterCat" onchange="filterTable()">
+    <option value="">Toutes</option>
+    <option value="rest">Repos</option>
+    <option value="hypoxia">Hypoxie</option>
+    <option value="activity">Activite</option>
+    <option value="arrhythmia">Arythmies</option>
+    <option value="brady_block">Bradycardie / Blocs</option>
+    <option value="cardiac_arrest">Arret cardiaque</option>
+    <option value="transitional">Transitionnel</option>
+    <option value="cardiac_pathology">Pathologies cardiaques</option>
+    <option value="extreme">Conditions extremes</option>
+  </select>
+  <label>Score:</label>
+  <select id="filterScore" onchange="filterTable()">
+    <option value="">Tous</option>
+    <option value="PASS">PASS</option>
+    <option value="WARN">WARN</option>
+    <option value="FAIL">FAIL</option>
+  </select>
+</div>
+<table id="mainTable">
+<thead>
+<tr>
+  <th onclick="sortTable(0)">#</th>
+  <th onclick="sortTable(1)">Scenario</th>
+  <th onclick="sortTable(2)">Categorie</th>
+  <th onclick="sortTable(3)">HR attendu</th>
+  <th onclick="sortTable(4)">HR mesure</th>
+  <th onclick="sortTable(5)">HR &Delta;</th>
+  <th onclick="sortTable(6)">HR</th>
+  <th onclick="sortTable(7)">SpO2 att.</th>
+  <th onclick="sortTable(8)">SpO2 mes.</th>
+  <th onclick="sortTable(9)">SpO2 &Delta;</th>
+  <th onclick="sortTable(10)">SpO2</th>
+  <th onclick="sortTable(11)">Wearing</th>
+  <th onclick="sortTable(12)">Score</th>
+</tr>
+</thead>
+<tbody>
+<tr data-cat="rest" data-score="PASS">
+  <td>01</td>
+  <td><strong>01_normal_rest</strong></td>
+  <td>Repos</td>
+  <td>70</td>
+  <td>70.9</td>
+  <td>0.9</td>
+  <td><span class="badge badge-pass">PASS</span></td>
+  <td>98</td>
+  <td>99.0</td>
+  <td>1.0</td>
+  <td><span class="badge badge-pass">PASS</span></td>
+  <td><span class="badge badge-pass">OK</span></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr data-cat="rest" data-score="FAIL">
+  <td>02</td>
+  <td><strong>02_elderly_rest</strong></td>
+  <td>Repos</td>
+  <td>65</td>
+  <td>75.7</td>
+  <td>10.7</td>
+  <td><span class="badge badge-ok">OK</span></td>
+  <td>96</td>
+  <td>97.3</td>
+  <td>1.3</td>
+  <td><span class="badge badge-pass">PASS</span></td>
+  <td><span class="badge badge-pass">OK</span></td>
+  <td><span class="badge badge-fail">FAIL</span></td>
+</tr>
+<tr data-cat="rest" data-score="PASS">
+  <td>03</td>
+  <td><strong>03_athlete_rest</strong></td>
+  <td>Repos</td>
+  <td>52</td>
+  <td>50.2</td>
+  <td>1.8</td>
+  <td><span class="badge badge-pass">PASS</span></td>
+  <td>99</td>
+  <td>99.0</td>
+  <td>0.0</td>
+  <td><span class="badge badge-pass">PASS</span></td>
+  <td><span class="badge badge-pass">OK</span></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr data-cat="hypoxia" data-score="WARN">
+  <td>04</td>
+  <td><strong>04_hypoxia_mild</strong></td>
+  <td>Hypoxie</td>
+  <td>95</td>
+  <td>96.8</td>
+  <td>1.8</td>
+  <td><span class="badge badge-pass">PASS</span></td>
+  <td>92</td>
+  <td>95.4</td>
+  <td>3.4</td>
+  <td><span class="badge badge-warn">WARN</span></td>
+  <td><span class="badge badge-pass">OK</span></td>
+  <td><span class="badge badge-warn">WARN</span></td>
+</tr>
+<tr data-cat="hypoxia" data-score="PASS">
+  <td>05</td>
+  <td><strong>05_hypoxia_moderate</strong></td>
+  <td>Hypoxie</td>
+  <td>110</td>
+  <td>118.2</td>
+  <td>8.2</td>
+  <td><span class="badge badge-pass">PASS</span></td>
+  <td>85</td>
+  <td>83.6</td>
+  <td>1.4</td>
+  <td><span class="badge badge-pass">PASS</span></td>
+  <td><span class="badge badge-pass">OK</span></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr data-cat="hypoxia" data-score="FAIL">
+  <td>06</td>
+  <td><strong>06_hypoxia_severe</strong></td>
+  <td>Hypoxie</td>
+  <td>140</td>
+  <td>144.4</td>
+  <td>4.4</td>
+  <td><span class="badge badge-pass">PASS</span></td>
+  <td>72</td>
+  <td>85.3</td>
+  <td>13.3</td>
+  <td><span class="badge badge-fail">FAIL</span></td>
+  <td><span class="badge badge-pass">OK</span></td>
+  <td><span class="badge badge-fail">FAIL</span></td>
+</tr>
+<tr data-cat="activity" data-score="PASS">
+  <td>07</td>
+  <td><strong>07_walking</strong></td>
+  <td>Activite</td>
+  <td>100</td>
+  <td>105.2</td>
+  <td>5.2</td>
+  <td><span class="badge badge-pass">PASS</span></td>
+  <td>97</td>
+  <td>0</td>
+  <td>-</td>
+  <td><span class="badge badge-na">N/A</span></td>
+  <td><span class="badge badge-pass">OK</span></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr data-cat="activity" data-score="PASS">
+  <td>08</td>
+  <td><strong>08_running</strong></td>
+  <td>Activite</td>
+  <td>165</td>
+  <td>171.0</td>
+  <td>6.0</td>
+  <td><span class="badge badge-pass">PASS</span></td>
+  <td>96</td>
+  <td>0</td>
+  <td>-</td>
+  <td><span class="badge badge-na">N/A</span></td>
+  <td><span class="badge badge-pass">OK</span></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr data-cat="activity" data-score="PASS">
+  <td>09</td>
+  <td><strong>09_wrist_movement</strong></td>
+  <td>Activite</td>
+  <td>variable</td>
+  <td>103.8</td>
+  <td>-</td>
+  <td><span class="badge badge-na">N/A</span></td>
+  <td>variable</td>
+  <td>99.4</td>
+  <td>-</td>
+  <td><span class="badge badge-na">N/A</span></td>
+  <td><span class="badge badge-pass">OK</span></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr data-cat="arrhythmia" data-score="FAIL">
+  <td>10</td>
+  <td><strong>10_af_rapid</strong></td>
+  <td>Arythmies</td>
+  <td>130</td>
+  <td>129.8</td>
+  <td>0.2</td>
+  <td><span class="badge badge-pass">PASS</span></td>
+  <td>96</td>
+  <td>97.3</td>
+  <td>1.3</td>
+  <td><span class="badge badge-pass">PASS</span></td>
+  <td><span class="badge badge-pass">OK</span></td>
+  <td><span class="badge badge-fail">FAIL</span></td>
+</tr>
+<tr data-cat="arrhythmia" data-score="PASS">
+  <td>11</td>
+  <td><strong>11_af_controlled</strong></td>
+  <td>Arythmies</td>
+  <td>75</td>
+  <td>72.0</td>
+  <td>3.0</td>
+  <td><span class="badge badge-pass">PASS</span></td>
+  <td>97</td>
+  <td>97.3</td>
+  <td>0.3</td>
+  <td><span class="badge badge-pass">PASS</span></td>
+  <td><span class="badge badge-pass">OK</span></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr data-cat="arrhythmia" data-score="FAIL">
+  <td>12</td>
+  <td><strong>12_flutter_2_1</strong></td>
+  <td>Arythmies</td>
+  <td>150</td>
+  <td>158.4</td>
+  <td>8.4</td>
+  <td><span class="badge badge-pass">PASS</span></td>
+  <td>96</td>
+  <td>97.3</td>
+  <td>1.3</td>
+  <td><span class="badge badge-pass">PASS</span></td>
+  <td><span class="badge badge-pass">OK</span></td>
+  <td><span class="badge badge-fail">FAIL</span></td>
+</tr>
+<tr data-cat="arrhythmia" data-score="PASS">
+  <td>13</td>
+  <td><strong>13_esv_bigeminy</strong></td>
+  <td>Arythmies</td>
+  <td>80</td>
+  <td>81.2</td>
+  <td>1.2</td>
+  <td><span class="badge badge-pass">PASS</span></td>
+  <td>97</td>
+  <td>0</td>
+  <td>-</td>
+  <td><span class="badge badge-na">N/A</span></td>
+  <td><span class="badge badge-pass">OK</span></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr data-cat="arrhythmia" data-score="PASS">
+  <td>14</td>
+  <td><strong>14_esv_trigeminy</strong></td>
+  <td>Arythmies</td>
+  <td>80</td>
+  <td>80.8</td>
+  <td>0.8</td>
+  <td><span class="badge badge-pass">PASS</span></td>
+  <td>97</td>
+  <td>98.1</td>
+  <td>1.1</td>
+  <td><span class="badge badge-pass">PASS</span></td>
+  <td><span class="badge badge-pass">OK</span></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr data-cat="arrhythmia" data-score="FAIL">
+  <td>15</td>
+  <td><strong>15_psvt_episodes</strong></td>
+  <td>Arythmies</td>
+  <td>variable</td>
+  <td>71.8</td>
+  <td>-</td>
+  <td><span class="badge badge-na">N/A</span></td>
+  <td>96</td>
+  <td>98.3</td>
+  <td>2.3</td>
+  <td><span class="badge badge-ok">OK</span></td>
+  <td><span class="badge badge-pass">OK</span></td>
+  <td><span class="badge badge-fail">FAIL</span></td>
+</tr>
+<tr data-cat="arrhythmia" data-score="PASS">
+  <td>16</td>
+  <td><strong>16_vt_monomorphic</strong></td>
+  <td>Arythmies</td>
+  <td>180</td>
+  <td>185.6</td>
+  <td>5.6</td>
+  <td><span class="badge badge-pass">PASS</span></td>
+  <td>variable</td>
+  <td>93.0</td>
+  <td>-</td>
+  <td><span class="badge badge-na">N/A</span></td>
+  <td><span class="badge badge-pass">OK</span></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr data-cat="arrhythmia" data-score="PASS">
+  <td>17</td>
+  <td><strong>17_torsades</strong></td>
+  <td>Arythmies</td>
+  <td>variable</td>
+  <td>178.9</td>
+  <td>-</td>
+  <td><span class="badge badge-na">N/A</span></td>
+  <td>variable</td>
+  <td>0</td>
+  <td>-</td>
+  <td><span class="badge badge-na">N/A</span></td>
+  <td><span class="badge badge-pass">OK</span></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr data-cat="brady_block" data-score="FAIL">
+  <td>18</td>
+  <td><strong>18_bradycardia</strong></td>
+  <td>Bradycardie / Blocs</td>
+  <td>42</td>
+  <td>84.2</td>
+  <td>42.2</td>
+  <td><span class="badge badge-fail">FAIL</span></td>
+  <td>97</td>
+  <td>98.1</td>
+  <td>1.1</td>
+  <td><span class="badge badge-pass">PASS</span></td>
+  <td><span class="badge badge-pass">OK</span></td>
+  <td><span class="badge badge-fail">FAIL</span></td>
+</tr>
+<tr data-cat="brady_block" data-score="PASS">
+  <td>19</td>
+  <td><strong>19_bav2_mobitz1</strong></td>
+  <td>Bradycardie / Blocs</td>
+  <td>variable</td>
+  <td>50.4</td>
+  <td>-</td>
+  <td><span class="badge badge-na">N/A</span></td>
+  <td>97</td>
+  <td>98.1</td>
+  <td>1.1</td>
+  <td><span class="badge badge-pass">PASS</span></td>
+  <td><span class="badge badge-pass">OK</span></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr data-cat="brady_block" data-score="FAIL">
+  <td>20</td>
+  <td><strong>20_bav3_complete</strong></td>
+  <td>Bradycardie / Blocs</td>
+  <td>33</td>
+  <td>70.8</td>
+  <td>37.8</td>
+  <td><span class="badge badge-fail">FAIL</span></td>
+  <td>96</td>
+  <td>97.1</td>
+  <td>1.1</td>
+  <td><span class="badge badge-pass">PASS</span></td>
+  <td><span class="badge badge-pass">OK</span></td>
+  <td><span class="badge badge-fail">FAIL</span></td>
+</tr>
+<tr data-cat="cardiac_arrest" data-score="WARN">
+  <td>21</td>
+  <td><strong>21_vf_from_sinus</strong></td>
+  <td>Arret cardiaque</td>
+  <td>75->VF</td>
+  <td>77.6</td>
+  <td>-</td>
+  <td><span class="badge badge-na">N/A</span></td>
+  <td>variable</td>
+  <td>98.2</td>
+  <td>-</td>
+  <td><span class="badge badge-na">N/A</span></td>
+  <td><span class="badge badge-pass">OK</span></td>
+  <td><span class="badge badge-warn">WARN</span></td>
+</tr>
+<tr data-cat="cardiac_arrest" data-score="WARN">
+  <td>22</td>
+  <td><strong>22_vt_to_vf</strong></td>
+  <td>Arret cardiaque</td>
+  <td>variable</td>
+  <td>84.7</td>
+  <td>-</td>
+  <td><span class="badge badge-na">N/A</span></td>
+  <td>variable</td>
+  <td>98.1</td>
+  <td>-</td>
+  <td><span class="badge badge-na">N/A</span></td>
+  <td><span class="badge badge-pass">OK</span></td>
+  <td><span class="badge badge-warn">WARN</span></td>
+</tr>
+<tr data-cat="cardiac_arrest" data-score="WARN">
+  <td>23</td>
+  <td><strong>23_asystole</strong></td>
+  <td>Arret cardiaque</td>
+  <td>variable</td>
+  <td>99.0</td>
+  <td>-</td>
+  <td><span class="badge badge-na">N/A</span></td>
+  <td>variable</td>
+  <td>97.2</td>
+  <td>-</td>
+  <td><span class="badge badge-na">N/A</span></td>
+  <td><span class="badge badge-pass">OK</span></td>
+  <td><span class="badge badge-warn">WARN</span></td>
+</tr>
+<tr data-cat="cardiac_arrest" data-score="WARN">
+  <td>24</td>
+  <td><strong>24_pea</strong></td>
+  <td>Arret cardiaque</td>
+  <td>80->PEA</td>
+  <td>81.0</td>
+  <td>-</td>
+  <td><span class="badge badge-na">N/A</span></td>
+  <td>variable</td>
+  <td>98.1</td>
+  <td>-</td>
+  <td><span class="badge badge-na">N/A</span></td>
+  <td><span class="badge badge-pass">OK</span></td>
+  <td><span class="badge badge-warn">WARN</span></td>
+</tr>
+<tr data-cat="transitional" data-score="PASS">
+  <td>25</td>
+  <td><strong>25_progressive_deterioration</strong></td>
+  <td>Transitionnel</td>
+  <td>80->140->60</td>
+  <td>101.9</td>
+  <td>-</td>
+  <td><span class="badge badge-na">N/A</span></td>
+  <td>variable</td>
+  <td>87.3</td>
+  <td>-</td>
+  <td><span class="badge badge-na">N/A</span></td>
+  <td><span class="badge badge-pass">OK</span></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr data-cat="cardiac_pathology" data-score="FAIL">
+  <td>26</td>
+  <td><strong>26_hf_pulsus_alternans</strong></td>
+  <td>Pathologies cardiaques</td>
+  <td>95</td>
+  <td>112.7</td>
+  <td>17.7</td>
+  <td><span class="badge badge-warn">WARN</span></td>
+  <td>96</td>
+  <td>98.8</td>
+  <td>2.8</td>
+  <td><span class="badge badge-ok">OK</span></td>
+  <td><span class="badge badge-pass">OK</span></td>
+  <td><span class="badge badge-fail">FAIL</span></td>
+</tr>
+<tr data-cat="cardiac_pathology" data-score="PASS">
+  <td>27</td>
+  <td><strong>27_hf_cheyne_stokes</strong></td>
+  <td>Pathologies cardiaques</td>
+  <td>85</td>
+  <td>93.0</td>
+  <td>8.0</td>
+  <td><span class="badge badge-pass">PASS</span></td>
+  <td>variable</td>
+  <td>95.2</td>
+  <td>-</td>
+  <td><span class="badge badge-na">N/A</span></td>
+  <td><span class="badge badge-pass">OK</span></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr data-cat="cardiac_pathology" data-score="PASS">
+  <td>28</td>
+  <td><strong>28_aortic_stenosis</strong></td>
+  <td>Pathologies cardiaques</td>
+  <td>75</td>
+  <td>81.1</td>
+  <td>6.1</td>
+  <td><span class="badge badge-pass">PASS</span></td>
+  <td>97</td>
+  <td>98.1</td>
+  <td>1.1</td>
+  <td><span class="badge badge-pass">PASS</span></td>
+  <td><span class="badge badge-pass">OK</span></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr data-cat="cardiac_pathology" data-score="PASS">
+  <td>29</td>
+  <td><strong>29_aortic_regurgitation</strong></td>
+  <td>Pathologies cardiaques</td>
+  <td>80</td>
+  <td>86.4</td>
+  <td>6.4</td>
+  <td><span class="badge badge-pass">PASS</span></td>
+  <td>97</td>
+  <td>98.1</td>
+  <td>1.1</td>
+  <td><span class="badge badge-pass">PASS</span></td>
+  <td><span class="badge badge-pass">OK</span></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr data-cat="cardiac_pathology" data-score="WARN">
+  <td>30</td>
+  <td><strong>30_tamponade</strong></td>
+  <td>Pathologies cardiaques</td>
+  <td>100</td>
+  <td>118.2</td>
+  <td>18.2</td>
+  <td><span class="badge badge-warn">WARN</span></td>
+  <td>variable</td>
+  <td>97.3</td>
+  <td>-</td>
+  <td><span class="badge badge-na">N/A</span></td>
+  <td><span class="badge badge-pass">OK</span></td>
+  <td><span class="badge badge-warn">WARN</span></td>
+</tr>
+<tr data-cat="cardiac_pathology" data-score="PASS">
+  <td>31</td>
+  <td><strong>31_hcm</strong></td>
+  <td>Pathologies cardiaques</td>
+  <td>70</td>
+  <td>75.8</td>
+  <td>5.8</td>
+  <td><span class="badge badge-pass">PASS</span></td>
+  <td>97</td>
+  <td>98.1</td>
+  <td>1.1</td>
+  <td><span class="badge badge-pass">PASS</span></td>
+  <td><span class="badge badge-pass">OK</span></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr data-cat="extreme" data-score="FAIL">
+  <td>32</td>
+  <td><strong>32_hemorrhagic_shock</strong></td>
+  <td>Conditions extremes</td>
+  <td>130</td>
+  <td>134.3</td>
+  <td>4.3</td>
+  <td><span class="badge badge-pass">PASS</span></td>
+  <td>96</td>
+  <td>88.4</td>
+  <td>7.6</td>
+  <td><span class="badge badge-fail">FAIL</span></td>
+  <td><span class="badge badge-pass">OK</span></td>
+  <td><span class="badge badge-fail">FAIL</span></td>
+</tr>
+<tr data-cat="extreme" data-score="FAIL">
+  <td>33</td>
+  <td><strong>33_hypothermia_32C</strong></td>
+  <td>Conditions extremes</td>
+  <td>55</td>
+  <td>108.2</td>
+  <td>53.2</td>
+  <td><span class="badge badge-fail">FAIL</span></td>
+  <td>94</td>
+  <td>0</td>
+  <td>-</td>
+  <td><span class="badge badge-na">N/A</span></td>
+  <td><span class="badge badge-pass">OK</span></td>
+  <td><span class="badge badge-fail">FAIL</span></td>
+</tr>
+<tr data-cat="extreme" data-score="FAIL">
+  <td>34</td>
+  <td><strong>34_hypothermia_28C</strong></td>
+  <td>Conditions extremes</td>
+  <td>35</td>
+  <td>70.3</td>
+  <td>35.3</td>
+  <td><span class="badge badge-fail">FAIL</span></td>
+  <td>90</td>
+  <td>0</td>
+  <td>-</td>
+  <td><span class="badge badge-na">N/A</span></td>
+  <td><span class="badge badge-pass">OK</span></td>
+  <td><span class="badge badge-fail">FAIL</span></td>
+</tr>
+<tr data-cat="extreme" data-score="WARN">
+  <td>35</td>
+  <td><strong>35_sleep_apnea</strong></td>
+  <td>Conditions extremes</td>
+  <td>60</td>
+  <td>84.1</td>
+  <td>24.1</td>
+  <td><span class="badge badge-warn">WARN</span></td>
+  <td>variable</td>
+  <td>98.7</td>
+  <td>-</td>
+  <td><span class="badge badge-na">N/A</span></td>
+  <td><span class="badge badge-pass">OK</span></td>
+  <td><span class="badge badge-warn">WARN</span></td>
+</tr>
+<tr data-cat="extreme" data-score="PASS">
+  <td>36</td>
+  <td><strong>36_vasovagal_syncope</strong></td>
+  <td>Conditions extremes</td>
+  <td>variable</td>
+  <td>78.8</td>
+  <td>-</td>
+  <td><span class="badge badge-na">N/A</span></td>
+  <td>variable</td>
+  <td>98.3</td>
+  <td>-</td>
+  <td><span class="badge badge-na">N/A</span></td>
+  <td><span class="badge badge-pass">OK</span></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr data-cat="extreme" data-score="PASS">
+  <td>37</td>
+  <td><strong>37_venous_pooling</strong></td>
+  <td>Conditions extremes</td>
+  <td>75</td>
+  <td>60.9</td>
+  <td>14.1</td>
+  <td><span class="badge badge-ok">OK</span></td>
+  <td>97</td>
+  <td>95.4</td>
+  <td>1.6</td>
+  <td><span class="badge badge-pass">PASS</span></td>
+  <td><span class="badge badge-pass">OK</span></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr data-cat="extreme" data-score="PASS">
+  <td>38</td>
+  <td><strong>38_severe_anemia</strong></td>
+  <td>Conditions extremes</td>
+  <td>110</td>
+  <td>112.6</td>
+  <td>2.6</td>
+  <td><span class="badge badge-pass">PASS</span></td>
+  <td>variable</td>
+  <td>99.0</td>
+  <td>-</td>
+  <td><span class="badge badge-na">N/A</span></td>
+  <td><span class="badge badge-pass">OK</span></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr data-cat="extreme" data-score="PASS">
+  <td>39</td>
+  <td><strong>39_parkinsonian_tremor</strong></td>
+  <td>Conditions extremes</td>
+  <td>70</td>
+  <td>71.1</td>
+  <td>1.1</td>
+  <td><span class="badge badge-pass">PASS</span></td>
+  <td>97</td>
+  <td>0</td>
+  <td>-</td>
+  <td><span class="badge badge-na">N/A</span></td>
+  <td><span class="badge badge-pass">OK</span></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+<tr data-cat="extreme" data-score="PASS">
+  <td>40</td>
+  <td><strong>40_co_poisoning</strong></td>
+  <td>Conditions extremes</td>
+  <td>110</td>
+  <td>112.7</td>
+  <td>2.7</td>
+  <td><span class="badge badge-pass">PASS</span></td>
+  <td>99</td>
+  <td>99.0</td>
+  <td>0.0</td>
+  <td><span class="badge badge-pass">PASS</span></td>
+  <td><span class="badge badge-pass">OK</span></td>
+  <td><span class="badge badge-pass">PASS</span></td>
+</tr>
+</tbody>
+</table>
+
+<!-- HR/SpO2 overview charts -->
+<div id="chart-hr-overview" style="width:100%;height:400px;margin:24px 0"></div>
+<div id="chart-spo2-overview" style="width:100%;height:400px;margin:24px 0"></div>
+</div>
+
+<!-- Tab: Details -->
+<div id="tab-details" class="tab-content">
+<div class="category-section"><h2>Repos</h2>
+<div class="scenario-detail">
+  <div class="scenario-header" onclick="toggleDetail(this)">
+    <div><strong>01_normal_rest</strong> &mdash; Repos normal, sujet sain, 70 bpm, SpO2 98%</div>
+    <span class="badge badge-pass">PASS</span>
+  </div>
+  <div class="scenario-body">
+    <div class="metrics-row">
+      <div class="metric"><div class="value">70.9</div><div class="label">HR moyen (bpm)</div></div>
+      <div class="metric"><div class="value">0.9</div><div class="label">HR std</div></div>
+      <div class="metric"><div class="value">99.0</div><div class="label">SpO2 moyen (%)</div></div>
+      <div class="metric"><div class="value">96.6%</div><div class="label">HR qualite >=3</div></div>
+      <div class="metric"><div class="value">100.0%</div><div class="label">SpO2 qualite >=4</div></div>
+      <div class="metric"><div class="value">15.0</div><div class="label">Resp (c/min)</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">Pas total</div></div>
+      <div class="metric"><div class="value">REST</div><div class="label">Activite</div></div>
+    </div>
+    <div id="chart-01_normal_rest" class="timeline-chart"></div>
+  </div>
+</div>
+<div class="scenario-detail">
+  <div class="scenario-header" onclick="toggleDetail(this)">
+    <div><strong>02_elderly_rest</strong> &mdash; Repos sujet age 70 ans, 75 bpm, SpO2 96%</div>
+    <span class="badge badge-fail">FAIL</span>
+  </div>
+  <div class="scenario-body">
+    <div class="metrics-row">
+      <div class="metric"><div class="value">75.7</div><div class="label">HR moyen (bpm)</div></div>
+      <div class="metric"><div class="value">1.1</div><div class="label">HR std</div></div>
+      <div class="metric"><div class="value">97.3</div><div class="label">SpO2 moyen (%)</div></div>
+      <div class="metric"><div class="value">96.6%</div><div class="label">HR qualite >=3</div></div>
+      <div class="metric"><div class="value">100.0%</div><div class="label">SpO2 qualite >=4</div></div>
+      <div class="metric"><div class="value">16.5</div><div class="label">Resp (c/min)</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">Pas total</div></div>
+      <div class="metric"><div class="value">REST</div><div class="label">Activite</div></div>
+    </div>
+<h4 style="margin:12px 0 8px">Deviations</h4>
+    <div class="deviation deviation-critique">CRITIQUE: SpO2 mesure 97.3% au lieu de 96% - R ratio probablement incorrect dans les donnees generees</div>
+    <div id="chart-02_elderly_rest" class="timeline-chart"></div>
+  </div>
+</div>
+<div class="scenario-detail">
+  <div class="scenario-header" onclick="toggleDetail(this)">
+    <div><strong>03_athlete_rest</strong> &mdash; Repos sportif entraine, 48 bpm, SpO2 99%</div>
+    <span class="badge badge-pass">PASS</span>
+  </div>
+  <div class="scenario-body">
+    <div class="metrics-row">
+      <div class="metric"><div class="value">50.2</div><div class="label">HR moyen (bpm)</div></div>
+      <div class="metric"><div class="value">8.6</div><div class="label">HR std</div></div>
+      <div class="metric"><div class="value">99.0</div><div class="label">SpO2 moyen (%)</div></div>
+      <div class="metric"><div class="value">91.4%</div><div class="label">HR qualite >=3</div></div>
+      <div class="metric"><div class="value">100.0%</div><div class="label">SpO2 qualite >=4</div></div>
+      <div class="metric"><div class="value">12.2</div><div class="label">Resp (c/min)</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">Pas total</div></div>
+      <div class="metric"><div class="value">REST</div><div class="label">Activite</div></div>
+    </div>
+    <div id="chart-03_athlete_rest" class="timeline-chart"></div>
+  </div>
+</div>
+</div>
+<div class="category-section"><h2>Hypoxie</h2>
+<div class="scenario-detail">
+  <div class="scenario-header" onclick="toggleDetail(this)">
+    <div><strong>04_hypoxia_mild</strong> &mdash; Hypoxie legere, 95 bpm, SpO2 92%</div>
+    <span class="badge badge-warn">WARN</span>
+  </div>
+  <div class="scenario-body">
+    <div class="metrics-row">
+      <div class="metric"><div class="value">96.8</div><div class="label">HR moyen (bpm)</div></div>
+      <div class="metric"><div class="value">1.7</div><div class="label">HR std</div></div>
+      <div class="metric"><div class="value">95.4</div><div class="label">SpO2 moyen (%)</div></div>
+      <div class="metric"><div class="value">89.7%</div><div class="label">HR qualite >=3</div></div>
+      <div class="metric"><div class="value">96.6%</div><div class="label">SpO2 qualite >=4</div></div>
+      <div class="metric"><div class="value">22.7</div><div class="label">Resp (c/min)</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">Pas total</div></div>
+      <div class="metric"><div class="value">REST</div><div class="label">Activite</div></div>
+    </div>
+<h4 style="margin:12px 0 8px">Deviations</h4>
+    <div class="deviation deviation-info">SpO2 deviation: measured 95.4 vs expected 92 (delta=3.4)</div>
+    <div id="chart-04_hypoxia_mild" class="timeline-chart"></div>
+  </div>
+</div>
+<div class="scenario-detail">
+  <div class="scenario-header" onclick="toggleDetail(this)">
+    <div><strong>05_hypoxia_moderate</strong> &mdash; Hypoxie moderee, 115 bpm, SpO2 84%</div>
+    <span class="badge badge-pass">PASS</span>
+  </div>
+  <div class="scenario-body">
+    <div class="metrics-row">
+      <div class="metric"><div class="value">118.2</div><div class="label">HR moyen (bpm)</div></div>
+      <div class="metric"><div class="value">0.6</div><div class="label">HR std</div></div>
+      <div class="metric"><div class="value">83.6</div><div class="label">SpO2 moyen (%)</div></div>
+      <div class="metric"><div class="value">93.1%</div><div class="label">HR qualite >=3</div></div>
+      <div class="metric"><div class="value">98.3%</div><div class="label">SpO2 qualite >=4</div></div>
+      <div class="metric"><div class="value">30.0</div><div class="label">Resp (c/min)</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">Pas total</div></div>
+      <div class="metric"><div class="value">REST</div><div class="label">Activite</div></div>
+    </div>
+    <div id="chart-05_hypoxia_moderate" class="timeline-chart"></div>
+  </div>
+</div>
+<div class="scenario-detail">
+  <div class="scenario-header" onclick="toggleDetail(this)">
+    <div><strong>06_hypoxia_severe</strong> &mdash; Hypoxie severe, 140 bpm, SpO2 72%</div>
+    <span class="badge badge-fail">FAIL</span>
+  </div>
+  <div class="scenario-body">
+    <div class="metrics-row">
+      <div class="metric"><div class="value">144.4</div><div class="label">HR moyen (bpm)</div></div>
+      <div class="metric"><div class="value">1.5</div><div class="label">HR std</div></div>
+      <div class="metric"><div class="value">85.3</div><div class="label">SpO2 moyen (%)</div></div>
+      <div class="metric"><div class="value">96.6%</div><div class="label">HR qualite >=3</div></div>
+      <div class="metric"><div class="value">15.5%</div><div class="label">SpO2 qualite >=4</div></div>
+      <div class="metric"><div class="value">34.9</div><div class="label">Resp (c/min)</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">Pas total</div></div>
+      <div class="metric"><div class="value">REST</div><div class="label">Activite</div></div>
+    </div>
+<h4 style="margin:12px 0 8px">Deviations</h4>
+    <div class="deviation deviation-info">SpO2 deviation: measured 85.3 vs expected 72 (delta=13.3)</div>
+    <div id="chart-06_hypoxia_severe" class="timeline-chart"></div>
+  </div>
+</div>
+</div>
+<div class="category-section"><h2>Activite</h2>
+<div class="scenario-detail">
+  <div class="scenario-header" onclick="toggleDetail(this)">
+    <div><strong>07_walking</strong> &mdash; Marche normale 4-5 km/h, 100 bpm, SpO2 97%</div>
+    <span class="badge badge-pass">PASS</span>
+  </div>
+  <div class="scenario-body">
+    <div class="metrics-row">
+      <div class="metric"><div class="value">105.2</div><div class="label">HR moyen (bpm)</div></div>
+      <div class="metric"><div class="value">1.3</div><div class="label">HR std</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">SpO2 moyen (%)</div></div>
+      <div class="metric"><div class="value">93.1%</div><div class="label">HR qualite >=3</div></div>
+      <div class="metric"><div class="value">100.0%</div><div class="label">SpO2 qualite >=4</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">Resp (c/min)</div></div>
+      <div class="metric"><div class="value">7194</div><div class="label">Pas total</div></div>
+      <div class="metric"><div class="value">WALK</div><div class="label">Activite</div></div>
+    </div>
+    <div id="chart-07_walking" class="timeline-chart"></div>
+  </div>
+</div>
+<div class="scenario-detail">
+  <div class="scenario-header" onclick="toggleDetail(this)">
+    <div><strong>08_running</strong> &mdash; Course 8-10 km/h, 165 bpm, SpO2 96%</div>
+    <span class="badge badge-pass">PASS</span>
+  </div>
+  <div class="scenario-body">
+    <div class="metrics-row">
+      <div class="metric"><div class="value">171.0</div><div class="label">HR moyen (bpm)</div></div>
+      <div class="metric"><div class="value">2.8</div><div class="label">HR std</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">SpO2 moyen (%)</div></div>
+      <div class="metric"><div class="value">75.9%</div><div class="label">HR qualite >=3</div></div>
+      <div class="metric"><div class="value">98.3%</div><div class="label">SpO2 qualite >=4</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">Resp (c/min)</div></div>
+      <div class="metric"><div class="value">10792</div><div class="label">Pas total</div></div>
+      <div class="metric"><div class="value">RUN</div><div class="label">Activite</div></div>
+    </div>
+    <div id="chart-08_running" class="timeline-chart"></div>
+  </div>
+</div>
+<div class="scenario-detail">
+  <div class="scenario-header" onclick="toggleDetail(this)">
+    <div><strong>09_wrist_movement</strong> &mdash; Mouvements poignet non periodiques, 75 bpm, SpO2 97%</div>
+    <span class="badge badge-pass">PASS</span>
+  </div>
+  <div class="scenario-body">
+    <div class="metrics-row">
+      <div class="metric"><div class="value">103.8</div><div class="label">HR moyen (bpm)</div></div>
+      <div class="metric"><div class="value">13.3</div><div class="label">HR std</div></div>
+      <div class="metric"><div class="value">99.4</div><div class="label">SpO2 moyen (%)</div></div>
+      <div class="metric"><div class="value">0.0%</div><div class="label">HR qualite >=3</div></div>
+      <div class="metric"><div class="value">50.0%</div><div class="label">SpO2 qualite >=4</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">Resp (c/min)</div></div>
+      <div class="metric"><div class="value">948</div><div class="label">Pas total</div></div>
+      <div class="metric"><div class="value">REST</div><div class="label">Activite</div></div>
+    </div>
+    <div id="chart-09_wrist_movement" class="timeline-chart"></div>
+  </div>
+</div>
+</div>
+<div class="category-section"><h2>Arythmies</h2>
+<div class="scenario-detail">
+  <div class="scenario-header" onclick="toggleDetail(this)">
+    <div><strong>10_af_rapid</strong> &mdash; Fibrillation auriculaire reponse rapide, 130 bpm, SpO2 96%</div>
+    <span class="badge badge-fail">FAIL</span>
+  </div>
+  <div class="scenario-body">
+    <div class="metrics-row">
+      <div class="metric"><div class="value">129.8</div><div class="label">HR moyen (bpm)</div></div>
+      <div class="metric"><div class="value">4.2</div><div class="label">HR std</div></div>
+      <div class="metric"><div class="value">97.3</div><div class="label">SpO2 moyen (%)</div></div>
+      <div class="metric"><div class="value">0.0%</div><div class="label">HR qualite >=3</div></div>
+      <div class="metric"><div class="value">98.3%</div><div class="label">SpO2 qualite >=4</div></div>
+      <div class="metric"><div class="value">24.3</div><div class="label">Resp (c/min)</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">Pas total</div></div>
+      <div class="metric"><div class="value">REST</div><div class="label">Activite</div></div>
+    </div>
+<h4 style="margin:12px 0 8px">Deviations</h4>
+    <div class="deviation deviation-critique">CRITIQUE: SpO2 mesure 97.3% au lieu de 96% - R ratio probablement incorrect dans les donnees generees</div>
+    <div id="chart-10_af_rapid" class="timeline-chart"></div>
+  </div>
+</div>
+<div class="scenario-detail">
+  <div class="scenario-header" onclick="toggleDetail(this)">
+    <div><strong>11_af_controlled</strong> &mdash; FA controlee sous traitement, 72 bpm, SpO2 96%</div>
+    <span class="badge badge-pass">PASS</span>
+  </div>
+  <div class="scenario-body">
+    <div class="metrics-row">
+      <div class="metric"><div class="value">72.0</div><div class="label">HR moyen (bpm)</div></div>
+      <div class="metric"><div class="value">2.3</div><div class="label">HR std</div></div>
+      <div class="metric"><div class="value">97.3</div><div class="label">SpO2 moyen (%)</div></div>
+      <div class="metric"><div class="value">1.7%</div><div class="label">HR qualite >=3</div></div>
+      <div class="metric"><div class="value">98.3%</div><div class="label">SpO2 qualite >=4</div></div>
+      <div class="metric"><div class="value">18.0</div><div class="label">Resp (c/min)</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">Pas total</div></div>
+      <div class="metric"><div class="value">REST</div><div class="label">Activite</div></div>
+    </div>
+    <div id="chart-11_af_controlled" class="timeline-chart"></div>
+  </div>
+</div>
+<div class="scenario-detail">
+  <div class="scenario-header" onclick="toggleDetail(this)">
+    <div><strong>12_flutter_2_1</strong> &mdash; Flutter auriculaire conduction 2:1, 150 bpm, SpO2 96%</div>
+    <span class="badge badge-fail">FAIL</span>
+  </div>
+  <div class="scenario-body">
+    <div class="metrics-row">
+      <div class="metric"><div class="value">158.4</div><div class="label">HR moyen (bpm)</div></div>
+      <div class="metric"><div class="value">3.0</div><div class="label">HR std</div></div>
+      <div class="metric"><div class="value">97.3</div><div class="label">SpO2 moyen (%)</div></div>
+      <div class="metric"><div class="value">93.1%</div><div class="label">HR qualite >=3</div></div>
+      <div class="metric"><div class="value">94.8%</div><div class="label">SpO2 qualite >=4</div></div>
+      <div class="metric"><div class="value">35.3</div><div class="label">Resp (c/min)</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">Pas total</div></div>
+      <div class="metric"><div class="value">REST</div><div class="label">Activite</div></div>
+    </div>
+<h4 style="margin:12px 0 8px">Deviations</h4>
+    <div class="deviation deviation-critique">CRITIQUE: SpO2 mesure 97.3% au lieu de 96% - R ratio probablement incorrect dans les donnees generees</div>
+    <div id="chart-12_flutter_2_1" class="timeline-chart"></div>
+  </div>
+</div>
+<div class="scenario-detail">
+  <div class="scenario-header" onclick="toggleDetail(this)">
+    <div><strong>13_esv_bigeminy</strong> &mdash; ESV bigeminees, 80 bpm effectif, SpO2 97%</div>
+    <span class="badge badge-pass">PASS</span>
+  </div>
+  <div class="scenario-body">
+    <div class="metrics-row">
+      <div class="metric"><div class="value">81.2</div><div class="label">HR moyen (bpm)</div></div>
+      <div class="metric"><div class="value">1.1</div><div class="label">HR std</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">SpO2 moyen (%)</div></div>
+      <div class="metric"><div class="value">96.6%</div><div class="label">HR qualite >=3</div></div>
+      <div class="metric"><div class="value">100.0%</div><div class="label">SpO2 qualite >=4</div></div>
+      <div class="metric"><div class="value">12.6</div><div class="label">Resp (c/min)</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">Pas total</div></div>
+      <div class="metric"><div class="value">REST</div><div class="label">Activite</div></div>
+    </div>
+    <div id="chart-13_esv_bigeminy" class="timeline-chart"></div>
+  </div>
+</div>
+<div class="scenario-detail">
+  <div class="scenario-header" onclick="toggleDetail(this)">
+    <div><strong>14_esv_trigeminy</strong> &mdash; ESV trigeminees, 80 bpm effectif, SpO2 97%</div>
+    <span class="badge badge-pass">PASS</span>
+  </div>
+  <div class="scenario-body">
+    <div class="metrics-row">
+      <div class="metric"><div class="value">80.8</div><div class="label">HR moyen (bpm)</div></div>
+      <div class="metric"><div class="value">0.6</div><div class="label">HR std</div></div>
+      <div class="metric"><div class="value">98.1</div><div class="label">SpO2 moyen (%)</div></div>
+      <div class="metric"><div class="value">94.8%</div><div class="label">HR qualite >=3</div></div>
+      <div class="metric"><div class="value">98.3%</div><div class="label">SpO2 qualite >=4</div></div>
+      <div class="metric"><div class="value">20.7</div><div class="label">Resp (c/min)</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">Pas total</div></div>
+      <div class="metric"><div class="value">REST</div><div class="label">Activite</div></div>
+    </div>
+    <div id="chart-14_esv_trigeminy" class="timeline-chart"></div>
+  </div>
+</div>
+<div class="scenario-detail">
+  <div class="scenario-header" onclick="toggleDetail(this)">
+    <div><strong>15_psvt_episodes</strong> &mdash; TSVP paroxystique, episodes recurrents</div>
+    <span class="badge badge-fail">FAIL</span>
+  </div>
+  <div class="scenario-body">
+    <div class="metrics-row">
+      <div class="metric"><div class="value">71.8</div><div class="label">HR moyen (bpm)</div></div>
+      <div class="metric"><div class="value">2.8</div><div class="label">HR std</div></div>
+      <div class="metric"><div class="value">98.3</div><div class="label">SpO2 moyen (%)</div></div>
+      <div class="metric"><div class="value">75.9%</div><div class="label">HR qualite >=3</div></div>
+      <div class="metric"><div class="value">93.1%</div><div class="label">SpO2 qualite >=4</div></div>
+      <div class="metric"><div class="value">14.8</div><div class="label">Resp (c/min)</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">Pas total</div></div>
+      <div class="metric"><div class="value">REST</div><div class="label">Activite</div></div>
+    </div>
+<h4 style="margin:12px 0 8px">Deviations</h4>
+    <div class="deviation deviation-critique">CRITIQUE: SpO2 mesure 98.3% au lieu de 96% - R ratio probablement incorrect dans les donnees generees</div>
+    <div id="chart-15_psvt_episodes" class="timeline-chart"></div>
+  </div>
+</div>
+<div class="scenario-detail">
+  <div class="scenario-header" onclick="toggleDetail(this)">
+    <div><strong>16_vt_monomorphic</strong> &mdash; TV monomorphe soutenue, 180 bpm, SpO2 90%</div>
+    <span class="badge badge-pass">PASS</span>
+  </div>
+  <div class="scenario-body">
+    <div class="metrics-row">
+      <div class="metric"><div class="value">185.6</div><div class="label">HR moyen (bpm)</div></div>
+      <div class="metric"><div class="value">2.5</div><div class="label">HR std</div></div>
+      <div class="metric"><div class="value">93.0</div><div class="label">SpO2 moyen (%)</div></div>
+      <div class="metric"><div class="value">94.8%</div><div class="label">HR qualite >=3</div></div>
+      <div class="metric"><div class="value">96.6%</div><div class="label">SpO2 qualite >=4</div></div>
+      <div class="metric"><div class="value">28.2</div><div class="label">Resp (c/min)</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">Pas total</div></div>
+      <div class="metric"><div class="value">REST</div><div class="label">Activite</div></div>
+    </div>
+    <div id="chart-16_vt_monomorphic" class="timeline-chart"></div>
+  </div>
+</div>
+<div class="scenario-detail">
+  <div class="scenario-header" onclick="toggleDetail(this)">
+    <div><strong>17_torsades</strong> &mdash; Torsades de Pointes, 220 bpm, SpO2 85%</div>
+    <span class="badge badge-pass">PASS</span>
+  </div>
+  <div class="scenario-body">
+    <div class="metrics-row">
+      <div class="metric"><div class="value">178.9</div><div class="label">HR moyen (bpm)</div></div>
+      <div class="metric"><div class="value">5.8</div><div class="label">HR std</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">SpO2 moyen (%)</div></div>
+      <div class="metric"><div class="value">0.0%</div><div class="label">HR qualite >=3</div></div>
+      <div class="metric"><div class="value">100.0%</div><div class="label">SpO2 qualite >=4</div></div>
+      <div class="metric"><div class="value">23.5</div><div class="label">Resp (c/min)</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">Pas total</div></div>
+      <div class="metric"><div class="value">REST</div><div class="label">Activite</div></div>
+    </div>
+    <div id="chart-17_torsades" class="timeline-chart"></div>
+  </div>
+</div>
+</div>
+<div class="category-section"><h2>Bradycardie / Blocs</h2>
+<div class="scenario-detail">
+  <div class="scenario-header" onclick="toggleDetail(this)">
+    <div><strong>18_bradycardia</strong> &mdash; Bradycardie sinusale, 42 bpm, SpO2 97%</div>
+    <span class="badge badge-fail">FAIL</span>
+  </div>
+  <div class="scenario-body">
+    <div class="metrics-row">
+      <div class="metric"><div class="value">84.2</div><div class="label">HR moyen (bpm)</div></div>
+      <div class="metric"><div class="value">0.7</div><div class="label">HR std</div></div>
+      <div class="metric"><div class="value">98.1</div><div class="label">SpO2 moyen (%)</div></div>
+      <div class="metric"><div class="value">91.4%</div><div class="label">HR qualite >=3</div></div>
+      <div class="metric"><div class="value">0.0%</div><div class="label">SpO2 qualite >=4</div></div>
+      <div class="metric"><div class="value">13.8</div><div class="label">Resp (c/min)</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">Pas total</div></div>
+      <div class="metric"><div class="value">REST</div><div class="label">Activite</div></div>
+    </div>
+<h4 style="margin:12px 0 8px">Deviations</h4>
+    <div class="deviation deviation-info">HR deviation: measured 84.2 vs expected 42 (delta=42.2)</div>
+    <div id="chart-18_bradycardia" class="timeline-chart"></div>
+  </div>
+</div>
+<div class="scenario-detail">
+  <div class="scenario-header" onclick="toggleDetail(this)">
+    <div><strong>19_bav2_mobitz1</strong> &mdash; BAV 2eme degre Mobitz I (Wenckebach), 55 bpm, SpO2 97%</div>
+    <span class="badge badge-pass">PASS</span>
+  </div>
+  <div class="scenario-body">
+    <div class="metrics-row">
+      <div class="metric"><div class="value">50.4</div><div class="label">HR moyen (bpm)</div></div>
+      <div class="metric"><div class="value">1.4</div><div class="label">HR std</div></div>
+      <div class="metric"><div class="value">98.1</div><div class="label">SpO2 moyen (%)</div></div>
+      <div class="metric"><div class="value">94.8%</div><div class="label">HR qualite >=3</div></div>
+      <div class="metric"><div class="value">0.0%</div><div class="label">SpO2 qualite >=4</div></div>
+      <div class="metric"><div class="value">8.0</div><div class="label">Resp (c/min)</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">Pas total</div></div>
+      <div class="metric"><div class="value">REST</div><div class="label">Activite</div></div>
+    </div>
+    <div id="chart-19_bav2_mobitz1" class="timeline-chart"></div>
+  </div>
+</div>
+<div class="scenario-detail">
+  <div class="scenario-header" onclick="toggleDetail(this)">
+    <div><strong>20_bav3_complete</strong> &mdash; BAV complet, rythme echappement 35 bpm, SpO2 95%</div>
+    <span class="badge badge-fail">FAIL</span>
+  </div>
+  <div class="scenario-body">
+    <div class="metrics-row">
+      <div class="metric"><div class="value">70.8</div><div class="label">HR moyen (bpm)</div></div>
+      <div class="metric"><div class="value">0.5</div><div class="label">HR std</div></div>
+      <div class="metric"><div class="value">97.1</div><div class="label">SpO2 moyen (%)</div></div>
+      <div class="metric"><div class="value">96.6%</div><div class="label">HR qualite >=3</div></div>
+      <div class="metric"><div class="value">0.0%</div><div class="label">SpO2 qualite >=4</div></div>
+      <div class="metric"><div class="value">16.2</div><div class="label">Resp (c/min)</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">Pas total</div></div>
+      <div class="metric"><div class="value">REST</div><div class="label">Activite</div></div>
+    </div>
+<h4 style="margin:12px 0 8px">Deviations</h4>
+    <div class="deviation deviation-info">HR deviation: measured 70.8 vs expected 33 (delta=37.8)</div>
+    <div class="deviation deviation-critique">CRITIQUE: SpO2 mesure 97.1% au lieu de 96% - R ratio probablement incorrect dans les donnees generees</div>
+    <div id="chart-20_bav3_complete" class="timeline-chart"></div>
+  </div>
+</div>
+</div>
+<div class="category-section"><h2>Arret cardiaque</h2>
+<div class="scenario-detail">
+  <div class="scenario-header" onclick="toggleDetail(this)">
+    <div><strong>21_vf_from_sinus</strong> &mdash; FV depuis rythme sinusal</div>
+    <span class="badge badge-warn">WARN</span>
+  </div>
+  <div class="scenario-body">
+    <div class="metrics-row">
+      <div class="metric"><div class="value">77.6</div><div class="label">HR moyen (bpm)</div></div>
+      <div class="metric"><div class="value">8.8</div><div class="label">HR std</div></div>
+      <div class="metric"><div class="value">98.2</div><div class="label">SpO2 moyen (%)</div></div>
+      <div class="metric"><div class="value">87.9%</div><div class="label">HR qualite >=3</div></div>
+      <div class="metric"><div class="value">91.4%</div><div class="label">SpO2 qualite >=4</div></div>
+      <div class="metric"><div class="value">15.6</div><div class="label">Resp (c/min)</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">Pas total</div></div>
+      <div class="metric"><div class="value">REST</div><div class="label">Activite</div></div>
+    </div>
+<h4 style="margin:12px 0 8px">Deviations</h4>
+    <div class="deviation deviation-warn">ATTENTION: HR > 10 pendant les 10 dernieres minutes dans scenario d'arret (valeurs: [76, 75, 76, 77, 80, 116, 128])</div>
+    <div class="deviation deviation-info">INFO: 1 messages 'Cardiac below thresh' detectes</div>
+    <div id="chart-21_vf_from_sinus" class="timeline-chart"></div>
+  </div>
+</div>
+<div class="scenario-detail">
+  <div class="scenario-header" onclick="toggleDetail(this)">
+    <div><strong>22_vt_to_vf</strong> &mdash; TV degenerant en FV</div>
+    <span class="badge badge-warn">WARN</span>
+  </div>
+  <div class="scenario-body">
+    <div class="metrics-row">
+      <div class="metric"><div class="value">84.7</div><div class="label">HR moyen (bpm)</div></div>
+      <div class="metric"><div class="value">17.5</div><div class="label">HR std</div></div>
+      <div class="metric"><div class="value">98.1</div><div class="label">SpO2 moyen (%)</div></div>
+      <div class="metric"><div class="value">89.7%</div><div class="label">HR qualite >=3</div></div>
+      <div class="metric"><div class="value">91.4%</div><div class="label">SpO2 qualite >=4</div></div>
+      <div class="metric"><div class="value">16.0</div><div class="label">Resp (c/min)</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">Pas total</div></div>
+      <div class="metric"><div class="value">REST</div><div class="label">Activite</div></div>
+    </div>
+<h4 style="margin:12px 0 8px">Deviations</h4>
+    <div class="deviation deviation-warn">ATTENTION: HR > 10 pendant les 10 dernieres minutes dans scenario d'arret (valeurs: [81, 81, 81, 81, 85, 104, 164, 182])</div>
+    <div class="deviation deviation-warn">WARN: Aucun message 'Cardiac below thresh' dans les logs pour un scenario d'arret cardiaque</div>
+    <div id="chart-22_vt_to_vf" class="timeline-chart"></div>
+  </div>
+</div>
+<div class="scenario-detail">
+  <div class="scenario-header" onclick="toggleDetail(this)">
+    <div><strong>23_asystole</strong> &mdash; Asystolie depuis bradycardie</div>
+    <span class="badge badge-warn">WARN</span>
+  </div>
+  <div class="scenario-body">
+    <div class="metrics-row">
+      <div class="metric"><div class="value">99.0</div><div class="label">HR moyen (bpm)</div></div>
+      <div class="metric"><div class="value">5.9</div><div class="label">HR std</div></div>
+      <div class="metric"><div class="value">97.2</div><div class="label">SpO2 moyen (%)</div></div>
+      <div class="metric"><div class="value">25.9%</div><div class="label">HR qualite >=3</div></div>
+      <div class="metric"><div class="value">91.4%</div><div class="label">SpO2 qualite >=4</div></div>
+      <div class="metric"><div class="value">14.0</div><div class="label">Resp (c/min)</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">Pas total</div></div>
+      <div class="metric"><div class="value">REST</div><div class="label">Activite</div></div>
+    </div>
+<h4 style="margin:12px 0 8px">Deviations</h4>
+    <div class="deviation deviation-warn">ATTENTION: HR > 10 pendant les 10 dernieres minutes dans scenario d'arret (valeurs: [101, 100, 99, 99, 100, 97, 73, 65])</div>
+    <div class="deviation deviation-info">INFO: 53 messages 'Cardiac below thresh' detectes</div>
+    <div id="chart-23_asystole" class="timeline-chart"></div>
+  </div>
+</div>
+<div class="scenario-detail">
+  <div class="scenario-header" onclick="toggleDetail(this)">
+    <div><strong>24_pea</strong> &mdash; AESP - activite electrique sans pouls</div>
+    <span class="badge badge-warn">WARN</span>
+  </div>
+  <div class="scenario-body">
+    <div class="metrics-row">
+      <div class="metric"><div class="value">81.0</div><div class="label">HR moyen (bpm)</div></div>
+      <div class="metric"><div class="value">1.4</div><div class="label">HR std</div></div>
+      <div class="metric"><div class="value">98.1</div><div class="label">SpO2 moyen (%)</div></div>
+      <div class="metric"><div class="value">93.1%</div><div class="label">HR qualite >=3</div></div>
+      <div class="metric"><div class="value">94.8%</div><div class="label">SpO2 qualite >=4</div></div>
+      <div class="metric"><div class="value">15.6</div><div class="label">Resp (c/min)</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">Pas total</div></div>
+      <div class="metric"><div class="value">REST</div><div class="label">Activite</div></div>
+    </div>
+<h4 style="margin:12px 0 8px">Deviations</h4>
+    <div class="deviation deviation-warn">ATTENTION: HR > 10 pendant les 10 dernieres minutes dans scenario d'arret (valeurs: [80, 80, 81, 81, 80, 80, 84, 90])</div>
+    <div class="deviation deviation-info">INFO: 1 messages 'Cardiac below thresh' detectes</div>
+    <div id="chart-24_pea" class="timeline-chart"></div>
+  </div>
+</div>
+</div>
+<div class="category-section"><h2>Transitionnel</h2>
+<div class="scenario-detail">
+  <div class="scenario-header" onclick="toggleDetail(this)">
+    <div><strong>25_progressive_deterioration</strong> &mdash; Deterioration hemodynamique progressive pre-arret</div>
+    <span class="badge badge-pass">PASS</span>
+  </div>
+  <div class="scenario-body">
+    <div class="metrics-row">
+      <div class="metric"><div class="value">101.9</div><div class="label">HR moyen (bpm)</div></div>
+      <div class="metric"><div class="value">18.3</div><div class="label">HR std</div></div>
+      <div class="metric"><div class="value">87.3</div><div class="label">SpO2 moyen (%)</div></div>
+      <div class="metric"><div class="value">82.8%</div><div class="label">HR qualite >=3</div></div>
+      <div class="metric"><div class="value">74.1%</div><div class="label">SpO2 qualite >=4</div></div>
+      <div class="metric"><div class="value">20.4</div><div class="label">Resp (c/min)</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">Pas total</div></div>
+      <div class="metric"><div class="value">REST</div><div class="label">Activite</div></div>
+    </div>
+    <div id="chart-25_progressive_deterioration" class="timeline-chart"></div>
+  </div>
+</div>
+</div>
+<div class="category-section"><h2>Pathologies cardiaques</h2>
+<div class="scenario-detail">
+  <div class="scenario-header" onclick="toggleDetail(this)">
+    <div><strong>26_hf_pulsus_alternans</strong> &mdash; IC severe avec pulsus alternans, 110 bpm, SpO2 92%</div>
+    <span class="badge badge-fail">FAIL</span>
+  </div>
+  <div class="scenario-body">
+    <div class="metrics-row">
+      <div class="metric"><div class="value">112.7</div><div class="label">HR moyen (bpm)</div></div>
+      <div class="metric"><div class="value">1.5</div><div class="label">HR std</div></div>
+      <div class="metric"><div class="value">98.8</div><div class="label">SpO2 moyen (%)</div></div>
+      <div class="metric"><div class="value">96.6%</div><div class="label">HR qualite >=3</div></div>
+      <div class="metric"><div class="value">0.0%</div><div class="label">SpO2 qualite >=4</div></div>
+      <div class="metric"><div class="value">23.0</div><div class="label">Resp (c/min)</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">Pas total</div></div>
+      <div class="metric"><div class="value">REST</div><div class="label">Activite</div></div>
+    </div>
+<h4 style="margin:12px 0 8px">Deviations</h4>
+    <div class="deviation deviation-info">HR deviation: measured 112.7 vs expected 95 (delta=17.7)</div>
+    <div class="deviation deviation-critique">CRITIQUE: SpO2 mesure 98.8% au lieu de 96% - R ratio probablement incorrect dans les donnees generees</div>
+    <div id="chart-26_hf_pulsus_alternans" class="timeline-chart"></div>
+  </div>
+</div>
+<div class="scenario-detail">
+  <div class="scenario-header" onclick="toggleDetail(this)">
+    <div><strong>27_hf_cheyne_stokes</strong> &mdash; IC avec respiration de Cheyne-Stokes</div>
+    <span class="badge badge-pass">PASS</span>
+  </div>
+  <div class="scenario-body">
+    <div class="metrics-row">
+      <div class="metric"><div class="value">93.0</div><div class="label">HR moyen (bpm)</div></div>
+      <div class="metric"><div class="value">1.1</div><div class="label">HR std</div></div>
+      <div class="metric"><div class="value">95.2</div><div class="label">SpO2 moyen (%)</div></div>
+      <div class="metric"><div class="value">0.0%</div><div class="label">HR qualite >=3</div></div>
+      <div class="metric"><div class="value">98.3%</div><div class="label">SpO2 qualite >=4</div></div>
+      <div class="metric"><div class="value">23.2</div><div class="label">Resp (c/min)</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">Pas total</div></div>
+      <div class="metric"><div class="value">REST</div><div class="label">Activite</div></div>
+    </div>
+    <div id="chart-27_hf_cheyne_stokes" class="timeline-chart"></div>
+  </div>
+</div>
+<div class="scenario-detail">
+  <div class="scenario-header" onclick="toggleDetail(this)">
+    <div><strong>28_aortic_stenosis</strong> &mdash; Stenose aortique severe (pulsus tardus et parvus), 80 bpm, SpO2 97%</div>
+    <span class="badge badge-pass">PASS</span>
+  </div>
+  <div class="scenario-body">
+    <div class="metrics-row">
+      <div class="metric"><div class="value">81.1</div><div class="label">HR moyen (bpm)</div></div>
+      <div class="metric"><div class="value">0.7</div><div class="label">HR std</div></div>
+      <div class="metric"><div class="value">98.1</div><div class="label">SpO2 moyen (%)</div></div>
+      <div class="metric"><div class="value">98.3%</div><div class="label">HR qualite >=3</div></div>
+      <div class="metric"><div class="value">100.0%</div><div class="label">SpO2 qualite >=4</div></div>
+      <div class="metric"><div class="value">16.5</div><div class="label">Resp (c/min)</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">Pas total</div></div>
+      <div class="metric"><div class="value">REST</div><div class="label">Activite</div></div>
+    </div>
+    <div id="chart-28_aortic_stenosis" class="timeline-chart"></div>
+  </div>
+</div>
+<div class="scenario-detail">
+  <div class="scenario-header" onclick="toggleDetail(this)">
+    <div><strong>29_aortic_regurgitation</strong> &mdash; Insuffisance aortique severe (water hammer), 85 bpm, SpO2 97%</div>
+    <span class="badge badge-pass">PASS</span>
+  </div>
+  <div class="scenario-body">
+    <div class="metrics-row">
+      <div class="metric"><div class="value">86.4</div><div class="label">HR moyen (bpm)</div></div>
+      <div class="metric"><div class="value">0.9</div><div class="label">HR std</div></div>
+      <div class="metric"><div class="value">98.1</div><div class="label">SpO2 moyen (%)</div></div>
+      <div class="metric"><div class="value">89.7%</div><div class="label">HR qualite >=3</div></div>
+      <div class="metric"><div class="value">100.0%</div><div class="label">SpO2 qualite >=4</div></div>
+      <div class="metric"><div class="value">17.0</div><div class="label">Resp (c/min)</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">Pas total</div></div>
+      <div class="metric"><div class="value">REST</div><div class="label">Activite</div></div>
+    </div>
+    <div id="chart-29_aortic_regurgitation" class="timeline-chart"></div>
+  </div>
+</div>
+<div class="scenario-detail">
+  <div class="scenario-header" onclick="toggleDetail(this)">
+    <div><strong>30_tamponade</strong> &mdash; Tamponnade cardiaque avec pouls paradoxal, 115 bpm, SpO2 96%</div>
+    <span class="badge badge-warn">WARN</span>
+  </div>
+  <div class="scenario-body">
+    <div class="metrics-row">
+      <div class="metric"><div class="value">118.2</div><div class="label">HR moyen (bpm)</div></div>
+      <div class="metric"><div class="value">0.8</div><div class="label">HR std</div></div>
+      <div class="metric"><div class="value">97.3</div><div class="label">SpO2 moyen (%)</div></div>
+      <div class="metric"><div class="value">96.6%</div><div class="label">HR qualite >=3</div></div>
+      <div class="metric"><div class="value">98.3%</div><div class="label">SpO2 qualite >=4</div></div>
+      <div class="metric"><div class="value">22.2</div><div class="label">Resp (c/min)</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">Pas total</div></div>
+      <div class="metric"><div class="value">REST</div><div class="label">Activite</div></div>
+    </div>
+<h4 style="margin:12px 0 8px">Deviations</h4>
+    <div class="deviation deviation-info">HR deviation: measured 118.2 vs expected 100 (delta=18.2)</div>
+    <div id="chart-30_tamponade" class="timeline-chart"></div>
+  </div>
+</div>
+<div class="scenario-detail">
+  <div class="scenario-header" onclick="toggleDetail(this)">
+    <div><strong>31_hcm</strong> &mdash; Cardiomyopathie hypertrophique avec obstruction dynamique, 75 bpm, SpO2 97%</div>
+    <span class="badge badge-pass">PASS</span>
+  </div>
+  <div class="scenario-body">
+    <div class="metrics-row">
+      <div class="metric"><div class="value">75.8</div><div class="label">HR moyen (bpm)</div></div>
+      <div class="metric"><div class="value">0.9</div><div class="label">HR std</div></div>
+      <div class="metric"><div class="value">98.1</div><div class="label">SpO2 moyen (%)</div></div>
+      <div class="metric"><div class="value">96.6%</div><div class="label">HR qualite >=3</div></div>
+      <div class="metric"><div class="value">100.0%</div><div class="label">SpO2 qualite >=4</div></div>
+      <div class="metric"><div class="value">15.5</div><div class="label">Resp (c/min)</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">Pas total</div></div>
+      <div class="metric"><div class="value">REST</div><div class="label">Activite</div></div>
+    </div>
+    <div id="chart-31_hcm" class="timeline-chart"></div>
+  </div>
+</div>
+</div>
+<div class="category-section"><h2>Conditions extremes</h2>
+<div class="scenario-detail">
+  <div class="scenario-header" onclick="toggleDetail(this)">
+    <div><strong>32_hemorrhagic_shock</strong> &mdash; Choc hypovolemique, 130 bpm, SpO2 96%</div>
+    <span class="badge badge-fail">FAIL</span>
+  </div>
+  <div class="scenario-body">
+    <div class="metrics-row">
+      <div class="metric"><div class="value">134.3</div><div class="label">HR moyen (bpm)</div></div>
+      <div class="metric"><div class="value">0.6</div><div class="label">HR std</div></div>
+      <div class="metric"><div class="value">88.4</div><div class="label">SpO2 moyen (%)</div></div>
+      <div class="metric"><div class="value">93.1%</div><div class="label">HR qualite >=3</div></div>
+      <div class="metric"><div class="value">3.4%</div><div class="label">SpO2 qualite >=4</div></div>
+      <div class="metric"><div class="value">25.4</div><div class="label">Resp (c/min)</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">Pas total</div></div>
+      <div class="metric"><div class="value">REST</div><div class="label">Activite</div></div>
+    </div>
+<h4 style="margin:12px 0 8px">Deviations</h4>
+    <div class="deviation deviation-info">SpO2 deviation: measured 88.4 vs expected 96 (delta=7.6)</div>
+    <div id="chart-32_hemorrhagic_shock" class="timeline-chart"></div>
+  </div>
+</div>
+<div class="scenario-detail">
+  <div class="scenario-header" onclick="toggleDetail(this)">
+    <div><strong>33_hypothermia_32C</strong> &mdash; Hypothermie 32C avec frissons, 55 bpm, SpO2 95%</div>
+    <span class="badge badge-fail">FAIL</span>
+  </div>
+  <div class="scenario-body">
+    <div class="metrics-row">
+      <div class="metric"><div class="value">108.2</div><div class="label">HR moyen (bpm)</div></div>
+      <div class="metric"><div class="value">2.4</div><div class="label">HR std</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">SpO2 moyen (%)</div></div>
+      <div class="metric"><div class="value">0.0%</div><div class="label">HR qualite >=3</div></div>
+      <div class="metric"><div class="value">100.0%</div><div class="label">SpO2 qualite >=4</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">Resp (c/min)</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">Pas total</div></div>
+      <div class="metric"><div class="value">WALK</div><div class="label">Activite</div></div>
+    </div>
+<h4 style="margin:12px 0 8px">Deviations</h4>
+    <div class="deviation deviation-info">HR deviation: measured 108.2 vs expected 55 (delta=53.2)</div>
+    <div id="chart-33_hypothermia_32C" class="timeline-chart"></div>
+  </div>
+</div>
+<div class="scenario-detail">
+  <div class="scenario-header" onclick="toggleDetail(this)">
+    <div><strong>34_hypothermia_28C</strong> &mdash; Hypothermie 28C sans frissons, 35 bpm, SpO2 92%</div>
+    <span class="badge badge-fail">FAIL</span>
+  </div>
+  <div class="scenario-body">
+    <div class="metrics-row">
+      <div class="metric"><div class="value">70.3</div><div class="label">HR moyen (bpm)</div></div>
+      <div class="metric"><div class="value">0.5</div><div class="label">HR std</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">SpO2 moyen (%)</div></div>
+      <div class="metric"><div class="value">96.6%</div><div class="label">HR qualite >=3</div></div>
+      <div class="metric"><div class="value">100.0%</div><div class="label">SpO2 qualite >=4</div></div>
+      <div class="metric"><div class="value">8.3</div><div class="label">Resp (c/min)</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">Pas total</div></div>
+      <div class="metric"><div class="value">REST</div><div class="label">Activite</div></div>
+    </div>
+<h4 style="margin:12px 0 8px">Deviations</h4>
+    <div class="deviation deviation-info">HR deviation: measured 70.3 vs expected 35 (delta=35.3)</div>
+    <div id="chart-34_hypothermia_28C" class="timeline-chart"></div>
+  </div>
+</div>
+<div class="scenario-detail">
+  <div class="scenario-header" onclick="toggleDetail(this)">
+    <div><strong>35_sleep_apnea</strong> &mdash; SAOS avec cycles apnee-reprise repetitifs</div>
+    <span class="badge badge-warn">WARN</span>
+  </div>
+  <div class="scenario-body">
+    <div class="metrics-row">
+      <div class="metric"><div class="value">84.1</div><div class="label">HR moyen (bpm)</div></div>
+      <div class="metric"><div class="value">14.0</div><div class="label">HR std</div></div>
+      <div class="metric"><div class="value">98.7</div><div class="label">SpO2 moyen (%)</div></div>
+      <div class="metric"><div class="value">0.0%</div><div class="label">HR qualite >=3</div></div>
+      <div class="metric"><div class="value">0.0%</div><div class="label">SpO2 qualite >=4</div></div>
+      <div class="metric"><div class="value">15.6</div><div class="label">Resp (c/min)</div></div>
+      <div class="metric"><div class="value">133</div><div class="label">Pas total</div></div>
+      <div class="metric"><div class="value">REST</div><div class="label">Activite</div></div>
+    </div>
+<h4 style="margin:12px 0 8px">Deviations</h4>
+    <div class="deviation deviation-info">HR deviation: measured 84.1 vs expected 60 (delta=24.1)</div>
+    <div id="chart-35_sleep_apnea" class="timeline-chart"></div>
+  </div>
+</div>
+<div class="scenario-detail">
+  <div class="scenario-header" onclick="toggleDetail(this)">
+    <div><strong>36_vasovagal_syncope</strong> &mdash; Syncopes vasovagales recurrentes</div>
+    <span class="badge badge-pass">PASS</span>
+  </div>
+  <div class="scenario-body">
+    <div class="metrics-row">
+      <div class="metric"><div class="value">78.8</div><div class="label">HR moyen (bpm)</div></div>
+      <div class="metric"><div class="value">1.2</div><div class="label">HR std</div></div>
+      <div class="metric"><div class="value">98.3</div><div class="label">SpO2 moyen (%)</div></div>
+      <div class="metric"><div class="value">81.0%</div><div class="label">HR qualite >=3</div></div>
+      <div class="metric"><div class="value">96.6%</div><div class="label">SpO2 qualite >=4</div></div>
+      <div class="metric"><div class="value">15.6</div><div class="label">Resp (c/min)</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">Pas total</div></div>
+      <div class="metric"><div class="value">REST</div><div class="label">Activite</div></div>
+    </div>
+    <div id="chart-36_vasovagal_syncope" class="timeline-chart"></div>
+  </div>
+</div>
+<div class="scenario-detail">
+  <div class="scenario-header" onclick="toggleDetail(this)">
+    <div><strong>37_venous_pooling</strong> &mdash; Pooling veineux nocturne, 55 bpm, SpO2 faussement bas 93%</div>
+    <span class="badge badge-pass">PASS</span>
+  </div>
+  <div class="scenario-body">
+    <div class="metrics-row">
+      <div class="metric"><div class="value">60.9</div><div class="label">HR moyen (bpm)</div></div>
+      <div class="metric"><div class="value">14.4</div><div class="label">HR std</div></div>
+      <div class="metric"><div class="value">95.4</div><div class="label">SpO2 moyen (%)</div></div>
+      <div class="metric"><div class="value">84.5%</div><div class="label">HR qualite >=3</div></div>
+      <div class="metric"><div class="value">100.0%</div><div class="label">SpO2 qualite >=4</div></div>
+      <div class="metric"><div class="value">12.0</div><div class="label">Resp (c/min)</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">Pas total</div></div>
+      <div class="metric"><div class="value">REST</div><div class="label">Activite</div></div>
+    </div>
+    <div id="chart-37_venous_pooling" class="timeline-chart"></div>
+  </div>
+</div>
+<div class="scenario-detail">
+  <div class="scenario-header" onclick="toggleDetail(this)">
+    <div><strong>38_severe_anemia</strong> &mdash; Anemie severe Hb 6 g/dL, 110 bpm, SpO2 98%</div>
+    <span class="badge badge-pass">PASS</span>
+  </div>
+  <div class="scenario-body">
+    <div class="metrics-row">
+      <div class="metric"><div class="value">112.6</div><div class="label">HR moyen (bpm)</div></div>
+      <div class="metric"><div class="value">1.0</div><div class="label">HR std</div></div>
+      <div class="metric"><div class="value">99.0</div><div class="label">SpO2 moyen (%)</div></div>
+      <div class="metric"><div class="value">93.1%</div><div class="label">HR qualite >=3</div></div>
+      <div class="metric"><div class="value">98.3%</div><div class="label">SpO2 qualite >=4</div></div>
+      <div class="metric"><div class="value">24.0</div><div class="label">Resp (c/min)</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">Pas total</div></div>
+      <div class="metric"><div class="value">REST</div><div class="label">Activite</div></div>
+    </div>
+    <div id="chart-38_severe_anemia" class="timeline-chart"></div>
+  </div>
+</div>
+<div class="scenario-detail">
+  <div class="scenario-header" onclick="toggleDetail(this)">
+    <div><strong>39_parkinsonian_tremor</strong> &mdash; Tremor parkinsonien 4-6 Hz, 70 bpm, SpO2 97%</div>
+    <span class="badge badge-pass">PASS</span>
+  </div>
+  <div class="scenario-body">
+    <div class="metrics-row">
+      <div class="metric"><div class="value">71.1</div><div class="label">HR moyen (bpm)</div></div>
+      <div class="metric"><div class="value">1.1</div><div class="label">HR std</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">SpO2 moyen (%)</div></div>
+      <div class="metric"><div class="value">86.2%</div><div class="label">HR qualite >=3</div></div>
+      <div class="metric"><div class="value">100.0%</div><div class="label">SpO2 qualite >=4</div></div>
+      <div class="metric"><div class="value">15.3</div><div class="label">Resp (c/min)</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">Pas total</div></div>
+      <div class="metric"><div class="value">WALK</div><div class="label">Activite</div></div>
+    </div>
+    <div id="chart-39_parkinsonian_tremor" class="timeline-chart"></div>
+  </div>
+</div>
+<div class="scenario-detail">
+  <div class="scenario-header" onclick="toggleDetail(this)">
+    <div><strong>40_co_poisoning</strong> &mdash; Intoxication CO - SpO2 faussement normale 99%, tachycardie inexpliquee</div>
+    <span class="badge badge-pass">PASS</span>
+  </div>
+  <div class="scenario-body">
+    <div class="metrics-row">
+      <div class="metric"><div class="value">112.7</div><div class="label">HR moyen (bpm)</div></div>
+      <div class="metric"><div class="value">1.0</div><div class="label">HR std</div></div>
+      <div class="metric"><div class="value">99.0</div><div class="label">SpO2 moyen (%)</div></div>
+      <div class="metric"><div class="value">96.6%</div><div class="label">HR qualite >=3</div></div>
+      <div class="metric"><div class="value">98.3%</div><div class="label">SpO2 qualite >=4</div></div>
+      <div class="metric"><div class="value">23.1</div><div class="label">Resp (c/min)</div></div>
+      <div class="metric"><div class="value">0</div><div class="label">Pas total</div></div>
+      <div class="metric"><div class="value">REST</div><div class="label">Activite</div></div>
+    </div>
+    <div id="chart-40_co_poisoning" class="timeline-chart"></div>
+  </div>
+</div>
+</div>
+</div>
+<div id="tab-deviations" class="tab-content">
+<h2 style="margin:16px 0">Toutes les deviations</h2>
+<table>
+<thead><tr><th>Scenario</th><th>Severite</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><strong>02_elderly_rest</strong></td><td><span class="badge badge-fail">CRITIQUE</span></td><td>CRITIQUE: SpO2 mesure 97.3% au lieu de 96% - R ratio probablement incorrect dans les donnees generees</td></tr>
+<tr><td><strong>04_hypoxia_mild</strong></td><td><span class="badge badge-na">INFO</span></td><td>SpO2 deviation: measured 95.4 vs expected 92 (delta=3.4)</td></tr>
+<tr><td><strong>06_hypoxia_severe</strong></td><td><span class="badge badge-na">INFO</span></td><td>SpO2 deviation: measured 85.3 vs expected 72 (delta=13.3)</td></tr>
+<tr><td><strong>10_af_rapid</strong></td><td><span class="badge badge-fail">CRITIQUE</span></td><td>CRITIQUE: SpO2 mesure 97.3% au lieu de 96% - R ratio probablement incorrect dans les donnees generees</td></tr>
+<tr><td><strong>12_flutter_2_1</strong></td><td><span class="badge badge-fail">CRITIQUE</span></td><td>CRITIQUE: SpO2 mesure 97.3% au lieu de 96% - R ratio probablement incorrect dans les donnees generees</td></tr>
+<tr><td><strong>15_psvt_episodes</strong></td><td><span class="badge badge-fail">CRITIQUE</span></td><td>CRITIQUE: SpO2 mesure 98.3% au lieu de 96% - R ratio probablement incorrect dans les donnees generees</td></tr>
+<tr><td><strong>18_bradycardia</strong></td><td><span class="badge badge-na">INFO</span></td><td>HR deviation: measured 84.2 vs expected 42 (delta=42.2)</td></tr>
+<tr><td><strong>20_bav3_complete</strong></td><td><span class="badge badge-na">INFO</span></td><td>HR deviation: measured 70.8 vs expected 33 (delta=37.8)</td></tr>
+<tr><td><strong>20_bav3_complete</strong></td><td><span class="badge badge-fail">CRITIQUE</span></td><td>CRITIQUE: SpO2 mesure 97.1% au lieu de 96% - R ratio probablement incorrect dans les donnees generees</td></tr>
+<tr><td><strong>21_vf_from_sinus</strong></td><td><span class="badge badge-warn">WARN</span></td><td>ATTENTION: HR > 10 pendant les 10 dernieres minutes dans scenario d'arret (valeurs: [76, 75, 76, 77, 80, 116, 128])</td></tr>
+<tr><td><strong>21_vf_from_sinus</strong></td><td><span class="badge badge-na">INFO</span></td><td>INFO: 1 messages 'Cardiac below thresh' detectes</td></tr>
+<tr><td><strong>22_vt_to_vf</strong></td><td><span class="badge badge-warn">WARN</span></td><td>ATTENTION: HR > 10 pendant les 10 dernieres minutes dans scenario d'arret (valeurs: [81, 81, 81, 81, 85, 104, 164, 182])</td></tr>
+<tr><td><strong>22_vt_to_vf</strong></td><td><span class="badge badge-warn">WARN</span></td><td>WARN: Aucun message 'Cardiac below thresh' dans les logs pour un scenario d'arret cardiaque</td></tr>
+<tr><td><strong>23_asystole</strong></td><td><span class="badge badge-warn">WARN</span></td><td>ATTENTION: HR > 10 pendant les 10 dernieres minutes dans scenario d'arret (valeurs: [101, 100, 99, 99, 100, 97, 73, 65])</td></tr>
+<tr><td><strong>23_asystole</strong></td><td><span class="badge badge-na">INFO</span></td><td>INFO: 53 messages 'Cardiac below thresh' detectes</td></tr>
+<tr><td><strong>24_pea</strong></td><td><span class="badge badge-warn">WARN</span></td><td>ATTENTION: HR > 10 pendant les 10 dernieres minutes dans scenario d'arret (valeurs: [80, 80, 81, 81, 80, 80, 84, 90])</td></tr>
+<tr><td><strong>24_pea</strong></td><td><span class="badge badge-na">INFO</span></td><td>INFO: 1 messages 'Cardiac below thresh' detectes</td></tr>
+<tr><td><strong>26_hf_pulsus_alternans</strong></td><td><span class="badge badge-na">INFO</span></td><td>HR deviation: measured 112.7 vs expected 95 (delta=17.7)</td></tr>
+<tr><td><strong>26_hf_pulsus_alternans</strong></td><td><span class="badge badge-fail">CRITIQUE</span></td><td>CRITIQUE: SpO2 mesure 98.8% au lieu de 96% - R ratio probablement incorrect dans les donnees generees</td></tr>
+<tr><td><strong>30_tamponade</strong></td><td><span class="badge badge-na">INFO</span></td><td>HR deviation: measured 118.2 vs expected 100 (delta=18.2)</td></tr>
+<tr><td><strong>32_hemorrhagic_shock</strong></td><td><span class="badge badge-na">INFO</span></td><td>SpO2 deviation: measured 88.4 vs expected 96 (delta=7.6)</td></tr>
+<tr><td><strong>33_hypothermia_32C</strong></td><td><span class="badge badge-na">INFO</span></td><td>HR deviation: measured 108.2 vs expected 55 (delta=53.2)</td></tr>
+<tr><td><strong>34_hypothermia_28C</strong></td><td><span class="badge badge-na">INFO</span></td><td>HR deviation: measured 70.3 vs expected 35 (delta=35.3)</td></tr>
+<tr><td><strong>35_sleep_apnea</strong></td><td><span class="badge badge-na">INFO</span></td><td>HR deviation: measured 84.1 vs expected 60 (delta=24.1)</td></tr>
+</tbody></table>
+</div>
+
+<!-- JavaScript -->
+<script>
+// Tabs
+function switchTab(name) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+  if (name === 'overview') renderOverviewCharts();
+}
+
+// Filter
+function filterTable() {
+  const cat = document.getElementById('filterCat').value;
+  const score = document.getElementById('filterScore').value;
+  document.querySelectorAll('#mainTable tbody tr').forEach(row => {
+    const rCat = row.dataset.cat || '';
+    const rScore = row.dataset.score || '';
+    const show = (!cat || rCat === cat) && (!score || rScore === score);
+    row.style.display = show ? '' : 'none';
+  });
+}
+
+// Sort
+let sortDir = {};
+function sortTable(col) {
+  const table = document.getElementById('mainTable');
+  const rows = Array.from(table.tBodies[0].rows);
+  sortDir[col] = !sortDir[col];
+  rows.sort((a, b) => {
+    let va = a.cells[col].textContent.trim();
+    let vb = b.cells[col].textContent.trim();
+    let na = parseFloat(va), nb = parseFloat(vb);
+    if (!isNaN(na) && !isNaN(nb)) return sortDir[col] ? na - nb : nb - na;
+    return sortDir[col] ? va.localeCompare(vb) : vb.localeCompare(va);
+  });
+  rows.forEach(r => table.tBodies[0].appendChild(r));
+}
+
+// Toggle detail
+function toggleDetail(el) {
+  el.nextElementSibling.classList.toggle('open');
+  // Render chart if opening
+  if (el.nextElementSibling.classList.contains('open')) {
+    const chartDiv = el.nextElementSibling.querySelector('.timeline-chart');
+    if (chartDiv && !chartDiv.dataset.rendered) {
+      const name = chartDiv.id.replace('chart-', '');
+      const data = scenarioData[name];
+      if (data) {
+        renderTimelineChart(chartDiv.id, data.hr, data.spo2);
+        chartDiv.dataset.rendered = 'true';
+      }
+    }
+  }
+}
+
+// Scenario data for charts
+const scenarioData = {
+  "01_normal_rest": { hr: [115, 91, 73, 70, 70, 70, 71, 71, 71, 71, 71, 72, 71, 70, 71, 71, 71, 70, 72, 72, 70, 71, 71, 71, 71, 71, 71, 71, 71, 71, 71, 71, 70, 71, 71, 71, 71, 70, 70, 71, 71, 71, 71, 71, 71, 70, 70, 71, 71, 70, 70, 70, 71, 71, 71, 70, 70, 71, 71, 76], spo2: [100, 100, 100, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99] },
+  "02_elderly_rest": { hr: [111, 90, 77, 76, 76, 75, 75, 75, 75, 76, 76, 76, 76, 76, 76, 76, 75, 76, 76, 76, 75, 75, 76, 76, 76, 76, 76, 76, 75, 74, 75, 75, 75, 75, 75, 75, 76, 76, 76, 76, 75, 76, 76, 75, 75, 75, 75, 75, 75, 75, 75, 76, 76, 75, 76, 76, 76, 76, 76, 83], spo2: [100, 100, 100, 99, 99, 99, 99, 99, 99, 98, 98, 98, 98, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97] },
+  "03_athlete_rest": { hr: [109, 103, 92, 91, 73, 51, 48, 48, 49, 49, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 49, 49, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 49, 49, 48, 48, 48, 48, 52], spo2: [100, 100, 100, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99] },
+  "04_hypoxia_mild": { hr: [109, 101, 96, 97, 98, 98, 97, 96, 95, 96, 97, 97, 96, 97, 97, 97, 97, 97, 97, 98, 98, 97, 96, 97, 97, 97, 96, 96, 96, 96, 96, 96, 97, 97, 97, 97, 97, 97, 97, 97, 97, 96, 96, 96, 95, 95, 96, 96, 97, 98, 98, 97, 97, 97, 97, 96, 96, 96, 96, 108], spo2: [100, 99, 99, 98, 98, 97, 97, 97, 97, 96, 96, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 0] },
+  "05_hypoxia_moderate": { hr: [119, 119, 119, 118, 118, 117, 117, 118, 118, 119, 119, 119, 119, 119, 118, 118, 119, 119, 118, 118, 118, 118, 119, 119, 117, 118, 119, 118, 118, 118, 119, 119, 118, 117, 118, 118, 118, 118, 118, 118, 118, 118, 118, 118, 118, 118, 118, 117, 118, 118, 118, 118, 118, 118, 119, 118, 118, 118, 118, 119], spo2: [99, 97, 95, 91, 87, 86, 84, 83, 83, 83, 83, 83, 83, 83, 83, 83, 83, 83, 83, 83, 83, 83, 84, 84, 84, 83, 83, 83, 83, 83, 83, 83, 83, 83, 83, 83, 83, 83, 83, 83, 83, 83, 83, 83, 84, 83, 83, 83, 83, 83, 83, 83, 83, 83, 84, 83, 83, 83, 83, 0] },
+  "06_hypoxia_severe": { hr: [144, 144, 144, 144, 144, 144, 144, 144, 144, 145, 145, 144, 144, 144, 144, 144, 144, 145, 146, 146, 145, 145, 145, 144, 145, 145, 145, 144, 144, 144, 144, 145, 145, 145, 144, 145, 145, 144, 144, 145, 145, 145, 145, 145, 145, 146, 145, 144, 145, 145, 145, 144, 144, 144, 145, 145, 145, 145, 145, 134], spo2: [0, 0, 0, 0, 0, 0, 0, 99, 97, 0, 0, 0, 95, 91, 86, 83, 79, 76, 0, 0, 74, 73, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+  "07_walking": { hr: [100, 103, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 104, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 115], spo2: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+  "08_running": { hr: [102, 144, 169, 172, 172, 171, 171, 172, 172, 172, 172, 172, 171, 171, 171, 171, 172, 172, 171, 172, 171, 171, 172, 172, 172, 171, 170, 171, 171, 171, 172, 171, 172, 172, 172, 172, 171, 171, 171, 171, 172, 172, 172, 172, 172, 171, 172, 172, 171, 171, 172, 172, 171, 171, 172, 172, 172, 171, 165, 152], spo2: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+  "09_wrist_movement": { hr: [117, 108, 99, 95, 92, 104, 120, 115, 99, 102, 106, 100, 93, 93, 105, 106, 100, 106, 120, 125, 123, 122, 122, 118, 115, 114, 104, 103, 106, 89, 84, 87, 89, 92, 91, 93, 91, 87, 85, 82, 86, 106, 124, 123, 98, 97, 112, 131, 123, 96, 88, 88, 87, 93, 109, 118, 115, 111, 114, 124], spo2: [100, 100, 100, 100, 100, 100, 99, 99, 99, 99, 99, 99, 99, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+  "10_af_rapid": { hr: [134, 132, 129, 131, 134, 130, 123, 125, 127, 127, 134, 133, 129, 125, 126, 131, 127, 126, 131, 132, 135, 136, 139, 137, 133, 134, 127, 124, 129, 128, 126, 127, 125, 129, 132, 135, 131, 126, 131, 130, 128, 132, 126, 125, 127, 130, 127, 122, 130, 131, 123, 124, 132, 137, 138, 131, 128, 131, 135, 138], spo2: [100, 100, 100, 99, 99, 99, 99, 99, 99, 98, 98, 98, 98, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97] },
+  "11_af_controlled": { hr: [117, 94, 77, 74, 72, 70, 72, 68, 69, 72, 71, 71, 75, 75, 71, 69, 70, 73, 71, 70, 72, 73, 71, 67, 70, 72, 72, 72, 72, 74, 74, 71, 74, 72, 70, 72, 71, 70, 71, 71, 71, 70, 72, 74, 72, 72, 72, 71, 72, 74, 73, 74, 75, 73, 71, 71, 71, 72, 74, 82], spo2: [100, 100, 100, 99, 99, 99, 99, 99, 99, 98, 98, 98, 98, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97] },
+  "12_flutter_2_1": { hr: [158, 159, 159, 159, 159, 159, 159, 159, 159, 159, 159, 159, 159, 159, 158, 158, 159, 159, 159, 159, 159, 159, 159, 159, 159, 158, 159, 159, 159, 159, 159, 159, 159, 159, 159, 159, 159, 159, 159, 159, 159, 159, 159, 159, 159, 159, 159, 159, 159, 159, 159, 159, 159, 159, 159, 159, 159, 157, 145, 141], spo2: [100, 100, 100, 99, 99, 99, 99, 99, 99, 98, 98, 98, 98, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97] },
+  "13_esv_bigeminy": { hr: [111, 92, 82, 81, 81, 81, 81, 82, 82, 81, 81, 81, 81, 81, 81, 81, 82, 82, 82, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 82, 82, 81, 81, 81, 80, 80, 80, 80, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 80, 81, 89], spo2: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+  "14_esv_trigeminy": { hr: [111, 89, 82, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 80, 81, 81, 80, 81, 81, 81, 80, 80, 80, 80, 80, 81, 81, 81, 81, 80, 80, 80, 80, 80, 80, 80, 81, 81, 81, 81, 82, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 83], spo2: [100, 100, 100, 99, 99, 99, 99, 99, 99, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98] },
+  "15_psvt_episodes": { hr: [111, 88, 73, 72, 72, 71, 70, 70, 71, 71, 70, 81, 87, 73, 71, 72, 71, 70, 70, 71, 71, 71, 71, 71, 71, 71, 71, 71, 70, 70, 70, 70, 70, 70, 77, 75, 72, 71, 72, 72, 70, 71, 72, 71, 70, 71, 71, 71, 75, 76, 72, 71, 71, 71, 71, 71, 70, 71, 71, 75], spo2: [100, 100, 100, 99, 99, 99, 99, 99, 99, 98, 98, 99, 99, 99, 98, 98, 98, 98, 98, 98, 98, 99, 99, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 99, 99, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98] },
+  "16_vt_monomorphic": { hr: [139, 174, 186, 186, 187, 186, 185, 186, 186, 186, 186, 186, 187, 187, 187, 186, 186, 187, 187, 186, 186, 186, 186, 186, 185, 185, 186, 187, 187, 186, 186, 186, 187, 187, 186, 185, 185, 186, 187, 186, 186, 186, 186, 186, 186, 186, 186, 186, 186, 186, 186, 185, 185, 186, 186, 185, 184, 184, 179, 169], spo2: [99, 98, 97, 96, 95, 95, 95, 94, 94, 94, 94, 94, 94, 94, 94, 94, 91, 91, 91, 91, 94, 94, 94, 94, 91, 91, 91, 91, 91, 91, 94, 94, 94, 94, 94, 94, 94, 94, 91, 91, 91, 94, 91, 91, 91, 91, 94, 94, 94, 91, 91, 94, 94, 94, 94, 94, 91, 91, 0, 91] },
+  "17_torsades": { hr: [139, 168, 183, 182, 183, 182, 180, 179, 184, 184, 182, 183, 182, 180, 180, 180, 178, 177, 179, 182, 181, 179, 178, 179, 181, 183, 178, 175, 177, 180, 180, 177, 181, 179, 176, 179, 178, 174, 178, 180, 179, 178, 178, 181, 183, 184, 181, 180, 181, 179, 179, 183, 183, 182, 181, 176, 175, 174, 160, 145], spo2: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+  "18_bradycardia": { hr: [111, 91, 84, 84, 84, 85, 85, 84, 84, 84, 84, 85, 84, 84, 85, 84, 84, 84, 84, 84, 84, 84, 85, 85, 84, 84, 83, 84, 84, 84, 84, 83, 83, 84, 85, 85, 85, 84, 84, 84, 85, 85, 84, 84, 85, 85, 84, 84, 84, 83, 83, 84, 84, 84, 85, 85, 84, 84, 84, 87], spo2: [100, 100, 100, 99, 99, 99, 99, 99, 99, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98] },
+  "19_bav2_mobitz1": { hr: [111, 96, 60, 50, 50, 50, 50, 50, 50, 51, 51, 50, 50, 50, 50, 50, 50, 51, 51, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 51, 51, 50, 50, 50, 50, 50, 50, 50, 50, 51, 51, 51, 51, 50, 50, 50, 50, 53], spo2: [100, 100, 100, 99, 99, 99, 99, 99, 99, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98] },
+  "20_bav3_complete": { hr: [109, 86, 72, 71, 71, 71, 71, 71, 71, 71, 71, 70, 71, 71, 70, 70, 71, 71, 71, 71, 71, 71, 71, 71, 70, 70, 70, 70, 71, 71, 71, 71, 71, 71, 71, 70, 71, 71, 71, 71, 71, 71, 70, 71, 71, 70, 70, 70, 71, 71, 71, 71, 71, 71, 71, 71, 71, 71, 70, 73], spo2: [100, 100, 99, 99, 99, 99, 98, 98, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 96, 97, 97, 97, 97, 97, 97, 97, 97, 97, 96, 96, 96, 96, 96, 96, 97, 97, 97, 97] },
+  "21_vf_from_sinus": { hr: [111, 89, 76, 76, 76, 76, 76, 76, 76, 75, 76, 76, 75, 76, 76, 76, 76, 76, 76, 76, 76, 76, 75, 76, 76, 76, 76, 76, 76, 75, 75, 76, 76, 76, 77, 76, 75, 76, 76, 75, 76, 76, 76, 76, 76, 76, 75, 76, 76, 76, 76, 75, 76, 77, 80, 116, 128, 0, 0, 0], spo2: [100, 100, 100, 99, 99, 99, 99, 99, 99, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 0, 0, 0, 0, 0] },
+  "22_vt_to_vf": { hr: [110, 89, 81, 80, 80, 81, 81, 81, 80, 81, 81, 80, 80, 80, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 80, 81, 81, 82, 82, 81, 81, 81, 81, 81, 81, 81, 81, 81, 80, 81, 81, 81, 81, 81, 81, 81, 85, 104, 164, 182, 0, 0], spo2: [100, 100, 100, 99, 99, 99, 99, 99, 99, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 0, 0, 0, 0] },
+  "23_asystole": { hr: [106, 102, 101, 102, 101, 100, 100, 100, 101, 101, 100, 100, 101, 100, 99, 101, 100, 100, 100, 100, 100, 100, 101, 101, 100, 100, 100, 100, 100, 99, 99, 100, 100, 100, 100, 100, 100, 100, 101, 101, 101, 101, 100, 100, 101, 101, 99, 99, 100, 100, 101, 100, 99, 99, 100, 97, 73, 65, 0, 0], spo2: [100, 100, 99, 99, 99, 99, 98, 98, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 0, 0, 0] },
+  "24_pea": { hr: [111, 89, 81, 80, 80, 82, 81, 81, 80, 81, 81, 80, 80, 81, 82, 82, 81, 80, 80, 80, 81, 81, 81, 81, 82, 81, 81, 81, 81, 81, 81, 81, 81, 80, 81, 81, 80, 81, 81, 81, 81, 81, 81, 81, 81, 81, 80, 80, 80, 80, 80, 80, 81, 81, 80, 80, 84, 90, 0, 0], spo2: [100, 100, 100, 99, 99, 99, 99, 99, 99, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 0, 0, 0] },
+  "25_progressive_deterioration": { hr: [111, 92, 81, 80, 81, 84, 87, 87, 88, 88, 90, 92, 92, 91, 91, 95, 99, 99, 97, 97, 99, 104, 104, 104, 104, 108, 111, 109, 109, 109, 112, 115, 116, 116, 116, 118, 121, 122, 122, 121, 125, 128, 127, 127, 127, 124, 121, 121, 121, 121, 119, 96, 90, 91, 91, 81, 63, 60, 60, 60], spo2: [100, 100, 100, 99, 99, 99, 99, 99, 98, 98, 97, 97, 97, 97, 96, 96, 95, 95, 95, 94, 91, 89, 87, 86, 86, 84, 83, 83, 83, 83, 82, 79, 79, 79, 79, 78, 76, 76, 76, 76, 75, 74, 73, 73, 73, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+  "26_hf_pulsus_alternans": { hr: [114, 114, 113, 113, 112, 112, 113, 113, 112, 112, 112, 112, 113, 113, 113, 113, 113, 113, 113, 112, 112, 113, 113, 113, 113, 112, 113, 113, 112, 112, 112, 113, 113, 113, 113, 113, 112, 112, 112, 112, 112, 113, 113, 112, 112, 112, 112, 113, 113, 112, 112, 112, 113, 113, 113, 112, 112, 112, 114, 123], spo2: [0, 0, 0, 0, 0, 100, 100, 100, 99, 0, 0, 99, 99, 0, 0, 0, 0, 0, 99, 99, 99, 99, 98, 98, 0, 0, 0, 0, 0, 0, 0, 98, 98, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 98, 0, 0, 0, 0, 0, 0, 98] },
+  "27_hf_cheyne_stokes": { hr: [117, 104, 95, 94, 93, 92, 93, 93, 94, 93, 92, 93, 94, 94, 93, 93, 94, 93, 91, 92, 92, 93, 95, 95, 94, 93, 92, 93, 93, 94, 93, 93, 93, 93, 92, 91, 92, 93, 94, 93, 93, 93, 93, 93, 91, 91, 92, 91, 91, 93, 94, 93, 94, 95, 93, 93, 92, 92, 96, 95], spo2: [100, 99, 99, 98, 97, 97, 97, 97, 96, 96, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 94, 94, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 94, 94, 94, 94, 94, 95, 95, 95, 0] },
+  "28_aortic_stenosis": { hr: [111, 90, 82, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 82, 81, 81, 81, 81, 81, 82, 82, 82, 81, 80, 80, 81, 81, 81, 82, 82, 81, 80, 81, 81, 81, 81, 80, 81, 81, 80, 81, 81, 81, 80, 81, 81, 81, 81, 81, 81, 81, 81, 81, 82, 82, 81, 81, 81, 80, 84], spo2: [100, 100, 100, 99, 99, 99, 99, 99, 99, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98] },
+  "29_aortic_regurgitation": { hr: [113, 94, 87, 86, 85, 86, 86, 86, 87, 87, 86, 86, 86, 86, 87, 88, 87, 86, 86, 87, 87, 86, 86, 86, 86, 86, 86, 86, 86, 86, 86, 86, 87, 86, 86, 86, 87, 86, 86, 86, 87, 87, 86, 86, 86, 86, 86, 87, 87, 86, 87, 87, 86, 86, 86, 87, 87, 87, 87, 92], spo2: [100, 100, 100, 99, 99, 99, 99, 99, 99, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98] },
+  "30_tamponade": { hr: [119, 119, 118, 117, 118, 118, 118, 118, 118, 118, 118, 117, 118, 119, 118, 117, 118, 118, 118, 118, 119, 118, 117, 118, 118, 118, 119, 119, 119, 119, 118, 118, 119, 118, 118, 119, 118, 118, 118, 118, 118, 118, 117, 117, 119, 119, 119, 119, 118, 118, 118, 118, 118, 118, 118, 118, 118, 118, 117, 122], spo2: [100, 100, 100, 99, 99, 99, 99, 99, 99, 98, 98, 98, 98, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97] },
+  "31_hcm": { hr: [113, 90, 76, 75, 76, 76, 76, 76, 76, 76, 76, 76, 75, 76, 76, 75, 75, 75, 75, 76, 76, 76, 76, 75, 75, 75, 75, 76, 76, 76, 76, 76, 76, 76, 76, 76, 75, 75, 76, 75, 75, 76, 76, 76, 76, 76, 75, 76, 76, 75, 76, 76, 76, 76, 76, 77, 76, 75, 75, 81], spo2: [100, 100, 100, 99, 99, 99, 99, 99, 99, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98] },
+  "32_hemorrhagic_shock": { hr: [134, 134, 134, 134, 134, 134, 135, 135, 135, 135, 134, 134, 134, 134, 134, 134, 134, 134, 134, 134, 134, 135, 135, 135, 135, 135, 135, 134, 134, 134, 134, 135, 135, 134, 135, 135, 134, 134, 134, 134, 134, 134, 134, 135, 135, 135, 134, 134, 134, 134, 134, 134, 135, 135, 134, 134, 134, 134, 134, 132], spo2: [0, 99, 98, 0, 0, 0, 96, 95, 0, 0, 0, 95, 94, 94, 91, 89, 0, 0, 0, 0, 86, 85, 0, 85, 85, 85, 83, 83, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 84, 0, 0, 0, 0, 0, 84, 84, 0, 84] },
+  "33_hypothermia_32C": { hr: [113, 112, 109, 108, 110, 110, 109, 110, 110, 107, 107, 107, 108, 111, 111, 110, 109, 107, 109, 111, 110, 107, 107, 109, 108, 108, 108, 109, 109, 109, 110, 110, 110, 109, 108, 109, 109, 105, 99, 105, 109, 107, 103, 105, 109, 108, 103, 104, 108, 110, 110, 108, 109, 110, 110, 108, 105, 105, 109, 113], spo2: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+  "34_hypothermia_28C": { hr: [110, 87, 72, 70, 70, 70, 71, 71, 71, 71, 70, 70, 70, 70, 70, 70, 70, 70, 71, 71, 70, 70, 70, 70, 71, 71, 71, 71, 70, 70, 70, 70, 70, 70, 70, 71, 71, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70, 71, 71, 70, 70, 70, 70, 70, 70, 70, 70, 70, 69], spo2: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+  "35_sleep_apnea": { hr: [110, 103, 96, 95, 95, 93, 95, 98, 97, 96, 94, 91, 93, 95, 95, 96, 94, 91, 94, 97, 96, 95, 96, 96, 88, 75, 73, 73, 67, 61, 60, 59, 58, 59, 63, 63, 63, 65, 70, 70, 70, 68, 63, 64, 80, 95, 98, 95, 94, 95, 88, 75, 82, 93, 98, 95, 93, 92, 92, 95], spo2: [100, 100, 99, 99, 99, 99, 99, 99, 99, 98, 98, 97, 98, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 98, 98, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 98, 98, 97, 97, 98, 97, 97, 98, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99] },
+  "36_vasovagal_syncope": { hr: [113, 92, 80, 79, 79, 79, 79, 79, 79, 78, 80, 76, 75, 79, 79, 78, 79, 79, 80, 80, 78, 78, 79, 79, 79, 79, 79, 79, 78, 79, 83, 81, 78, 80, 80, 79, 78, 78, 79, 79, 78, 78, 78, 78, 78, 79, 79, 78, 79, 80, 82, 81, 78, 79, 78, 78, 78, 78, 78, 79], spo2: [100, 100, 100, 99, 99, 99, 99, 99, 99, 98, 99, 99, 99, 99, 99, 99, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 99, 99, 99, 99, 99, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 99, 98, 98, 98, 98, 98, 98, 98] },
+  "37_venous_pooling": { hr: [113, 111, 106, 107, 104, 98, 95, 94, 88, 61, 55, 55, 55, 56, 56, 56, 56, 56, 56, 56, 56, 56, 56, 55, 55, 55, 55, 55, 55, 56, 56, 55, 55, 55, 56, 56, 56, 56, 56, 55, 55, 55, 55, 55, 55, 55, 55, 56, 56, 55, 56, 56, 55, 55, 55, 56, 56, 55, 56, 60], spo2: [100, 99, 99, 99, 98, 98, 97, 97, 97, 97, 96, 96, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95] },
+  "38_severe_anemia": { hr: [122, 116, 113, 112, 112, 112, 112, 112, 112, 113, 113, 112, 113, 113, 113, 112, 112, 113, 112, 111, 111, 113, 113, 113, 112, 113, 113, 112, 112, 113, 113, 113, 112, 112, 112, 111, 111, 113, 113, 112, 112, 112, 112, 112, 112, 112, 113, 113, 113, 114, 113, 112, 113, 113, 113, 114, 113, 113, 114, 118], spo2: [100, 100, 100, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99] },
+  "39_parkinsonian_tremor": { hr: [110, 87, 72, 70, 71, 71, 71, 71, 71, 71, 71, 72, 72, 71, 71, 72, 72, 71, 71, 71, 71, 70, 70, 71, 71, 71, 71, 71, 71, 71, 71, 71, 71, 71, 71, 71, 72, 72, 71, 70, 72, 71, 70, 71, 71, 70, 70, 70, 71, 71, 71, 71, 70, 69, 70, 71, 71, 71, 71, 78], spo2: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+  "40_co_poisoning": { hr: [118, 115, 114, 114, 113, 112, 112, 112, 112, 112, 112, 113, 113, 113, 113, 113, 113, 112, 113, 113, 112, 112, 112, 112, 113, 113, 113, 113, 112, 112, 113, 114, 113, 112, 112, 113, 113, 112, 112, 112, 112, 112, 112, 112, 113, 113, 113, 112, 111, 112, 113, 112, 113, 113, 113, 113, 113, 113, 113, 119], spo2: [100, 100, 100, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99] },
+};
+
+function renderTimelineChart(divId, hr, spo2) {
+  const minutes = hr.map((_, i) => i + 1);
+  Plotly.newPlot(divId, [
+    { x: minutes, y: hr, name: 'HR (bpm)', type: 'scatter', line: { color: '#c5221f', width: 2 } },
+    { x: minutes, y: spo2, name: 'SpO2 (%)', yaxis: 'y2', type: 'scatter', line: { color: '#1a73e8', width: 2 } }
+  ], {
+    margin: { t: 30, b: 40, l: 50, r: 50 },
+    xaxis: { title: 'Minute' },
+    yaxis: { title: 'HR (bpm)', side: 'left' },
+    yaxis2: { title: 'SpO2 (%)', side: 'right', overlaying: 'y', range: [60, 105] },
+    legend: { orientation: 'h', y: 1.1 },
+    height: 200
+  }, { responsive: true });
+}
+
+function renderOverviewCharts() {
+
+  const names = ["01_normal_rest", "02_elderly_rest", "03_athlete_rest", "04_hypoxia_mild", "05_hypoxia_moderate", "06_hypoxia_severe", "07_walking", "08_running", "09_wrist_movement", "10_af_rapid", "11_af_controlled", "12_flutter_2_1", "13_esv_bigeminy", "14_esv_trigeminy", "15_psvt_episodes", "16_vt_monomorphic", "17_torsades", "18_bradycardia", "19_bav2_mobitz1", "20_bav3_complete", "21_vf_from_sinus", "22_vt_to_vf", "23_asystole", "24_pea", "25_progressive_deterioration", "26_hf_pulsus_alternans", "27_hf_cheyne_stokes", "28_aortic_stenosis", "29_aortic_regurgitation", "30_tamponade", "31_hcm", "32_hemorrhagic_shock", "33_hypothermia_32C", "34_hypothermia_28C", "35_sleep_apnea", "36_vasovagal_syncope", "37_venous_pooling", "38_severe_anemia", "39_parkinsonian_tremor", "40_co_poisoning"];
+  const hrExp = [70, 65, 52, 95, 110, 140, 100, 165, 0, 130, 75, 150, 80, 80, 0, 180, 0, 42, 0, 33, 0, 0, 0, 0, 0, 95, 85, 75, 80, 100, 70, 130, 55, 35, 60, 0, 75, 110, 70, 110];
+  const hrMeas = [70.9, 75.7, 50.2, 96.8, 118.2, 144.4, 105.2, 171.0, 103.8, 129.8, 72.0, 158.4, 81.2, 80.8, 71.8, 185.6, 178.9, 84.2, 50.4, 70.8, 77.6, 84.7, 99.0, 81.0, 101.9, 112.7, 93.0, 81.1, 86.4, 118.2, 75.8, 134.3, 108.2, 70.3, 84.1, 78.8, 60.9, 112.6, 71.1, 112.7];
+  const spo2Exp = [98, 96, 99, 92, 85, 72, 97, 96, 0, 96, 97, 96, 97, 97, 96, 0, 0, 97, 97, 96, 0, 0, 0, 0, 0, 96, 0, 97, 97, 0, 97, 96, 94, 90, 0, 0, 97, 0, 97, 99];
+  const spo2Meas = [99.0, 97.3, 99.0, 95.4, 83.6, 85.3, 0, 0, 99.4, 97.3, 97.3, 97.3, 0, 98.1, 98.3, 93.0, 0, 98.1, 98.1, 97.1, 98.2, 98.1, 97.2, 98.1, 87.3, 98.8, 95.2, 98.1, 98.1, 97.3, 98.1, 88.4, 0, 0, 98.7, 98.3, 95.4, 99.0, 0, 99.0];
+  const colorsHR = ["#0d652d", "#2e7d32", "#0d652d", "#0d652d", "#0d652d", "#0d652d", "#0d652d", "#0d652d", "#9e9e9e", "#0d652d", "#0d652d", "#0d652d", "#0d652d", "#0d652d", "#9e9e9e", "#0d652d", "#9e9e9e", "#c5221f", "#9e9e9e", "#c5221f", "#9e9e9e", "#9e9e9e", "#9e9e9e", "#9e9e9e", "#9e9e9e", "#e37400", "#0d652d", "#0d652d", "#0d652d", "#e37400", "#0d652d", "#0d652d", "#c5221f", "#c5221f", "#e37400", "#9e9e9e", "#2e7d32", "#0d652d", "#0d652d", "#0d652d"];
+  const colorsSpo2 = ["#0d652d", "#0d652d", "#0d652d", "#e37400", "#0d652d", "#c5221f", "#9e9e9e", "#9e9e9e", "#9e9e9e", "#0d652d", "#0d652d", "#0d652d", "#9e9e9e", "#0d652d", "#2e7d32", "#9e9e9e", "#9e9e9e", "#0d652d", "#0d652d", "#0d652d", "#9e9e9e", "#9e9e9e", "#9e9e9e", "#9e9e9e", "#9e9e9e", "#2e7d32", "#9e9e9e", "#0d652d", "#0d652d", "#9e9e9e", "#0d652d", "#c5221f", "#9e9e9e", "#9e9e9e", "#9e9e9e", "#9e9e9e", "#0d652d", "#9e9e9e", "#9e9e9e", "#0d652d"];
+
+  Plotly.newPlot('chart-hr-overview', [
+    { x: names, y: hrExp, name: 'HR attendu', type: 'bar', marker: { color: '#bbdefb' } },
+    { x: names, y: hrMeas, name: 'HR mesure', type: 'bar', marker: { color: colorsHR } }
+  ], {
+    title: 'HR: Attendu vs Mesure (40 scenarios)',
+    barmode: 'group', margin: { t: 40, b: 120 },
+    xaxis: { tickangle: -45, tickfont: { size: 10 } },
+    yaxis: { title: 'BPM' },
+    height: 400
+  }, { responsive: true });
+
+  Plotly.newPlot('chart-spo2-overview', [
+    { x: names, y: spo2Exp, name: 'SpO2 attendu', type: 'bar', marker: { color: '#bbdefb' } },
+    { x: names, y: spo2Meas, name: 'SpO2 mesure', type: 'bar', marker: { color: colorsSpo2 } }
+  ], {
+    title: 'SpO2: Attendu vs Mesure (40 scenarios)',
+    barmode: 'group', margin: { t: 40, b: 120 },
+    xaxis: { tickangle: -45, tickfont: { size: 10 } },
+    yaxis: { title: '%', range: [60, 105] },
+    height: 400
+  }, { responsive: true });
+}
+
+// Render on load
+document.addEventListener('DOMContentLoaded', renderOverviewCharts);
+</script>
+</div>
+</body>
+</html>

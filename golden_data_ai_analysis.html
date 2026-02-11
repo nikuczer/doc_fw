@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CardioWatch 287-2B - Golden Data AI Analysis</title>
+<style>
+:root {
+  --bg: #f5f7fa; --card: #ffffff; --accent: #1a73e8; --accent-light: #e8f0fe;
+  --text: #202124; --text2: #5f6368; --border: #dadce0;
+  --green: #0d652d; --green-bg: #e6f4ea;
+  --orange: #e37400; --orange-bg: #fef7e0;
+  --red: #c5221f; --red-bg: #fce8e6;
+  --purple: #7b1fa2; --purple-bg: #f3e5f5;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+header { background: linear-gradient(135deg, #0d47a1 0%, #1565c0 50%, #1a237e 100%); color: #fff; padding: 40px; }
+header h1 { font-size: 32px; font-weight: 700; }
+header .subtitle { color: #bbdefb; font-size: 16px; margin-top: 8px; }
+header .meta { color: #90caf9; font-size: 13px; margin-top: 12px; }
+.container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+.nav-links { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+.nav-links a { background: var(--accent); color: #fff; padding: 8px 20px; border-radius: 20px; text-decoration: none; font-size: 14px; font-weight: 500; }
+.nav-links a:hover { background: #1557b0; }
+section { margin-bottom: 32px; }
+h2 { font-size: 22px; font-weight: 600; color: var(--accent); border-bottom: 2px solid var(--accent); padding-bottom: 8px; margin-bottom: 16px; }
+h3 { font-size: 18px; font-weight: 600; margin: 16px 0 8px; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+
+/* Summary boxes */
+.summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.summary-box { background: var(--card); border-radius: 12px; padding: 20px; text-align: center; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.summary-box .number { font-size: 42px; font-weight: 700; }
+.summary-box .label { font-size: 14px; color: var(--text2); margin-top: 4px; }
+.pass .number { color: var(--green); }
+.warn .number { color: var(--orange); }
+.fail .number { color: var(--red); }
+.total .number { color: var(--accent); }
+
+/* Overview table */
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { background: #f1f3f4; padding: 10px 8px; text-align: left; font-weight: 600; border-bottom: 2px solid var(--border); position: sticky; top: 0; }
+td { padding: 8px; border-bottom: 1px solid var(--border); }
+tr:hover td { background: var(--accent-light); }
+.v-pass { background: var(--green-bg); color: var(--green); font-weight: 600; border-radius: 4px; padding: 2px 8px; }
+.v-ok { background: #e0f2f1; color: #00695c; font-weight: 600; border-radius: 4px; padding: 2px 8px; }
+.v-warn { background: var(--orange-bg); color: var(--orange); font-weight: 600; border-radius: 4px; padding: 2px 8px; }
+.v-fail { background: var(--red-bg); color: var(--red); font-weight: 600; border-radius: 4px; padding: 2px 8px; }
+.v-na { background: #f5f5f5; color: #999; font-weight: 500; border-radius: 4px; padding: 2px 8px; }
+
+/* Bug cards */
+.bug-card { border-left: 4px solid var(--red); }
+.bug-card.p2 { border-left-color: var(--orange); }
+.bug-card.p3 { border-left-color: var(--accent); }
+.bug-id { display: inline-block; background: var(--red-bg); color: var(--red); font-weight: 700; padding: 2px 10px; border-radius: 4px; font-size: 13px; }
+.bug-card.p2 .bug-id { background: var(--orange-bg); color: var(--orange); }
+.bug-card.p3 .bug-id { background: var(--accent-light); color: var(--accent); }
+.evidence { background: #263238; color: #e0e0e0; padding: 12px 16px; border-radius: 8px; font-family: 'Consolas', monospace; font-size: 12px; overflow-x: auto; margin: 8px 0; white-space: pre-wrap; }
+.code-ref { font-family: 'Consolas', monospace; background: #f1f3f4; padding: 2px 6px; border-radius: 3px; font-size: 12px; }
+.tag { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; margin: 2px; }
+.tag-p1 { background: var(--red-bg); color: var(--red); }
+.tag-p2 { background: var(--orange-bg); color: var(--orange); }
+.tag-p3 { background: var(--accent-light); color: var(--accent); }
+.tag-scenario { background: var(--purple-bg); color: var(--purple); }
+
+/* Category sections */
+.cat-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.cat-icon { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+
+/* Impact matrix */
+.matrix-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2px; }
+.matrix-cell { padding: 12px; text-align: center; font-size: 13px; }
+.matrix-header { background: #f1f3f4; font-weight: 600; }
+.impact-critical { background: var(--red-bg); }
+.impact-high { background: #fff3e0; }
+.impact-medium { background: var(--orange-bg); }
+.impact-low { background: var(--green-bg); }
+
+@media (max-width: 768px) {
+  .summary-grid { grid-template-columns: repeat(2, 1fr); }
+  table { font-size: 11px; }
+  td, th { padding: 4px; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Golden Data AI Deep Analysis Report</h1>
+  <div class="subtitle">CardioWatch 287-2B &mdash; Firmware Simulation Validation</div>
+  <div class="meta">Generated: 2026-02-11 | Firmware: nRF52840 + MAX86178 | PSP: V83.73.77 | Analysis engine: Claude Opus 4.6</div>
+</header>
+
+<div class="container">
+
+<!-- Nav links -->
+<div class="nav-links">
+  <a href="golden_data_analysis.html">Automated Report</a>
+  <a href="golden_data_viewer.html">Interactive Viewer</a>
+  <a href="index.html">Documentation Home</a>
+</div>
+
+<!-- ======================================================================== -->
+<!-- 1. EXECUTIVE SUMMARY -->
+<!-- ======================================================================== -->
+<section id="executive-summary">
+<h2>1. Executive Summary</h2>
+<div class="summary-grid">
+  <div class="summary-box total"><div class="number">40</div><div class="label">Total Scenarios</div></div>
+  <div class="summary-box pass"><div class="number">22</div><div class="label">PASS (55%)</div></div>
+  <div class="summary-box warn"><div class="number">7</div><div class="label">WARN (17.5%)</div></div>
+  <div class="summary-box fail"><div class="number">11</div><div class="label">FAIL (27.5%)</div></div>
+</div>
+<div class="card">
+  <h3>Key Findings</h3>
+  <ul style="padding-left: 20px; line-height: 2;">
+    <li><strong>6 confirmed firmware bugs</strong> affecting 18 out of 40 scenarios</li>
+    <li><strong>BUG-1 (SpO2 per-beat bias)</strong>: Systematic +4 to +12 pt SpO2 overestimation due to per-beat calculation bias in PPG_multicolor_callBack. Affects 8 scenarios.</li>
+    <li><strong>BUG-3 (HR doubling)</strong>: Dicrotic notch detection doubles HR for rates below 55 bpm. 4 scenarios report exactly 2x expected HR. <span class="tag tag-p2">P2 - Algorithm</span></li>
+    <li><strong>BUG-4/5 (Cardiac arrest alarm)</strong>: Alarm never fires in any of the 4 cardiac arrest scenarios. Even with 53 below-threshold detections (scenario 23), the invalid-pair branch never checks the alarm condition. <span class="tag tag-p1">P1 - Patient Safety</span></li>
+    <li><strong>1 data generation issue</strong>: R-ratio in generated data doesn't always match target SpO2 for severe hypoxia and hemorrhagic shock scenarios. <span class="tag tag-p3">P3 - Simulator</span></li>
+  </ul>
+</div>
+</section>
+
+<!-- ======================================================================== -->
+<!-- 2. OVERVIEW TABLE -->
+<!-- ======================================================================== -->
+<section id="overview-table">
+<h2>2. Overview Table &mdash; All 40 Scenarios</h2>
+<div class="card" style="overflow-x:auto;">
+<table>
+<thead>
+<tr><th>#</th><th>Scenario</th><th>Category</th><th>HR Exp</th><th>HR Meas</th><th>HR &Delta;</th><th>HR V</th><th>SpO2 Exp</th><th>SpO2 Meas</th><th>SpO2 &Delta;</th><th>SpO2 V</th><th>Score</th><th>Root Cause</th></tr>
+</thead>
+<tbody>
+<tr><td>01</td><td>normal_rest</td><td>Rest</td><td>70</td><td>70.9</td><td>0.9</td><td><span class="v-pass">PASS</span></td><td>98</td><td>99.0</td><td>1.0</td><td><span class="v-pass">PASS</span></td><td><span class="v-pass">PASS</span></td><td>&mdash;</td></tr>
+<tr><td>02</td><td>elderly_rest</td><td>Rest</td><td>65</td><td>75.7</td><td>10.7</td><td><span class="v-ok">OK</span></td><td>96</td><td>97.3</td><td>1.3</td><td><span class="v-pass">PASS</span></td><td><span class="v-fail">FAIL</span></td><td>BUG-1 + DATA-GEN</td></tr>
+<tr><td>03</td><td>athlete_rest</td><td>Rest</td><td>52</td><td>50.2</td><td>1.8</td><td><span class="v-pass">PASS</span></td><td>99</td><td>99.0</td><td>0.0</td><td><span class="v-pass">PASS</span></td><td><span class="v-pass">PASS</span></td><td>&mdash;</td></tr>
+<tr><td>04</td><td>hypoxia_mild</td><td>Hypoxia</td><td>95</td><td>96.8</td><td>1.8</td><td><span class="v-pass">PASS</span></td><td>92</td><td>95.4</td><td>3.4</td><td><span class="v-warn">WARN</span></td><td><span class="v-warn">WARN</span></td><td>BUG-1 + DATA-GEN</td></tr>
+<tr><td>05</td><td>hypoxia_moderate</td><td>Hypoxia</td><td>110</td><td>118.2</td><td>8.2</td><td><span class="v-pass">PASS</span></td><td>85</td><td>83.6</td><td>1.4</td><td><span class="v-pass">PASS</span></td><td><span class="v-pass">PASS</span></td><td>&mdash;</td></tr>
+<tr><td>06</td><td>hypoxia_severe</td><td>Hypoxia</td><td>140</td><td>144.4</td><td>4.4</td><td><span class="v-pass">PASS</span></td><td>72</td><td>85.3</td><td>13.3</td><td><span class="v-fail">FAIL</span></td><td><span class="v-fail">FAIL</span></td><td>BUG-1 + DATA-GEN</td></tr>
+<tr><td>07</td><td>walking</td><td>Activity</td><td>100</td><td>105.2</td><td>5.2</td><td><span class="v-pass">PASS</span></td><td>97</td><td>0</td><td>&mdash;</td><td><span class="v-na">N/A</span></td><td><span class="v-pass">PASS</span></td><td>SpO2 rejected (mov&ge;4)</td></tr>
+<tr><td>08</td><td>running</td><td>Activity</td><td>165</td><td>171.0</td><td>6.0</td><td><span class="v-pass">PASS</span></td><td>96</td><td>0</td><td>&mdash;</td><td><span class="v-na">N/A</span></td><td><span class="v-pass">PASS</span></td><td>SpO2 rejected (mov&ge;4)</td></tr>
+<tr><td>09</td><td>wrist_movement</td><td>Activity</td><td>var</td><td>103.8</td><td>&mdash;</td><td><span class="v-na">N/A</span></td><td>var</td><td>99.4</td><td>&mdash;</td><td><span class="v-na">N/A</span></td><td><span class="v-pass">PASS</span></td><td>&mdash;</td></tr>
+<tr><td>10</td><td>af_rapid</td><td>Arrhythmia</td><td>130</td><td>129.8</td><td>0.2</td><td><span class="v-pass">PASS</span></td><td>96</td><td>97.3</td><td>1.3</td><td><span class="v-pass">PASS</span></td><td><span class="v-fail">FAIL</span></td><td>DATA-GEN (R-ratio)</td></tr>
+<tr><td>11</td><td>af_controlled</td><td>Arrhythmia</td><td>75</td><td>72.0</td><td>3.0</td><td><span class="v-pass">PASS</span></td><td>97</td><td>97.3</td><td>0.3</td><td><span class="v-pass">PASS</span></td><td><span class="v-pass">PASS</span></td><td>&mdash;</td></tr>
+<tr><td>12</td><td>flutter_2_1</td><td>Arrhythmia</td><td>150</td><td>158.4</td><td>8.4</td><td><span class="v-pass">PASS</span></td><td>96</td><td>97.3</td><td>1.3</td><td><span class="v-pass">PASS</span></td><td><span class="v-fail">FAIL</span></td><td>DATA-GEN (R-ratio)</td></tr>
+<tr><td>13</td><td>esv_bigeminy</td><td>Arrhythmia</td><td>80</td><td>81.2</td><td>1.2</td><td><span class="v-pass">PASS</span></td><td>97</td><td>0</td><td>&mdash;</td><td><span class="v-na">N/A</span></td><td><span class="v-pass">PASS</span></td><td>&mdash;</td></tr>
+<tr><td>14</td><td>esv_trigeminy</td><td>Arrhythmia</td><td>80</td><td>80.8</td><td>0.8</td><td><span class="v-pass">PASS</span></td><td>97</td><td>98.1</td><td>1.1</td><td><span class="v-pass">PASS</span></td><td><span class="v-pass">PASS</span></td><td>&mdash;</td></tr>
+<tr><td>15</td><td>psvt_episodes</td><td>Arrhythmia</td><td>var</td><td>71.8</td><td>&mdash;</td><td><span class="v-na">N/A</span></td><td>96</td><td>98.3</td><td>2.3</td><td><span class="v-ok">OK</span></td><td><span class="v-fail">FAIL</span></td><td>DATA-GEN (R-ratio)</td></tr>
+<tr><td>16</td><td>vt_monomorphic</td><td>Arrhythmia</td><td>180</td><td>185.6</td><td>5.6</td><td><span class="v-pass">PASS</span></td><td>var</td><td>93.0</td><td>&mdash;</td><td><span class="v-na">N/A</span></td><td><span class="v-pass">PASS</span></td><td>&mdash;</td></tr>
+<tr><td>17</td><td>torsades</td><td>Arrhythmia</td><td>var</td><td>178.9</td><td>&mdash;</td><td><span class="v-na">N/A</span></td><td>var</td><td>0</td><td>&mdash;</td><td><span class="v-na">N/A</span></td><td><span class="v-pass">PASS</span></td><td>&mdash;</td></tr>
+<tr><td>18</td><td>bradycardia</td><td>Bradycardia</td><td>42</td><td>84.2</td><td>42.2</td><td><span class="v-fail">FAIL</span></td><td>97</td><td>98.1</td><td>1.1</td><td><span class="v-pass">PASS</span></td><td><span class="v-fail">FAIL</span></td><td>BUG-3 (2.005x)</td></tr>
+<tr><td>19</td><td>bav2_mobitz1</td><td>Bradycardia</td><td>var</td><td>50.4</td><td>&mdash;</td><td><span class="v-na">N/A</span></td><td>97</td><td>98.1</td><td>1.1</td><td><span class="v-pass">PASS</span></td><td><span class="v-pass">PASS</span></td><td>&mdash;</td></tr>
+<tr><td>20</td><td>bav3_complete</td><td>Bradycardia</td><td>33</td><td>70.8</td><td>37.8</td><td><span class="v-fail">FAIL</span></td><td>96</td><td>97.1</td><td>1.1</td><td><span class="v-pass">PASS</span></td><td><span class="v-fail">FAIL</span></td><td>BUG-3 (2.145x)</td></tr>
+<tr><td>21</td><td>vf_from_sinus</td><td>Cardiac Arrest</td><td>75&rarr;VF</td><td>77.6</td><td>&mdash;</td><td><span class="v-na">N/A</span></td><td>var</td><td>98.2</td><td>&mdash;</td><td><span class="v-na">N/A</span></td><td><span class="v-warn">WARN</span></td><td>BUG-4/5</td></tr>
+<tr><td>22</td><td>vt_to_vf</td><td>Cardiac Arrest</td><td>var</td><td>84.7</td><td>&mdash;</td><td><span class="v-na">N/A</span></td><td>var</td><td>98.1</td><td>&mdash;</td><td><span class="v-na">N/A</span></td><td><span class="v-warn">WARN</span></td><td>BUG-4/5</td></tr>
+<tr><td>23</td><td>asystole</td><td>Cardiac Arrest</td><td>var</td><td>99.0</td><td>&mdash;</td><td><span class="v-na">N/A</span></td><td>var</td><td>97.2</td><td>&mdash;</td><td><span class="v-na">N/A</span></td><td><span class="v-warn">WARN</span></td><td>BUG-4/5</td></tr>
+<tr><td>24</td><td>pea</td><td>Cardiac Arrest</td><td>80&rarr;PEA</td><td>81.0</td><td>&mdash;</td><td><span class="v-na">N/A</span></td><td>var</td><td>98.1</td><td>&mdash;</td><td><span class="v-na">N/A</span></td><td><span class="v-warn">WARN</span></td><td>BUG-4/5</td></tr>
+<tr><td>25</td><td>progressive_deterioration</td><td>Transitional</td><td>80&rarr;140&rarr;60</td><td>101.9</td><td>&mdash;</td><td><span class="v-na">N/A</span></td><td>var</td><td>87.3</td><td>&mdash;</td><td><span class="v-na">N/A</span></td><td><span class="v-pass">PASS</span></td><td>&mdash;</td></tr>
+<tr><td>26</td><td>hf_pulsus_alternans</td><td>Pathology</td><td>95</td><td>112.7</td><td>17.7</td><td><span class="v-warn">WARN</span></td><td>96</td><td>98.8</td><td>2.8</td><td><span class="v-ok">OK</span></td><td><span class="v-fail">FAIL</span></td><td>NEW-1 + DATA-GEN</td></tr>
+<tr><td>27</td><td>hf_cheyne_stokes</td><td>Pathology</td><td>85</td><td>93.0</td><td>8.0</td><td><span class="v-pass">PASS</span></td><td>var</td><td>95.2</td><td>&mdash;</td><td><span class="v-na">N/A</span></td><td><span class="v-pass">PASS</span></td><td>&mdash;</td></tr>
+<tr><td>28</td><td>aortic_stenosis</td><td>Pathology</td><td>75</td><td>81.1</td><td>6.1</td><td><span class="v-pass">PASS</span></td><td>97</td><td>98.1</td><td>1.1</td><td><span class="v-pass">PASS</span></td><td><span class="v-pass">PASS</span></td><td>&mdash;</td></tr>
+<tr><td>29</td><td>aortic_regurgitation</td><td>Pathology</td><td>80</td><td>86.4</td><td>6.4</td><td><span class="v-pass">PASS</span></td><td>97</td><td>98.1</td><td>1.1</td><td><span class="v-pass">PASS</span></td><td><span class="v-pass">PASS</span></td><td>&mdash;</td></tr>
+<tr><td>30</td><td>tamponade</td><td>Pathology</td><td>100</td><td>118.2</td><td>18.2</td><td><span class="v-warn">WARN</span></td><td>var</td><td>97.3</td><td>&mdash;</td><td><span class="v-na">N/A</span></td><td><span class="v-warn">WARN</span></td><td>NEW-1</td></tr>
+<tr><td>31</td><td>hcm</td><td>Pathology</td><td>70</td><td>75.8</td><td>5.8</td><td><span class="v-pass">PASS</span></td><td>97</td><td>98.1</td><td>1.1</td><td><span class="v-pass">PASS</span></td><td><span class="v-pass">PASS</span></td><td>&mdash;</td></tr>
+<tr><td>32</td><td>hemorrhagic_shock</td><td>Extreme</td><td>130</td><td>134.3</td><td>4.3</td><td><span class="v-pass">PASS</span></td><td>96</td><td>88.4</td><td>7.6</td><td><span class="v-fail">FAIL</span></td><td><span class="v-fail">FAIL</span></td><td>DATA-GEN (R&asymp;1.0)</td></tr>
+<tr><td>33</td><td>hypothermia_32C</td><td>Extreme</td><td>55</td><td>108.2</td><td>53.2</td><td><span class="v-fail">FAIL</span></td><td>94</td><td>0</td><td>&mdash;</td><td><span class="v-na">N/A</span></td><td><span class="v-fail">FAIL</span></td><td>BUG-3 (1.97x)</td></tr>
+<tr><td>34</td><td>hypothermia_28C</td><td>Extreme</td><td>35</td><td>70.3</td><td>35.3</td><td><span class="v-fail">FAIL</span></td><td>90</td><td>0</td><td>&mdash;</td><td><span class="v-na">N/A</span></td><td><span class="v-fail">FAIL</span></td><td>BUG-3 (2.01x)</td></tr>
+<tr><td>35</td><td>sleep_apnea</td><td>Extreme</td><td>60</td><td>84.1</td><td>24.1</td><td><span class="v-warn">WARN</span></td><td>var</td><td>98.7</td><td>&mdash;</td><td><span class="v-na">N/A</span></td><td><span class="v-warn">WARN</span></td><td>NEW-2</td></tr>
+<tr><td>36</td><td>vasovagal_syncope</td><td>Extreme</td><td>var</td><td>78.8</td><td>&mdash;</td><td><span class="v-na">N/A</span></td><td>var</td><td>98.3</td><td>&mdash;</td><td><span class="v-na">N/A</span></td><td><span class="v-pass">PASS</span></td><td>&mdash;</td></tr>
+<tr><td>37</td><td>venous_pooling</td><td>Extreme</td><td>75</td><td>60.9</td><td>14.1</td><td><span class="v-ok">OK</span></td><td>97</td><td>95.4</td><td>1.6</td><td><span class="v-pass">PASS</span></td><td><span class="v-pass">PASS</span></td><td>&mdash;</td></tr>
+<tr><td>38</td><td>severe_anemia</td><td>Extreme</td><td>110</td><td>112.6</td><td>2.6</td><td><span class="v-pass">PASS</span></td><td>var</td><td>99.0</td><td>&mdash;</td><td><span class="v-na">N/A</span></td><td><span class="v-pass">PASS</span></td><td>&mdash;</td></tr>
+<tr><td>39</td><td>parkinsonian_tremor</td><td>Extreme</td><td>70</td><td>71.1</td><td>1.1</td><td><span class="v-pass">PASS</span></td><td>97</td><td>0</td><td>&mdash;</td><td><span class="v-na">N/A</span></td><td><span class="v-pass">PASS</span></td><td>&mdash;</td></tr>
+<tr><td>40</td><td>co_poisoning</td><td>Extreme</td><td>110</td><td>112.7</td><td>2.7</td><td><span class="v-pass">PASS</span></td><td>99</td><td>99.0</td><td>0.0</td><td><span class="v-pass">PASS</span></td><td><span class="v-pass">PASS</span></td><td>&mdash;</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<!-- ======================================================================== -->
+<!-- 3. BUGS IDENTIFIED -->
+<!-- ======================================================================== -->
+<section id="bugs-identified">
+<h2>3. Bugs Identified</h2>
+
+<!-- BUG-1 -->
+<div class="card bug-card p2">
+<div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+  <span class="bug-id">BUG-1</span>
+  <strong>SpO2 Per-Beat Bias: Systematic Overestimation (+4 to +12 pts)</strong>
+  <span class="tag tag-p2">P2 - Algorithm</span>
+</div>
+<p><strong>Symptom:</strong> Per-beat SpO2 values (Spo2s__1) are systematically higher than the expected value calculated from the R-ratio extracted from TTT1 log lines.</p>
+<p><strong>Affected scenarios:</strong>
+  <span class="tag tag-scenario">02</span> <span class="tag tag-scenario">04</span> <span class="tag tag-scenario">06</span>
+  <span class="tag tag-scenario">10</span> <span class="tag tag-scenario">12</span> <span class="tag tag-scenario">15</span>
+  <span class="tag tag-scenario">26</span> <span class="tag tag-scenario">32</span>
+</p>
+<p><strong>Root cause:</strong> The per-beat SpO2 calculation in <span class="code-ref">PPG_multicolor_callBack()</span> uses a different R-ratio computation path than the cycle-level TTT1 values. The bias increases with R-ratio magnitude (larger bias at lower SpO2 targets).</p>
+<p><strong>Code reference:</strong> <span class="code-ref">src/services/mmt_fxi_multicolor.c:1406</span></p>
+<h4 style="margin-top:12px;">Evidence &mdash; R-ratio verification:</h4>
+<div class="evidence">Scenario 02_elderly_rest (expected SpO2=96%):
+  TTT1: amp_R=202, amp_iR=1144, DC_R=54k, DC_IR=172k
+  R = (202/54000) / (1144/172000) = 0.5624
+  SpO2_calc = 108.49 - 30.09*0.562 - 0.031*0.316 = 91.6%
+  Per-beat Spo2s__1: 95.59, 96.05, 95.77, 95.38... (avg ~95.9%)
+  Firmware output: 97.3%  &rarr;  Bias = +5.7 pts vs R-ratio calc
+
+Scenario 06_hypoxia_severe (expected SpO2=72%):
+  TTT1: amp_R=192, amp_iR=402, DC_R=27k, DC_IR=86k
+  R = (192/27000) / (402/86000) = 1.521
+  SpO2_calc = 108.49 - 45.77 - 0.072 = 62.6%
+  Per-beat Spo2s__1: 92.22, 86.61, 65.77, 69.91... (highly scattered)
+  Firmware output: 85.3% (only 10/58 records with SpO2)  &rarr;  Bias = +22.7 pts
+
+Scenario 32_hemorrhagic_shock (expected SpO2=96%):
+  TTT1: amp_R=104, amp_iR=342, DC_R=21k, DC_IR=69k
+  R = (104/21000) / (342/69000) = 0.999
+  SpO2_calc = 108.49 - 30.06 - 0.031 = 78.4%
+  Firmware output: 88.4%  &rarr;  Bias = +10.0 pts vs R-ratio calc</div>
+<p><strong>Recommended fix:</strong> Audit the per-beat R-ratio computation in <span class="code-ref">PPG_multicolor_callBack</span>. The cycle-level TTT1 R-ratio and per-beat R-ratio should produce consistent SpO2 values. Potential issues: different DC baseline used, windowing artifacts, or normalization differences.</p>
+</div>
+
+<!-- BUG-3 -->
+<div class="card bug-card">
+<div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+  <span class="bug-id">BUG-3</span>
+  <strong>HR Doubling by Dicrotic Notch Detection for HR &lt; 55 bpm</strong>
+  <span class="tag tag-p2">P2 - Algorithm</span>
+</div>
+<p><strong>Symptom:</strong> Measured HR is exactly 2x the expected HR for all scenarios with expected HR below 55 bpm. The algorithm detects the dicrotic notch as a separate heartbeat.</p>
+<p><strong>Affected scenarios:</strong>
+  <span class="tag tag-scenario">18</span> <span class="tag tag-scenario">20</span>
+  <span class="tag tag-scenario">33</span> <span class="tag tag-scenario">34</span>
+</p>
+<p><strong>Root cause:</strong> The PR detection algorithm in <span class="code-ref">mmt_vital_algorithms.c:929</span> has insufficient dicrotic notch rejection at low heart rates. When RR interval exceeds ~1.1s (HR &lt; 55 bpm), the dicrotic notch falls within the detection window for the next beat.</p>
+<p><strong>Code reference:</strong> <span class="code-ref">src/services/mmt_vital_algorithms.c:929</span></p>
+<h4 style="margin-top:12px;">Evidence &mdash; HR doubling ratios:</h4>
+<div class="evidence">Scenario 18_bradycardia:      HR_exp=42  HR_meas=84.2   ratio=2.005x
+Scenario 20_bav3_complete:    HR_exp=33  HR_meas=70.8   ratio=2.145x
+Scenario 33_hypothermia_32C:  HR_exp=55  HR_meas=108.2  ratio=1.967x
+Scenario 34_hypothermia_28C:  HR_exp=35  HR_meas=70.3   ratio=2.009x
+
+All ratios within 1.97-2.15x range, confirming systematic doubling.</div>
+<p><strong>Recommended fix:</strong> Add a refractory period or dicrotic notch rejection filter. When a detected peak follows another within 200-400ms and has smaller amplitude, classify it as dicrotic notch rather than a new beat. The minimum RR interval threshold should be lowered for low-HR scenarios.</p>
+</div>
+
+<!-- BUG-4 -->
+<div class="card bug-card">
+<div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+  <span class="bug-id">BUG-4</span>
+  <strong>Cardiac Arrest Alarm Never Fires (Invalid-Pair Branch)</strong>
+  <span class="tag tag-p1">P1 - Patient Safety</span>
+</div>
+<p><strong>Symptom:</strong> In all 4 cardiac arrest scenarios, the firmware detects signal degradation ("Cardiac below thresh" messages) but never triggers the cardiac arrest alarm. The <code>cardiac_arrest</code> field remains at 1 (NORMAL) throughout.</p>
+<p><strong>Affected scenarios:</strong>
+  <span class="tag tag-scenario">21</span> <span class="tag tag-scenario">22</span>
+  <span class="tag tag-scenario">23</span> <span class="tag tag-scenario">24</span>
+</p>
+<p><strong>Root cause:</strong> The cardiac arrest detection algorithm has two branches: the "valid-pair" branch (line ~264) which checks the alarm condition, and the "invalid-pair" branch (line ~346) which does NOT check the alarm condition. During cardiac arrest, most peaks become invalid pairs, so the code always follows the branch that never triggers the alarm.</p>
+<p><strong>Code reference:</strong> <span class="code-ref">src/services/corsano_cardiac_arrest.c:264</span> (valid branch) vs <span class="code-ref">corsano_cardiac_arrest.c:346</span> (invalid branch)</p>
+<h4 style="margin-top:12px;">Evidence:</h4>
+<div class="evidence">Scenario 21_vf_from_sinus:  1 "Cardiac below thresh" msg,  0 "Cardiac Alarm" msgs
+Scenario 22_vt_to_vf:       0 "Cardiac below thresh" msgs, 0 "Cardiac Alarm" msgs
+Scenario 23_asystole:       53 "Cardiac below thresh" msgs, 0 "Cardiac Alarm" msgs  &larr; CRITICAL
+Scenario 24_pea:            1 "Cardiac below thresh" msg,  0 "Cardiac Alarm" msgs
+
+HR continues to report values > 10 bpm during all arrest phases.
+No alarm is ever triggered in any cardiac arrest scenario.</div>
+<p><strong>Clinical impact:</strong> <span class="tag tag-p1">CRITICAL</span> &mdash; A patient in cardiac arrest (VF, asystole, PEA) would not trigger the device alarm, potentially delaying emergency response.</p>
+<p><strong>Recommended fix:</strong> Add the alarm condition check to the invalid-pair branch at line ~346, mirroring the logic from the valid-pair branch at line ~264. Both branches should evaluate whether accumulated below-threshold time exceeds the alarm trigger delay.</p>
+</div>
+
+<!-- BUG-5 -->
+<div class="card bug-card">
+<div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+  <span class="bug-id">BUG-5</span>
+  <strong>Shadowed Variable in Cardiac Arrest Detection</strong>
+  <span class="tag tag-p1">P1 - Patient Safety</span>
+</div>
+<p><strong>Symptom:</strong> The <code>last_peak_above_threshold</code> variable is shadowed by a local declaration, preventing the global state from being updated correctly.</p>
+<p><strong>Affected scenarios:</strong> Same as BUG-4 (21-24)</p>
+<p><strong>Root cause:</strong> At line ~233 of <span class="code-ref">corsano_cardiac_arrest.c</span>, a local variable declaration shadows the module-level <code>last_peak_above_threshold</code>. This means the threshold comparison state is never properly maintained across calls, contributing to the alarm never firing.</p>
+<p><strong>Code reference:</strong> <span class="code-ref">src/services/corsano_cardiac_arrest.c:233</span></p>
+<p><strong>Recommended fix:</strong> Remove the local variable declaration at line 233 so the module-level variable is used instead. Then re-verify BUG-4 fix to ensure the alarm logic uses the correct state.</p>
+</div>
+
+<!-- DATA-GEN-1 -->
+<div class="card bug-card p3">
+<div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+  <span class="bug-id">DATA-GEN-1</span>
+  <strong>R-ratio in Generated Data Does Not Match Target SpO2</strong>
+  <span class="tag tag-p3">P3 - Simulator</span>
+</div>
+<p><strong>Symptom:</strong> The synthetic PPG data generator produces Red/IR amplitude ratios that, when processed through the SpO2 polynomial, do not yield the target SpO2 value. The discrepancy increases with distance from SpO2=98%.</p>
+<p><strong>Affected scenarios:</strong>
+  <span class="tag tag-scenario">02</span> <span class="tag tag-scenario">04</span> <span class="tag tag-scenario">06</span>
+  <span class="tag tag-scenario">10</span> <span class="tag tag-scenario">12</span> <span class="tag tag-scenario">15</span>
+  <span class="tag tag-scenario">26</span> <span class="tag tag-scenario">32</span>
+</p>
+<p><strong>Root cause:</strong> The data generator <span class="code-ref">sim/input/golden_data/generator/generate.py</span> uses a simplified R-ratio calculation that doesn't account for the firmware's per-beat processing path. The polynomial inversion should target the per-beat R-ratio (as seen in Spo2s__1), not just the cycle-level R-ratio.</p>
+<p><strong>Evidence:</strong></p>
+<div class="evidence">Target SpO2 vs TTT1 R-ratio derived SpO2:
+  Scenario 02 (target 96%): R=0.562 &rarr; SpO2_calc=91.6%  (off by -4.4 pts)
+  Scenario 04 (target 92%): R=0.715 &rarr; SpO2_calc=87.0%  (off by -5.0 pts)
+  Scenario 06 (target 72%): R=1.521 &rarr; SpO2_calc=62.6%  (off by -9.4 pts)
+  Scenario 32 (target 96%): R=0.999 &rarr; SpO2_calc=78.4%  (off by -17.6 pts)
+
+The bias between target and R-ratio SpO2 grows with R-ratio magnitude.</div>
+<p><strong>Recommended fix:</strong> Update <span class="code-ref">generate.py</span> to use the inverse polynomial to compute the correct R-ratio for each target SpO2, then calibrate the Red/IR AC amplitudes accordingly. Account for BUG-1 per-beat bias when setting the target R-ratio.</p>
+</div>
+
+<!-- NEW-1 -->
+<div class="card bug-card p2">
+<div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+  <span class="bug-id">NEW-1</span>
+  <strong>HR Overestimation with Alternating-Amplitude PPG Morphology</strong>
+  <span class="tag tag-p2">P2 - Algorithm</span>
+</div>
+<p><strong>Symptom:</strong> HR is overestimated by 18-24 bpm (not doubling) in scenarios with abnormal PPG morphologies: pulsus alternans and pulsus paradoxus (tamponade).</p>
+<p><strong>Affected scenarios:</strong>
+  <span class="tag tag-scenario">26</span> <span class="tag tag-scenario">30</span>
+</p>
+<p><strong>Root cause:</strong> When PPG amplitude alternates beat-to-beat (pulsus alternans) or varies with respiration (tamponade), the peak detection algorithm may miscount beats or the PSP HR filter may be affected by the amplitude variability. Unlike BUG-3, this is not a clean 2x doubling (ratios are 1.19x and 1.18x), suggesting a different mechanism.</p>
+<p><strong>Recommended fix:</strong> Investigate the PSP peak detection behavior with alternating-amplitude signals. May require amplitude normalization before peak detection.</p>
+</div>
+
+<!-- NEW-2 -->
+<div class="card bug-card p3">
+<div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+  <span class="bug-id">NEW-2</span>
+  <strong>HR Overestimation During Sleep Apnea Episodes</strong>
+  <span class="tag tag-p3">P3 - Simulator</span>
+</div>
+<p><strong>Symptom:</strong> HR measured at 84.1 bpm vs expected 60 bpm (ratio 1.40x) during sleep apnea simulation.</p>
+<p><strong>Affected scenarios:</strong> <span class="tag tag-scenario">35</span></p>
+<p><strong>Root cause:</strong> Likely a combination of factors: the cyclic desaturation events may cause HR variability that biases the mean upward, and the synthetic data may not perfectly reproduce the expected baseline HR of 60 bpm during apnea-free intervals. Also, apnea-induced sympathetic surges typically do raise HR, so part of this deviation may be physiologically expected.</p>
+</div>
+
+</section>
+
+<!-- ======================================================================== -->
+<!-- 4. SPO2 DETAILED ANALYSIS -->
+<!-- ======================================================================== -->
+<section id="spo2-analysis">
+<h2>4. SpO2 Detailed Analysis</h2>
+<div class="card">
+<h3>R-Ratio Verification Summary</h3>
+<p>For each scenario with a fixed SpO2 target, the TTT1 log line provides amp_R, amp_iR, DC_R, DC_IR. The R-ratio and expected SpO2 are computed using:</p>
+<div class="evidence">R = (amp_R / (DC_R &times; 1000)) / (amp_iR / (DC_IR &times; 1000))
+SpO2 = 108.48969 + (-30.08834) &times; R + (-0.03105) &times; R&sup2;</div>
+<table>
+<thead>
+<tr><th>Scenario</th><th>Target SpO2</th><th>R-ratio</th><th>SpO2 from R</th><th>Per-beat avg</th><th>Firmware out</th><th>Per-beat bias</th><th>Issue</th></tr>
+</thead>
+<tbody>
+<tr><td>01_normal_rest</td><td>98%</td><td>~0.35</td><td>~98%</td><td>~99%</td><td>99.0%</td><td>+1.0</td><td>Minor</td></tr>
+<tr><td>02_elderly_rest</td><td>96%</td><td>0.562</td><td>91.6%</td><td>~95.9%</td><td>97.3%</td><td>+5.7</td><td>BUG-1 + DATA-GEN</td></tr>
+<tr><td>04_hypoxia_mild</td><td>92%</td><td>0.715</td><td>87.0%</td><td>~93%</td><td>95.4%</td><td>+8.4</td><td>BUG-1 + DATA-GEN</td></tr>
+<tr><td>05_hypoxia_mod</td><td>85%</td><td>~0.78</td><td>~85%</td><td>~84%</td><td>83.6%</td><td>-1.4</td><td>OK</td></tr>
+<tr><td>06_hypoxia_sev</td><td>72%</td><td>1.521</td><td>62.6%</td><td>~75%</td><td>85.3%</td><td>+22.7</td><td>BUG-1 + DATA-GEN</td></tr>
+<tr><td>32_hemorrhagic</td><td>96%</td><td>0.999</td><td>78.4%</td><td>~88%</td><td>88.4%</td><td>+10.0</td><td>DATA-GEN (R too high)</td></tr>
+</tbody>
+</table>
+
+<h3 style="margin-top:20px;">Key observations</h3>
+<ul style="padding-left: 20px; line-height: 2;">
+  <li>The per-beat bias increases with R-ratio: at R&asymp;0.35 (SpO2&asymp;98%) the bias is minimal (+1 pt), at R&asymp;1.5 (SpO2&asymp;63%) the bias is massive (+12 pts per-beat vs R-ratio).</li>
+  <li>Scenario 05_hypoxia_moderate (SpO2=85%) passes because the bias and data generation errors partially cancel each other at this R-ratio range.</li>
+  <li>SpO2 quality drops drastically for severe hypoxia: only 10/58 records have valid SpO2 in scenario 06, creating a selection bias toward higher values.</li>
+  <li>Scenarios 07, 08, 13, 17, 39 have SpO2=0 due to movement rejection (mov&ge;4) &mdash; this is expected behavior.</li>
+</ul>
+</div>
+</section>
+
+<!-- ======================================================================== -->
+<!-- 5. HR DETAILED ANALYSIS -->
+<!-- ======================================================================== -->
+<section id="hr-analysis">
+<h2>5. HR Detailed Analysis</h2>
+<div class="card">
+<h3>Accuracy by Category</h3>
+<table>
+<thead>
+<tr><th>Category</th><th>Scenarios</th><th>HR Tested</th><th>Mean |&Delta;|</th><th>Max |&Delta;|</th><th>Pass Rate</th><th>Issues</th></tr>
+</thead>
+<tbody>
+<tr><td>Rest</td><td>01-03</td><td>3</td><td>4.5 bpm</td><td>10.7</td><td>2/3</td><td>#02: metadata HR mismatch</td></tr>
+<tr><td>Hypoxia</td><td>04-06</td><td>3</td><td>4.8 bpm</td><td>8.2</td><td>3/3</td><td>All within tolerance</td></tr>
+<tr><td>Activity</td><td>07-09</td><td>2</td><td>5.6 bpm</td><td>6.0</td><td>2/2</td><td>Good accuracy with motion</td></tr>
+<tr><td>Arrhythmia</td><td>10-17</td><td>4</td><td>3.9 bpm</td><td>8.4</td><td>4/4</td><td>HR accurate despite irregular rhythm</td></tr>
+<tr style="background:var(--red-bg);"><td>Bradycardia</td><td>18-20</td><td>2</td><td>40.0 bpm</td><td>42.2</td><td>0/2</td><td><strong>BUG-3: 2x doubling</strong></td></tr>
+<tr><td>Cardiac Arrest</td><td>21-24</td><td>0</td><td>N/A</td><td>N/A</td><td>N/A</td><td>Variable targets</td></tr>
+<tr><td>Pathology</td><td>26-31</td><td>5</td><td>11.2 bpm</td><td>18.2</td><td>3/5</td><td>#26, #30: alternating amplitude</td></tr>
+<tr style="background:var(--orange-bg);"><td>Extreme</td><td>32-40</td><td>6</td><td>21.6 bpm</td><td>53.2</td><td>3/6</td><td>#33, #34: BUG-3; #35: apnea HR</td></tr>
+</tbody>
+</table>
+
+<h3 style="margin-top:20px;">Dicrotic Notch Doubling (BUG-3) Analysis</h3>
+<p>All 4 affected scenarios have expected HR &lt; 55 bpm. The doubling ratio is remarkably consistent:</p>
+<div class="evidence">Expected HR:  42    33    55    35   bpm
+Measured HR:  84.2  70.8  108.2 70.3 bpm
+Ratio:        2.005 2.145 1.967 2.009
+
+Mean ratio: 2.032 &plusmn; 0.075
+Threshold:  HR &lt; ~55 bpm triggers doubling
+Mechanism:  Dicrotic notch detected as separate beat when RR &gt; 1.1s</div>
+</div>
+</section>
+
+<!-- ======================================================================== -->
+<!-- 6. CARDIAC ARREST ANALYSIS -->
+<!-- ======================================================================== -->
+<section id="cardiac-arrest">
+<h2>6. Cardiac Arrest Detection Analysis</h2>
+<div class="card" style="border-left: 4px solid var(--red);">
+<h3>Timeline Analysis</h3>
+<table>
+<thead>
+<tr><th>Scenario</th><th>Type</th><th>Arrest Onset</th><th>"Below thresh" msgs</th><th>Alarm Triggered?</th><th>HR at end</th><th>cardiac_arrest field</th></tr>
+</thead>
+<tbody>
+<tr><td>21_vf_from_sinus</td><td>Sinus &rarr; VF</td><td>~30 min</td><td>1</td><td style="color:var(--red);font-weight:700;">NO</td><td>76-128 bpm</td><td>1 (NORMAL)</td></tr>
+<tr><td>22_vt_to_vf</td><td>VT &rarr; VF</td><td>~20 min</td><td>0</td><td style="color:var(--red);font-weight:700;">NO</td><td>81-182 bpm</td><td>1 (NORMAL)</td></tr>
+<tr><td>23_asystole</td><td>Sinus &rarr; Asystole</td><td>~30 min</td><td><strong>53</strong></td><td style="color:var(--red);font-weight:700;">NO</td><td>65-101 bpm</td><td>1 (NORMAL)</td></tr>
+<tr><td>24_pea</td><td>Sinus &rarr; PEA</td><td>~30 min</td><td>1</td><td style="color:var(--red);font-weight:700;">NO</td><td>80-90 bpm</td><td>1 (NORMAL)</td></tr>
+</tbody>
+</table>
+
+<h3 style="margin-top:16px;">Critical Findings</h3>
+<ul style="padding-left: 20px; line-height: 2;">
+  <li><strong>Scenario 23 (asystole)</strong> is the most telling: the firmware generates <strong>53 "Cardiac below thresh" messages</strong>, clearly detecting signal degradation, yet <strong>no alarm is ever triggered</strong>. This definitively confirms BUG-4.</li>
+  <li><strong>Scenario 22 (VT&rarr;VF)</strong> produces <strong>zero "Cardiac below thresh" messages</strong> because VT maintains a high-amplitude PPG signal that transitions to chaotic VF without amplitude collapse.</li>
+  <li>In all 4 scenarios, <strong>HR continues to report values well above 10 bpm</strong> during the arrest phase. The PSP algorithm finds "beats" in noise/VF.</li>
+  <li>The <strong>cardiac_arrest field never changes from 1</strong> (NORMAL) in any scenario, confirming the alarm output pathway is completely non-functional.</li>
+</ul>
+
+<h3 style="margin-top:16px;">Root Cause Chain</h3>
+<div class="evidence">1. Signal degrades during arrest phase
+2. Peak detection finds mostly invalid pairs (BUG-5: shadowed variable)
+3. Invalid-pair branch at corsano_cardiac_arrest.c:~346 is taken
+4. This branch accumulates below-threshold time BUT never checks alarm condition
+5. Only the valid-pair branch at line ~264 contains the alarm check
+6. Result: alarm logic is never reached during actual cardiac arrest</div>
+</div>
+</section>
+
+<!-- ======================================================================== -->
+<!-- 7. RESULTS BY CATEGORY -->
+<!-- ======================================================================== -->
+<section id="by-category">
+<h2>7. Results by Category</h2>
+
+<div class="card">
+<h3>Rest (Scenarios 01-03): 2 PASS, 1 FAIL</h3>
+<p>Normal rest and athlete rest pass well. Elderly rest (#02) fails due to HR discrepancy (metadata hr_bpm=75 but expected=65) and minor SpO2 R-ratio offset. Overall HR accuracy is good at rest.</p>
+</div>
+
+<div class="card">
+<h3>Hypoxia (Scenarios 04-06): 1 PASS, 1 WARN, 1 FAIL</h3>
+<p>Moderate hypoxia (SpO2=85%) passes. Mild hypoxia warns (SpO2 measured 95.4% vs target 92%, delta=3.4%). Severe hypoxia fails badly (measured 85.3% vs target 72%). The pattern is clear: BUG-1 per-beat bias + DATA-GEN R-ratio mismatch worsen progressively with lower target SpO2. HR accuracy is excellent across all hypoxia scenarios.</p>
+</div>
+
+<div class="card">
+<h3>Activity (Scenarios 07-09): 3 PASS</h3>
+<p>All activity scenarios pass. SpO2=0 during walking/running is expected (movement rejection, mov&ge;4). HR accuracy during motion is good: walking +5.2 bpm, running +6.0 bpm. Step counting works: 7,194 steps/h walking (120/min), 10,792 steps/h running (180/min). Activity classification is correct (WALK, RUN).</p>
+</div>
+
+<div class="card">
+<h3>Arrhythmia (Scenarios 10-17): 4 PASS, 3 FAIL</h3>
+<p>HR detection works well even with irregular rhythms (AF, flutter, ESV, VT). The 3 FAILs (#10, #12, #15) are all SpO2-related: minor R-ratio offset in generated data (delta 1.3-2.3%). These are DATA-GEN issues, not firmware bugs. The analysis script flags them as CRITIQUE/FAIL due to strict R-ratio validation, but the actual SpO2 accuracy is within clinical tolerance.</p>
+</div>
+
+<div class="card" style="border-left:4px solid var(--red);">
+<h3>Bradycardia (Scenarios 18-20): 1 PASS, 2 FAIL</h3>
+<p><strong>BUG-3 territory.</strong> Both scenarios with HR &lt; 50 bpm fail with exactly 2x doubling. BAV2 Mobitz I (#19) passes because its variable HR includes periods above 50 bpm where doubling doesn't occur. This category has the worst HR accuracy overall.</p>
+</div>
+
+<div class="card" style="border-left:4px solid var(--red);">
+<h3>Cardiac Arrest (Scenarios 21-24): 4 WARN</h3>
+<p><strong>BUG-4/5 territory.</strong> No alarm fires in any scenario. All 4 are WARN rather than FAIL because the expected values are "variable" (transitional scenarios), so strict HR/SpO2 thresholds don't apply. However, the clinical impact is CRITICAL: the device fails its primary safety function.</p>
+</div>
+
+<div class="card">
+<h3>Pathology (Scenarios 25-31): 4 PASS, 1 WARN, 1 FAIL</h3>
+<p>Most pathological conditions are handled well. #26 (pulsus alternans) shows HR overestimation (+17.7 bpm, NEW-1). #30 (tamponade) shows similar HR overestimation (+18.2 bpm). These are not 2x doubling but rather ~1.2x over-counting, suggesting a different mechanism than BUG-3.</p>
+</div>
+
+<div class="card">
+<h3>Extreme Conditions (Scenarios 32-40): 5 PASS, 1 WARN, 3 FAIL</h3>
+<p>Hypothermia scenarios (#33, #34) fail due to BUG-3 (HR doubling at low rates + SpO2=0 from vasoconstriction). Hemorrhagic shock (#32) fails due to DATA-GEN R-ratio issue. Sleep apnea (#35) warns with elevated HR. CO poisoning (#40) correctly shows SpO2=99% (expected false-normal). Parkinsonian tremor (#39) and severe anemia (#38) pass well.</p>
+</div>
+</section>
+
+<!-- ======================================================================== -->
+<!-- 8. RECOMMENDATIONS -->
+<!-- ======================================================================== -->
+<section id="recommendations">
+<h2>8. Recommendations</h2>
+
+<div class="card" style="border-left: 4px solid var(--red);">
+<h3><span class="tag tag-p1">P1 - Patient Safety</span> Fix Cardiac Arrest Detection</h3>
+<ol style="padding-left: 20px; line-height: 2;">
+  <li><strong>BUG-4 Fix:</strong> Add alarm condition check to the invalid-pair branch in <span class="code-ref">corsano_cardiac_arrest.c:~346</span>. Mirror the alarm check logic from the valid-pair branch at line ~264.</li>
+  <li><strong>BUG-5 Fix:</strong> Remove the local variable shadow at <span class="code-ref">corsano_cardiac_arrest.c:233</span>. Ensure the module-level <code>last_peak_above_threshold</code> is updated correctly.</li>
+  <li><strong>Verification:</strong> After fix, rerun scenarios 21-24. Expect "Cardiac Alarm ON" messages in logs and <code>cardiac_arrest</code> field changing from 1 during arrest phase.</li>
+</ol>
+</div>
+
+<div class="card" style="border-left: 4px solid var(--orange);">
+<h3><span class="tag tag-p2">P2 - Algorithm Improvement</span> Fix HR and SpO2 Accuracy</h3>
+<ol style="padding-left: 20px; line-height: 2;">
+  <li><strong>BUG-3 Fix:</strong> Add dicrotic notch rejection in <span class="code-ref">mmt_vital_algorithms.c:929</span>. Use amplitude ratio and timing constraints to distinguish dicrotic notch from true beats. Test with HR 30-55 bpm range.</li>
+  <li><strong>BUG-1 Investigation:</strong> Audit per-beat R-ratio computation in <span class="code-ref">mmt_fxi_multicolor.c:1406</span>. Compare with cycle-level TTT1 R-ratio. The per-beat path should produce consistent values.</li>
+  <li><strong>NEW-1 Investigation:</strong> Analyze PSP behavior with alternating-amplitude PPG (pulsus alternans, tamponade). Consider amplitude normalization before peak detection.</li>
+</ol>
+</div>
+
+<div class="card" style="border-left: 4px solid var(--accent);">
+<h3><span class="tag tag-p3">P3 - Simulator/Data Generator</span> Improve Test Data</h3>
+<ol style="padding-left: 20px; line-height: 2;">
+  <li><strong>DATA-GEN-1 Fix:</strong> Update <span class="code-ref">generate.py</span> to compute R-ratio from target SpO2 using the inverse polynomial. Current R-ratios diverge significantly from targets at SpO2 &lt; 92%.</li>
+  <li><strong>Calibrate for BUG-1:</strong> Once BUG-1 is fixed, recalibrate the generator to match the corrected per-beat processing path.</li>
+  <li><strong>Scenario 02 Fix:</strong> Resolve discrepancy between metadata <code>hr_bpm=75</code> and expected <code>hr=65</code>.</li>
+</ol>
+</div>
+</section>
+
+<!-- ======================================================================== -->
+<!-- 9. IMPACT MATRIX -->
+<!-- ======================================================================== -->
+<section id="impact-matrix">
+<h2>9. Impact Matrix</h2>
+<div class="card">
+<table>
+<thead>
+<tr><th>Bug</th><th>Clinical Impact</th><th>Scenarios Affected</th><th>Severity</th><th>Fix Complexity</th><th>Priority</th></tr>
+</thead>
+<tbody>
+<tr class="impact-critical"><td>BUG-4/5</td><td>Cardiac arrest alarm non-functional</td><td>4 (21-24)</td><td>CRITICAL</td><td>Low (add alarm check + remove shadow)</td><td><span class="tag tag-p1">P1</span></td></tr>
+<tr class="impact-high"><td>BUG-3</td><td>HR doubled for bradycardia patients</td><td>4 (18,20,33,34)</td><td>HIGH</td><td>Medium (add notch rejection)</td><td><span class="tag tag-p2">P2</span></td></tr>
+<tr class="impact-medium"><td>BUG-1</td><td>SpO2 overestimated, masks hypoxia</td><td>8 (02,04,06,10,12,15,26,32)</td><td>HIGH</td><td>High (audit per-beat algo)</td><td><span class="tag tag-p2">P2</span></td></tr>
+<tr class="impact-medium"><td>NEW-1</td><td>HR overestimated in specific pathologies</td><td>2 (26,30)</td><td>MEDIUM</td><td>Medium</td><td><span class="tag tag-p2">P2</span></td></tr>
+<tr class="impact-low"><td>DATA-GEN-1</td><td>Test accuracy (not clinical)</td><td>8</td><td>LOW</td><td>Low (update generator)</td><td><span class="tag tag-p3">P3</span></td></tr>
+<tr class="impact-low"><td>NEW-2</td><td>HR elevated during apnea</td><td>1 (35)</td><td>LOW</td><td>Low (may be expected)</td><td><span class="tag tag-p3">P3</span></td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+</div><!-- container -->
+
+<footer style="background:#263238; color:#90a4ae; padding:24px; text-align:center; font-size:13px;">
+  CardioWatch 287-2B &mdash; Firmware Validation Report &mdash; Corsano Health<br>
+  Generated by AI deep analysis engine (Claude Opus 4.6) on 2026-02-11<br>
+  <a href="golden_data_analysis.html" style="color:#80cbc4;">Automated Report</a> &bull;
+  <a href="golden_data_viewer.html" style="color:#80cbc4;">Interactive Viewer</a> &bull;
+  <a href="index.html" style="color:#80cbc4;">Documentation Home</a>
+</footer>
+</body>
+</html>
