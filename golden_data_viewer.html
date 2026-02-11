@@ -928,15 +928,6 @@ function generateAIAnalysis(activityRecords, ppgGreen, ppgRed, ppgIR, acc, scena
       3. Reporting rate issue: Default mmt_process_fxi uses 30-min reporting. With 1-hour test, you get max 2 reports.
       Solution: call mmt_process_fxi_set_reporting_rate_spo2(60) for 1-min reports.`
     });
-  } else if (avgSpO2 > 0 && estimatedSpO2 !== null && Math.abs(avgSpO2 - estimatedSpO2) > 5) {
-    insights.push({
-      title: 'SpO2 Measurement vs Raw R Ratio Discrepancy',
-      details: `Firmware reports avg SpO2 = ${avgSpO2}%, but raw R ratio ${rRatio} suggests ~${estimatedSpO2}%.<br>
-      Difference: ${Math.abs(avgSpO2 - estimatedSpO2).toFixed(1)}%.<br><br>
-      This is <strong>${Math.abs(avgSpO2 - estimatedSpO2) > 10 ? 'ABNORMAL' : 'acceptable'}</strong>.
-      Firmware likely applies additional filtering, perfusion quality checks, and temporal averaging
-      that aren't visible in this 1Hz-downsampled view. Original 32Hz data may show more variability.`
-    });
   }
 
   // === MOTION ANALYSIS ===
