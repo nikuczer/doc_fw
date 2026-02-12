@@ -278,7 +278,7 @@
     <ol>
         <li><a href="#executive-summary">Executive Summary</a></li>
         <li><a href="#overview-table">Overview Table &mdash; All 40 Scenarios</a></li>
-        <li><a href="#bugs-identified">Bugs Identified (6 Open, 2 Fixed)</a></li>
+        <li><a href="#bugs-identified">Bugs Identified (5 Open, 3 Fixed)</a></li>
         <li><a href="#spo2-analysis">SpO2 Detailed Analysis</a></li>
         <li><a href="#hr-analysis">HR Detailed Analysis</a></li>
         <li><a href="#cardiac-arrest-analysis">Cardiac Arrest Detection Analysis</a></li>
@@ -314,7 +314,7 @@
 </div>
 
 <div class="alert-box alert-fail">
-    <strong>Critical Patient Safety Issue:</strong> Cardiac arrest detection is completely non-functional. None of the 4 cardiac arrest scenarios (21-24) trigger an alarm, due to 3 independent bugs in <code>corsano_cardiac_arrest.c</code>. This is the highest priority finding.
+    <strong>Critical Patient Safety Issue:</strong> Cardiac arrest detection is unreliable. Source fixes for BUG-4 and BUG-5 are now included in the DLL &mdash; alarms DO fire in scenarios 23 (asystole: 6 alarm cycles) and 24 (PEA: 1 alarm cycle), but the alarm-OFF logic is too permissive: a single spurious noise peak cancels the alarm within seconds. Scenarios 21 (VF) and 22 (VT&rarr;VF) still produce no alarm at all.
 </div>
 
 <div class="alert-box alert-warn">
@@ -323,11 +323,11 @@
 
 <h3>Key Findings</h3>
 <ul>
-    <li><strong>8 bugs identified</strong> (5 previously known, 3 new) &mdash; <strong>6 open, 2 fixed</strong></li>
-    <li><strong>P1 (Patient Safety):</strong> 3 bugs &mdash; Cardiac arrest alarm never fires (BUG-4, BUG-5), counter reset by spurious peaks (NEW). Source fixes exist but DLL not rebuilt.</li>
-    <li><strong>P2 (Algorithm):</strong> 3 bugs &mdash; HR doubling (BUG-3), SpO2 selection bias + rolling avg initialization lag (NEW), SpO2 old_mid bias (BUG-1)</li>
-    <li><strong>P3 (Simulator/Tooling):</strong> 1 open bug &mdash; ACC classifier (BUG-6). Two issues <strong>FIXED</strong>: analysis script wrong expected values (scenarios 26, 30), hemorrhagic shock SNR (scenario 32 now PASS)</li>
-    <li><strong>Improvement vs previous run:</strong> Scenario 32 (hemorrhagic_shock) moved from FAIL to PASS (SpO2 97.3 vs 89.1 previously). Total: 30 PASS (+1), 5 FAIL (-1)</li>
+    <li><strong>8 bugs identified</strong> (5 previously known, 3 new) &mdash; <strong>5 open, 3 fixed</strong></li>
+    <li><strong>P1 (Patient Safety):</strong> 2 bugs open &mdash; Alarm-OFF logic too permissive (NEW: 4 consecutive peaks cancel alarm), counter reset by spurious peaks (NEW). BUG-4 partially fixed (Alarm3 ON fires in invalid-pair branch). BUG-5 <strong>FIXED</strong> (shadowed variable removed).</li>
+    <li><strong>P2 (Algorithm):</strong> 3 bugs &mdash; HR doubling (BUG-3: bandpass filter 0.7Hz cutoff + FFT search floor 45bpm), SpO2 selection bias + rolling avg init at 100% (NEW), SpO2 old_mid bias (BUG-1)</li>
+    <li><strong>P3 (Simulator/Tooling):</strong> 1 open bug &mdash; ACC classifier vs mmt_idle_detection mismatch (BUG-6). Two issues <strong>FIXED</strong>: analysis script wrong expected values (scenarios 26, 30), hemorrhagic shock SNR (scenario 32 now PASS)</li>
+    <li><strong>Improvement vs previous run:</strong> Scenario 32 (hemorrhagic_shock) moved from FAIL to PASS (SpO2 97.3 vs 89.1 previously). BUG-4 and BUG-5 source fixes now in DLL &mdash; alarms fire in scenarios 23 and 24 but cycle ON/OFF. Total: 30 PASS, 5 WARN, 5 FAIL</li>
 </ul>
 </section>
 
@@ -375,7 +375,7 @@
 <tr><td>17</td><td>torsades</td><td><span class="category-header">Arrhythmias</span></td><td>var</td><td>178.7</td><td>&mdash;</td><td><span class="badge badge-na">N/A</span></td><td>var</td><td>0</td><td>&mdash;</td><td><span class="badge badge-na">N/A</span></td><td><span class="badge badge-pass">PASS</span></td><td>&mdash;</td></tr>
 <tr><td>18</td><td>bradycardia</td><td><span class="category-header">Bradycardia</span></td><td>42</td><td>84.2</td><td>42.2</td><td><span class="badge badge-fail">FAIL</span></td><td>97</td><td>98.1</td><td>1.1</td><td><span class="badge badge-pass">PASS</span></td><td><span class="badge badge-fail">FAIL</span></td><td>BUG-3 (ratio <span class="ratio-highlight">2.005</span>)</td></tr>
 <tr><td>19</td><td>bav2_mobitz1</td><td><span class="category-header">Bradycardia</span></td><td>var</td><td>50.4</td><td>&mdash;</td><td><span class="badge badge-na">N/A</span></td><td>97</td><td>98.1</td><td>1.1</td><td><span class="badge badge-pass">PASS</span></td><td><span class="badge badge-pass">PASS</span></td><td>&mdash;</td></tr>
-<tr><td>20</td><td>bav3_complete</td><td><span class="category-header">Bradycardia</span></td><td>33</td><td>70.8</td><td>37.8</td><td><span class="badge badge-fail">FAIL</span></td><td>96</td><td>97.0</td><td>1.0</td><td><span class="badge badge-pass">PASS</span></td><td><span class="badge badge-fail">FAIL</span></td><td>BUG-3 (ratio <span class="ratio-highlight">2.023</span>)</td></tr>
+<tr><td>20</td><td>bav3_complete</td><td><span class="category-header">Bradycardia</span></td><td>33</td><td>70.8</td><td>37.8</td><td><span class="badge badge-fail">FAIL</span></td><td>96</td><td>97.0</td><td>1.0</td><td><span class="badge badge-pass">PASS</span></td><td><span class="badge badge-fail">FAIL</span></td><td>BUG-3 (ratio <span class="ratio-highlight">2.145</span>)</td></tr>
 <tr><td>21</td><td>vf_from_sinus</td><td><span class="category-header">Cardiac Arrest</span></td><td>75&rarr;VF</td><td>80.8</td><td>&mdash;</td><td><span class="badge badge-na">N/A</span></td><td>var</td><td>98.1</td><td>&mdash;</td><td><span class="badge badge-na">N/A</span></td><td><span class="badge badge-warn">WARN</span></td><td>BUG-4, BUG-5</td></tr>
 <tr><td>22</td><td>vt_to_vf</td><td><span class="category-header">Cardiac Arrest</span></td><td>var</td><td>86.9</td><td>&mdash;</td><td><span class="badge badge-na">N/A</span></td><td>var</td><td>97.9</td><td>&mdash;</td><td><span class="badge badge-na">N/A</span></td><td><span class="badge badge-warn">WARN</span></td><td>BUG-4, BUG-5</td></tr>
 <tr><td>23</td><td>asystole</td><td><span class="category-header">Cardiac Arrest</span></td><td>var</td><td>99.4</td><td>&mdash;</td><td><span class="badge badge-na">N/A</span></td><td>var</td><td>97.2</td><td>&mdash;</td><td><span class="badge badge-na">N/A</span></td><td><span class="badge badge-warn">WARN</span></td><td>BUG-4, BUG-5, NEW</td></tr>
@@ -406,102 +406,92 @@
 <!-- ============================================================ -->
 <section id="bugs-identified">
 <h2>3. Bugs Identified</h2>
-<p>8 bugs total: 5 previously known (confirmed still present), 3 newly discovered. <strong>6 open, 2 fixed.</strong></p>
+<p>8 bugs total: 5 previously known, 3 newly discovered. <strong>5 open, 3 fixed.</strong> BUG-4 partially fixed (alarm fires but cycles ON/OFF). BUG-5 fully fixed (shadowed variable removed).</p>
 
 <!-- BUG-4 -->
 <div class="bug-card bug-p1">
     <div class="bug-header">
-        <span>BUG-4: Cardiac Arrest Alarm Never Fires (Invalid-Pair Branch)</span>
+        <span>BUG-4: Cardiac Arrest Alarm Fires but Cycles ON/OFF (Partially Fixed)</span>
         <span class="priority p1">P1 &mdash; PATIENT SAFETY</span>
     </div>
     <div class="bug-body">
         <dl>
             <dt>Symptom</dt>
-            <dd>Zero "Cardiac Alarm ON" messages in all 4 cardiac arrest scenarios (21-24). Cardiac arrest is never detected.</dd>
+            <dd>The invalid-pair alarm check was added (source fix confirmed) &mdash; "Cardiac Alarm3 ON (invalid pairs)!" now fires in scenarios 23 (6 cycles) and 24 (1 cycle). However, the alarm is immediately cancelled by the alarm-OFF logic within seconds. Scenarios 21 (VF) and 22 (VT&rarr;VF) still produce zero alarms.</dd>
             <dt>Affected Scenarios</dt>
-            <dd>21_vf_from_sinus, 22_vt_to_vf, 23_asystole, 24_pea</dd>
-            <dt>Root Cause</dt>
-            <dd>In <code>corsano_cardiac_arrest.c:346-352</code>, the <code>else</code> branch (invalid pair: peak-trough time &gt; 1.0s) accumulates <code>below_threshold_duration</code> and logs "Cardiac below thresh", but <strong>never checks</strong> if the duration exceeds <code>min_duration</code> (10s) to fire the alarm. During cardiac arrest, peaks have chaotic timing (peak-trough &gt; 1.0s), so the code enters this branch exclusively. The alarm check at line 264 is unreachable.</dd>
+            <dd>21_vf_from_sinus (0 alarms), 22_vt_to_vf (0 alarms), 23_asystole (6 alarm ON/OFF cycles, <code>cardiac_arrest=2</code> for 1 of 60 records), 24_pea (1 alarm ON/OFF cycle, <code>cardiac_arrest=2</code> for 1 of 60 records)</dd>
+            <dt>Root Cause (Remaining Issue)</dt>
+            <dd>The alarm-OFF logic at <code>corsano_cardiac_arrest.c:287</code> requires only 4 consecutive above-threshold peaks to cancel the alarm. The inter-peak timing validation (lines 302-330) that would verify realistic cardiac intervals is <strong>commented out</strong>. During arrest, noise produces occasional spurious peaks that satisfy the unvalidated condition, causing rapid alarm ON/OFF cycling.</dd>
             <dt>Evidence</dt>
-            <dd>
-<pre><code>// corsano_cardiac_arrest.c:346-352 -- alarm check MISSING
+            <dd>Scenario 23 (asystole) log shows 6 complete alarm cycles:
+<pre><code>// corsano_cardiac_arrest.c:349-359 -- FIX APPLIED
 } else {
     below_threshold_duration += time_diff;
-    if (below_threshold_duration > 5.0)
-        LOG_TO_FLASH("Cardiac below thresh %.1f %.1f.",
-            below_threshold_duration, time_diff);
-    // NO alarm check here -- compare with line 264 in valid-pair branch
-}</code></pre>
+    // BUG-4 FIX: alarm check in invalid-pair branch
+    if (below_threshold_duration > min_duration && !alarm_on) {
+        alarm_on = true;
+        corsano_cardiac_set_state(CARDIAC_ARREST);
+        LOG_TO_FLASH("Cardiac Alarm3 ON (invalid pairs)!");
+    }
+}
+// But alarm-OFF at line 287 cancels within seconds:
+// consecutive_above_threshold >= 4  →  alarm OFF (no timing validation)</code></pre>
+            Scenario 23: Alarm3 ON fires 5 times, Alarm2 ON fires 1 time, each cancelled within ~20-50 log lines. <code>cardiac_arrest=2</code> for only 1 of 60 activity records.
             </dd>
-            <dt>Fix</dt>
-            <dd>Add alarm condition check after <code>below_threshold_duration += time_diff;</code> in the invalid-pair branch, mirroring the logic at lines 264-268.</dd>
+            <dt>Fix (Remaining)</dt>
+            <dd>Un-comment the 2-second inter-peak validation at lines 302-330. Require sustained normal rhythm (15+ consecutive above-threshold peaks within physiological timing) before turning alarm OFF. Add hysteresis: alarm-ON requires 10s, alarm-OFF should require 30s of normal rhythm.</dd>
         </dl>
     </div>
 </div>
 
 <!-- BUG-5 -->
-<div class="bug-card bug-p1">
-    <div class="bug-header">
+<div class="bug-card bug-p1" style="opacity: 0.7;">
+    <div class="bug-header" style="background: var(--success-bg); color: var(--success); border-left: 4px solid var(--success);">
         <span>BUG-5: Shadowed Variable Prevents Gap-Based Alarm</span>
-        <span class="priority p1">P1 &mdash; PATIENT SAFETY</span>
+        <span class="badge badge-pass">FIXED</span>
     </div>
     <div class="bug-body">
         <dl>
-            <dt>Symptom</dt>
-            <dd>The gap-detection alarm ("Cardiac Alarm ON!") can never fire. Even when no valid peaks are seen for &gt;10 seconds, the alarm is not triggered.</dd>
-            <dt>Root Cause</dt>
-            <dd>Local variable <code>float last_peak_above_threshold = 0.0;</code> at <code>corsano_cardiac_arrest.c:233</code> shadows the global at line 143. Every function call starts with the local at 0.0, so the condition <code>if (last_peak_above_threshold != 0)</code> at line 243 is <strong>always false</strong>. The gap duration is never computed.</dd>
-            <dt>Evidence</dt>
-            <dd>
-<pre><code>// Line 143 (global):
-float last_peak_above_threshold = 0;
-
-// Line 233 (local shadow -- BUG):
-void corsano_cardiac_arrest_send_peak(...) {
-    float last_peak_above_threshold = 0.0;  // SHADOWS GLOBAL!
-    ...
-    if (last_peak_above_threshold != 0) {   // ALWAYS FALSE
-        float gap_duration = (peak_time - last_peak_above_threshold);
-        if (gap_duration > min_duration && !alarm_on) {
-            LOG_TO_FLASH("Cardiac Alarm ON!");  // NEVER REACHED
-        }
-    }
-}</code></pre>
-            </dd>
-            <dt>Fix</dt>
-            <dd>Remove the local declaration at line 233. Use the global variable directly.</dd>
+            <dt>Symptom (resolved)</dt>
+            <dd>The gap-detection alarm ("Cardiac Alarm ON!") could never fire because a local variable shadowed the global <code>last_peak_above_threshold</code>.</dd>
+            <dt>Root Cause (was)</dt>
+            <dd>Local variable <code>float last_peak_above_threshold = 0.0;</code> at <code>corsano_cardiac_arrest.c:233</code> shadowed the global at line 143. Every function call started with the local at 0.0, making the gap condition always false.</dd>
+            <dt>Resolution</dt>
+            <dd>Source code comment at line 233 confirms: <code>// BUG-5 FIX: removed local 'last_peak_above_threshold' that shadowed global (line 143)</code>. The global variable at line 143 is now the only declaration. Fix verified working: scenario 24 (PEA) fires "Cardiac Alarm ON!" via the gap-detection path, confirming <code>last_peak_above_threshold</code> retains its value between calls. Scenario 23 fires "Cardiac Alarm2 ON!" (amplitude-based, valid pair) &mdash; also requires the global to persist.</dd>
         </dl>
     </div>
 </div>
 
-<!-- NEW: Counter Reset -->
+<!-- NEW: Alarm-OFF Too Permissive + Counter Reset -->
 <div class="bug-card bug-p1">
     <div class="bug-header">
-        <span>NEW: Below-Threshold Counter Reset by Spurious Peaks</span>
+        <span>NEW: Alarm-OFF Logic Too Permissive + Counter Reset by Spurious Peaks</span>
         <span class="priority p1">P1 &mdash; PATIENT SAFETY</span>
     </div>
     <div class="bug-body">
         <dl>
             <dt>Symptom</dt>
-            <dd>In scenario 23 (asystole), <code>below_threshold_duration</code> reaches 31.8 seconds (well past the 10s alarm threshold) but then resets to ~6 seconds. The cycle repeats without ever triggering an alarm.</dd>
+            <dd>Two related issues: (1) The alarm-OFF logic at <code>corsano_cardiac_arrest.c:287</code> requires only 4 consecutive above-threshold peaks to cancel an active alarm, with no inter-peak timing validation (lines 302-330 are commented out). In scenario 23 (asystole), the alarm fires 6 times but is cancelled within seconds each time. (2) A single spurious above-threshold peak resets <code>below_threshold_duration = 0</code>, preventing sustained accumulation toward the alarm-ON threshold.</dd>
+            <dt>Affected Scenarios</dt>
+            <dd>23_asystole (6 alarm ON/OFF cycles, <code>cardiac_arrest=2</code> for 1/60 records), 24_pea (1 alarm ON/OFF cycle, <code>cardiac_arrest=2</code> for 1/60 records). Scenarios 21 and 22 never reach alarm-ON because noise peaks prevent <code>below_threshold_duration</code> from accumulating past 10s.</dd>
             <dt>Root Cause</dt>
-            <dd>At <code>corsano_cardiac_arrest.c:340-344</code>, a <strong>single</strong> spurious above-threshold peak resets <code>below_threshold_duration = 0</code>. During cardiac arrest, noise occasionally produces peaks that satisfy <code>amplitude_difference >= threshold</code>, resetting the entire counter.</dd>
+            <dd>During cardiac arrest, noise occasionally produces spurious peaks that satisfy <code>amplitude_difference >= threshold</code>. These peaks: (a) reset <code>below_threshold_duration = 0</code> at line 340, preventing alarm-ON, and (b) increment <code>consecutive_above_threshold</code> at line 287, triggering alarm-OFF after just 4 peaks. The 2-second inter-peak validation that would reject temporally scattered noise peaks is <strong>commented out</strong> (lines 302-330).</dd>
             <dt>Evidence</dt>
-            <dd>Scenario 23 (asystole) log shows 3 reset cycles across 43 "Cardiac below thresh" messages:
-<pre><code>// Cluster 1: builds to 27.8s then resets
-Cardiac below thresh 7.8 7.8  // starts
-Cardiac below thresh 14.2 2.0  // accumulating
-Cardiac below thresh 23.8 2.0  // still going
-Cardiac below thresh 27.8 2.0  // MAX 27.8s -- then resets!
+            <dd>Scenario 23 (asystole) log shows 6 complete alarm cycles:
+<pre><code>// Alarm cycle example from scenario 23:
+Cardiac Alarm3 ON (invalid pairs)!   // alarm fires correctly
+Cardiac below thresh 16.0 2.0        // still in arrest
+Cardiac Alarm OFF!                   // cancelled by 4 spurious peaks
 
-// Cluster 3: builds to 31.8s then resets
-Cardiac below thresh 25.6 1.8  // accumulating
-Cardiac below thresh 29.6 2.0  // past 10s alarm threshold!
-Cardiac below thresh 31.8 2.0  // MAX 31.8s -- then resets!
-Cardiac below thresh 6.1 6.1   // RESET by spurious peak</code></pre>
+// Counter reset pattern:
+Cardiac below thresh 27.8 2.0  // 27.8s accumulated
+Cardiac below thresh 6.1 6.1   // RESET to 6.1s by single spurious peak
+
+// Scenario 22 (VT→VF): 0 "below thresh" msgs -- noise peaks
+// are frequent enough to prevent ANY accumulation</code></pre>
             </dd>
             <dt>Fix</dt>
-            <dd>Require N consecutive above-threshold peaks (e.g., 4) before resetting the counter, consistent with the alarm-off logic design.</dd>
+            <dd>(1) Un-comment the 2-second inter-peak validation at lines 302-330 to reject temporally scattered noise peaks. (2) Require N consecutive above-threshold peaks (e.g., 15) before resetting counter or cancelling alarm. (3) Add amplitude gating: when green avg amp drops below ~100 (normal ~800), reject all peaks as noise. (4) Add hysteresis: alarm-OFF should require 30+ seconds of sustained normal rhythm.</dd>
         </dl>
     </div>
 </div>
@@ -515,11 +505,16 @@ Cardiac below thresh 6.1 6.1   // RESET by spurious peak</code></pre>
     <div class="bug-body">
         <dl>
             <dt>Symptom</dt>
-            <dd>Heart rate is consistently reported at exactly 2x the true rate for bradycardic patients. Measured/expected ratios: 2.005, 2.023, 1.967, 2.006. Algorithm reports with high confidence (quality=3).</dd>
+            <dd>Heart rate is consistently reported at exactly 2x the true rate for bradycardic patients. Measured/expected ratios: 2.005, 2.145, 1.967, 2.006. Algorithm reports with high confidence (quality=3).</dd>
             <dt>Affected Scenarios</dt>
             <dd>18_bradycardia (42&rarr;84.2 bpm, ratio 2.005), 20_bav3_complete (33&rarr;70.8 bpm, ratio 2.145), 33_hypothermia_32C (55&rarr;108.2 bpm, ratio 1.967), 34_hypothermia_28C (35&rarr;70.2 bpm, ratio 2.006)</dd>
             <dt>Root Cause</dt>
-            <dd>At HR &lt; 55 bpm (IBI &gt; 1090ms), the dicrotic notch in the PPG waveform has sufficient temporal separation from the systolic peak to be detected as a separate cardiac beat by the peak detector at <code>mmt_vital_algorithms.c:929</code>. Even with attenuated notch depth (0.04-0.06), the long IBI gives the notch maximum prominence.</dd>
+            <dd>Two reinforcing mechanisms exclude the true fundamental frequency, leaving only the 2nd harmonic (dicrotic notch):
+            <ol style="margin: 8px 0 0 20px;">
+                <li><strong>Bandpass filter cutoff at 0.7 Hz (42 bpm):</strong> At <code>mmt_vital_algorithms.c:281-283</code>, the green channel bandpass filter has <code>lowcut=0.7</code>. At 42 bpm, the fundamental sits at the -3dB point (50% power attenuation). At 35 bpm (0.58 Hz), it is heavily suppressed (&gt;-10 dB). The 2nd harmonic passes unattenuated.</li>
+                <li><strong>FFT search floor at 45 bpm:</strong> At <code>mmt_vital_algorithms.c:70</code>, <code>#define LOW_BPM_50 45.0</code> sets the FFT search window to bin 24 (45 bpm). A 42 bpm fundamental maps to bin 22.4, <strong>below</strong> the search floor. A 33 bpm fundamental maps to bin 17.6, far below. Only the doubled frequency is found.</li>
+            </ol>
+            Once locked to the doubled frequency, <code>prev_hr > 80</code> raises the search floor to 50-65 bpm (lines 3626, 3695), and the jump limiter (~4 bpm/step, lines 3677-3685) prevents recovery. The algorithm permanently latches to the 2nd harmonic.</dd>
             <dt>Evidence</dt>
             <dd>
                 <table>
@@ -531,8 +526,14 @@ Cardiac below thresh 6.1 6.1   // RESET by spurious peak</code></pre>
                 </table>
                 <p style="font-size:0.85em;">* Scenario 33 has additional shivering noise (BUG-6 interaction), reducing quality and adding HR variance.</p>
             </dd>
-            <dt>Fix</dt>
-            <dd>Add dicrotic notch rejection: suppress secondary peaks within 300-500ms of a primary systolic peak when the secondary amplitude is significantly smaller.</dd>
+            <dt>Fix (3-level approach)</dt>
+            <dd>
+            <ol style="margin: 0 0 0 20px;">
+                <li><strong>Lower bandpass filter cutoff</strong> (<code>mmt_vital_algorithms.c:283</code>): Redesign with <code>lowcut=0.4 Hz</code> (24 bpm) instead of 0.7 Hz (42 bpm)</li>
+                <li><strong>Lower FFT search floor</strong> (<code>mmt_vital_algorithms.c:70</code>): Change <code>LOW_BPM_50</code> from 45.0 to 25.0 to include bradycardic fundamentals</li>
+                <li><strong>Add sub-harmonic checking</strong>: After finding the dominant FFT peak at frequency f, check for significant energy at f/2. If <code>peak_at_f/2 / peak_at_f > 0.3</code>, report f/2 as the true HR. Most robust approach.</li>
+            </ol>
+            </dd>
         </dl>
     </div>
 </div>
@@ -582,17 +583,19 @@ Cardiac below thresh 6.1 6.1   // RESET by spurious peak</code></pre>
 <!-- BUG-6 -->
 <div class="bug-card bug-p3">
     <div class="bug-header">
-        <span>BUG-6: ACC Classifier &mdash; Shivering Misclassified as OTHER</span>
-        <span class="priority p3">P3 &mdash; SIMULATOR</span>
+        <span>BUG-6: Movement Detection Mismatch &mdash; mmt_idle_detection vs PSP Classifier</span>
+        <span class="priority p3">P3 &mdash; SIMULATOR / FIRMWARE</span>
     </div>
     <div class="bug-body">
         <dl>
             <dt>Symptom</dt>
-            <dd>Scenario 33 (hypothermia 32&deg;C with shivering): activity classified as OTHER (type=1) instead of REST (type=7). Causes 100% SpO2 rejection and 0% HR quality.</dd>
+            <dd>Scenario 33 (hypothermia 32&deg;C with shivering): PSP classifier correctly classifies as REST (variance threshold raised to 20k), but <code>mmt_idle_detection</code> returns ACTIVE(4), causing 100% SpO2 movement rejection. SpO2=0 for all 60 minutes.</dd>
             <dt>Root Cause</dt>
-            <dd>In <code>sim_stubs.c:485-490</code>, ACC variance in [5000, 50000) is classified as OTHER. Shivering at 0.15g produces variance ~17k, falling in this range.</dd>
+            <dd>Two independent motion-detection systems use incompatible metrics: PSP uses per-second variance (threshold 20k), while <code>mmt_idle_detection.c:256-270</code> uses sum of Euclidean sample-to-sample deltas over 100 samples. For 10 Hz shivering at 0.15g (154 counts), <code>sum_d_acc</code> reaches ~36,600, far above the ACTIVE threshold of 2,700 at line 175. The SpO2 filter at <code>mmt_vital_algorithms.c:5956</code> then zeros SpO2 when <code>movement_level &gt; ALMOST_IDLE(1)</code>.</dd>
             <dt>Impact</dt>
-            <dd>Amplifies BUG-3: the OTHER classification prevents quality-enhancement filters, making the HR doubling noisier (std=2.5 vs &lt;1.0 for pure BUG-3 scenarios).</dd>
+            <dd>SpO2 completely suppressed during shivering despite being stationary. Also amplifies BUG-3: the low quality prevents quality-enhancement filters, making HR doubling noisier (std=2.5 vs &lt;1.0 for pure BUG-3 scenarios).</dd>
+            <dt>Scenario 34 (28&deg;C, no shivering) &mdash; Different SpO2=0 mechanism</dt>
+            <dd>No movement issue (IDLE). SpO2=0 because Red-IR peak alignment mismatch (<code>time_diff</code> 4.2-7.0s) exceeds the fixed 4.0s threshold at <code>mmt_vital_algorithms.c:5989</code>. At 35 bpm with 30% DC levels and noise_std=200, peak detection is too imprecise. Valid SpO2=82 readings are rejected. Fix: scale threshold with HR: <code>threshold = max(4.0, 60.0/HR * 2.5)</code>.</dd>
         </dl>
     </div>
 </div>
@@ -667,7 +670,7 @@ Cardiac below thresh 6.1 6.1   // RESET by spurious peak</code></pre>
     <strong>06_hypoxia_severe:</strong> Two compounding issues cause the +14.6 point deviation: (1) The quality filter (R &gt; 2 cutoff + spo2_std &gt; 10) creates selection bias, rejecting the most hypoxic beats while keeping beats where noise lowered R. (2) The <code>Proc_spo2</code> rolling average initializes at 100% and converges very slowly toward the true ~72%, with only 9 non-zero SpO2 values in 60 minutes of activity records. Mean of the 9 values (99, 97, 95, 91, 86, 83, 79, 76, 73) = 86.6%, matching the measured value exactly. Per-beat scatter within windows:
 <pre><code>Spo2s__1,92.76,87.03,64.37,70.92,92.97,70.90,67.76,61.34,75.47
 Spo2s__1,71.08,64.57,85.45,78.18,50.84,86.30,82.37,65.54,67.07</code></pre>
-    232 per-beat windows processed; SPO2_F quality&gt;0 in only 60.4% of intervals (145/240). No "venous pooling" messages found (BUG-2 not triggered, as <code>sleep_recording=false</code> in sim).
+    232 per-beat windows processed; SPO2_F quality&gt;0 in only 54% of intervals (~130/240). 128 "spo2 bads" rejection events (median-split divergence &gt;4 pts rejects entire window). No "venous pooling" messages found (BUG-2 not triggered, as <code>sleep_recording=false</code> in sim). <strong>Note:</strong> The <code>Proc_spo2</code> rolling average correctly converges to 73% by minute 18, but the <code>show high</code> quality gate then suppresses reporting when data density drops below threshold &mdash; the remaining 42 minutes output SpO2=0.
 </div>
 
 <div class="finding-box" style="border-left-color: var(--success);">
@@ -748,7 +751,7 @@ Spo2s__1,71.08,64.57,85.45,78.18,50.84,86.30,82.37,65.54,67.07</code></pre>
 <h2>6. Cardiac Arrest Detection Analysis</h2>
 
 <div class="alert-box alert-fail">
-    <strong>CRITICAL SAFETY FINDING:</strong> The cardiac arrest detection system is non-functional. None of the 4 arrest scenarios (VF, VT&rarr;VF, asystole, PEA) trigger a cardiac alarm. Three independent bugs prevent alarm activation. <strong>Note:</strong> BUG-4 and BUG-5 source fixes exist in <code>corsano_cardiac_arrest.c</code> but the simulator DLL has not been rebuilt &mdash; current results reflect the unpatched code.
+    <strong>CRITICAL SAFETY FINDING:</strong> The cardiac arrest detection system is unreliable despite source fixes for BUG-4 and BUG-5 being active in the current DLL. Alarms now fire in scenarios 23 (asystole: 6 ON/OFF cycles) and 24 (PEA: 1 ON/OFF cycle), but the alarm-OFF logic cancels them within seconds. Scenarios 21 (VF) and 22 (VT&rarr;VF) produce zero alarms. The <code>cardiac_arrest</code> field reaches value 2 (CARDIAC_ARREST) for only 1 out of 60 activity records in scenarios 23 and 24, and never in scenarios 21 and 22.
 </div>
 
 <h3>Per-Scenario Timeline</h3>
@@ -764,30 +767,33 @@ Spo2s__1,71.08,64.57,85.45,78.18,50.84,86.30,82.37,65.54,67.07</code></pre>
         <td>22_vt_to_vf</td><td>VT&rarr;VF</td><td style="color:var(--fail); font-weight:bold;">0</td><td>N/A</td><td style="color:var(--fail); font-weight:bold;">NO</td><td>81-177 bpm</td><td>98%</td>
     </tr>
     <tr>
-        <td>23_asystole</td><td>Asystole</td><td>45</td><td>31.8s</td><td style="color:var(--fail); font-weight:bold;">NO</td><td>71-108 bpm</td><td>97%</td>
+        <td>23_asystole</td><td>Asystole</td><td>45</td><td>31.8s</td><td style="color:var(--warn); font-weight:bold;">YES (6 cycles, each cancelled)</td><td>71-108 bpm</td><td>97%</td>
     </tr>
     <tr>
-        <td>24_pea</td><td>PEA</td><td>1</td><td>8.2s</td><td style="color:var(--fail); font-weight:bold;">NO</td><td>80-103 bpm</td><td>98%</td>
+        <td>24_pea</td><td>PEA</td><td>1</td><td>8.2s</td><td style="color:var(--warn); font-weight:bold;">YES (1 cycle, cancelled)</td><td>80-103 bpm</td><td>98%</td>
     </tr>
     </tbody>
 </table>
 
 <h3>Bug Interaction Diagram</h3>
 <div class="finding-box">
-    Three independent bugs create a <strong>triple-redundant failure</strong> in cardiac arrest detection:
+    After BUG-4 and BUG-5 fixes, two remaining issues prevent reliable arrest detection:
     <ol>
-        <li><strong>BUG-4</strong>: Invalid-pair branch (entered during VF/asystole) has no alarm check &rarr; alarm cannot fire from this path</li>
-        <li><strong>BUG-5</strong>: Shadowed variable makes gap-detection alarm unreachable &rarr; backup detection disabled</li>
-        <li><strong>NEW bug</strong>: Single spurious peak resets below_threshold_duration counter &rarr; even if alarm check existed, counter would be periodically reset</li>
+        <li><strong>BUG-4 (partially fixed)</strong>: Invalid-pair alarm check now works &rarr; "Alarm3 ON (invalid pairs)!" fires in scenarios 23, 24. But VF noise (scenarios 21, 22) prevents <code>below_threshold_duration</code> from accumulating past 10s.</li>
+        <li><del><strong>BUG-5 (FIXED)</strong>: Shadowed variable removed &rarr; gap-based alarm now functional.</del></li>
+        <li><strong>NEW: Alarm-OFF too permissive</strong>: Only 4 consecutive above-threshold peaks cancel alarm. Inter-peak timing validation is commented out (lines 302-330). During arrest, noise produces sporadic peaks satisfying the condition, causing rapid alarm ON/OFF cycling. This is now the <strong>primary remaining issue</strong>.</li>
+        <li><strong>NEW: Counter reset</strong>: A single spurious above-threshold peak resets <code>below_threshold_duration = 0</code>, preventing sustained accumulation toward alarm-ON.</li>
     </ol>
 </div>
 
 <h3>Additional Concerns</h3>
 <ul>
-    <li><strong>False HR during arrest:</strong> All 4 scenarios report HR 72-177 bpm during arrest phases. The PSP algorithm latches onto noise peaks or uses historical values.</li>
+    <li><strong>False HR during arrest:</strong> All 4 scenarios report HR 72-177 bpm during arrest phases. HR comes exclusively from the internal FFT-based PR algorithm in <code>mmt_vital_algorithms.c</code> (PSP stub does not emit HR metric). The <code>HRM_filtered</code> buffer retains historical values and decays slowly.</li>
+    <li><strong>No HR suppression when alarm active:</strong> The HR reporting logic at <code>mmt_process_fxi.c:1605-1685</code> does not check <code>corsano_cardiac_get_state()</code>. Even when <code>cardiac_arrest=2</code> (scenarios 23, 24), the firmware continues reporting non-zero HR. A patient in cardiac arrest should show HR=0.</li>
     <li><strong>False SpO2 during arrest:</strong> All scenarios report SpO2 95-100% during arrest &mdash; physiologically impossible.</li>
     <li><strong>LED auto-gain masks signal loss:</strong> When green amplitude drops from ~800 to ~35, LED power increases from 1% to 60%, making the signal appear "present" to the algorithm despite no actual pulse.</li>
-    <li><strong>Scenario 24 (PEA) is worst case:</strong> HR reported at 80-103 bpm with 93.1% quality during pulseless rhythm. A clinician relying on the watch would see normal vitals during cardiac arrest.</li>
+    <li><strong>Scenario 24 (PEA) is worst case:</strong> HR reported at 80-103 bpm with 93.1% quality during pulseless rhythm. A clinician relying on the watch would see completely normal vitals during cardiac arrest.</li>
+    <li><strong>Scenario 22 (VT&rarr;VF) has zero detection:</strong> VT phase produces enough above-threshold peaks that <code>below_threshold_duration</code> never accumulates. Zero "Cardiac below thresh" messages. HR reaches 177 bpm during VF.</li>
 </ul>
 </section>
 
@@ -824,7 +830,7 @@ Spo2s__1,71.08,64.57,85.45,78.18,50.84,86.30,82.37,65.54,67.07</code></pre>
 
 <h3>Cardiac Arrest (Scenarios 21-24)</h3>
 <div class="finding-box">
-    <strong>0/4 adequate detection.</strong> All 4 scenarios WARN. No alarm triggered in any scenario. HR and SpO2 continue reporting normal values during arrest. This is the most critical failure category. See <a href="#cardiac-arrest-analysis">Section 6</a> for detailed analysis.
+    <strong>0/4 adequate detection.</strong> All 4 scenarios WARN. BUG-4/BUG-5 fixes are active: alarms fire in scenarios 23 (6 cycles) and 24 (1 cycle) but cycle ON/OFF within seconds due to permissive alarm-OFF logic. Scenarios 21, 22 produce zero alarms. HR and SpO2 continue reporting normal values during arrest. <code>cardiac_arrest=2</code> for only 1 of 60 records in best case. This is the most critical failure category. See <a href="#cardiac-arrest-analysis">Section 6</a>.
 </div>
 
 <h3>Cardiac Pathologies (Scenarios 25-31)</h3>
@@ -834,7 +840,7 @@ Spo2s__1,71.08,64.57,85.45,78.18,50.84,86.30,82.37,65.54,67.07</code></pre>
 
 <h3>Extreme Conditions (Scenarios 32-40)</h3>
 <div class="finding-box">
-    <strong>7 PASS, 2 FAIL.</strong> Hemorrhagic shock now passes (SpO2=97.3%, previously failed). Scenario 33 (32&deg;C) fails with HR doubling + shivering misclassification (BUG-3 + BUG-6, SpO2 rejected by motion). Scenario 34 (28&deg;C) fails with HR doubling + severe vasoconstriction (BUG-3, SpO2=0 due to insufficient signal amplitude at DC_R ~16k, led_g=60 max). Sleep apnea, vasovagal syncope, venous pooling, severe anemia, Parkinson tremor, and CO poisoning all pass.
+    <strong>7 PASS, 2 FAIL.</strong> Hemorrhagic shock now passes (SpO2=97.3%, previously failed). Scenario 33 (32&deg;C) fails with HR doubling + shivering: PSP classifier correctly returns REST, but <code>mmt_idle_detection</code> returns ACTIVE(4) causing 100% SpO2 rejection (BUG-6 mismatch). Scenario 34 (28&deg;C) fails with HR doubling + SpO2=0 from Red-IR peak misalignment (<code>time_diff</code> 4.2-7.0s exceeds fixed 4.0s threshold at 35 bpm). Sleep apnea, vasovagal syncope, venous pooling, severe anemia, Parkinson tremor, and CO poisoning all pass.
 </div>
 </section>
 
@@ -846,31 +852,49 @@ Spo2s__1,71.08,64.57,85.45,78.18,50.84,86.30,82.37,65.54,67.07</code></pre>
 
 <h3><span class="priority p1">P1</span> Patient Safety &mdash; Immediate Action Required</h3>
 <table>
-    <thead><tr><th>#</th><th>Action</th><th>File</th><th>Impact</th></tr></thead>
+    <thead><tr><th>#</th><th>Action</th><th>File</th><th>Status</th><th>Impact</th></tr></thead>
     <tbody>
-    <tr>
+    <tr style="opacity: 0.6; text-decoration: line-through;">
         <td>1</td>
-        <td>Add alarm condition check in invalid-pair branch of cardiac arrest detection</td>
-        <td><code>corsano_cardiac_arrest.c:346-352</code></td>
-        <td>Enables alarm during VF/asystole (BUG-4)</td>
+        <td>Add alarm condition check in invalid-pair branch &mdash; <strong style="text-decoration: none; color: var(--success);">DONE</strong></td>
+        <td><code>corsano_cardiac_arrest.c:349-359</code></td>
+        <td><span class="badge badge-pass">FIXED</span></td>
+        <td>Alarm3 ON now fires in scenarios 23, 24</td>
     </tr>
-    <tr>
+    <tr style="opacity: 0.6; text-decoration: line-through;">
         <td>2</td>
-        <td>Remove local <code>last_peak_above_threshold</code> variable shadow</td>
+        <td>Remove local <code>last_peak_above_threshold</code> variable shadow &mdash; <strong style="text-decoration: none; color: var(--success);">DONE</strong></td>
         <td><code>corsano_cardiac_arrest.c:233</code></td>
-        <td>Enables gap-based alarm detection (BUG-5)</td>
+        <td><span class="badge badge-pass">FIXED</span></td>
+        <td>Gap-based alarm now functional (scenario 24)</td>
     </tr>
     <tr>
         <td>3</td>
-        <td>Require N consecutive above-threshold peaks before resetting below_threshold_duration</td>
-        <td><code>corsano_cardiac_arrest.c:340-344</code></td>
-        <td>Prevents spurious counter reset during arrest</td>
+        <td><strong>Un-comment 2-second inter-peak validation</strong> in alarm-OFF logic</td>
+        <td><code>corsano_cardiac_arrest.c:302-330</code></td>
+        <td><span class="badge badge-fail">OPEN</span></td>
+        <td>Prevents noise peaks from cancelling alarm. Currently commented out.</td>
     </tr>
     <tr>
         <td>3b</td>
-        <td><strong>Rebuild simulator DLL</strong> to include existing BUG-4/BUG-5 source fixes, then re-run all 40 golden scenarios to validate</td>
-        <td><code>sim/build/</code></td>
-        <td>Validates that source fixes resolve cardiac arrest detection failure</td>
+        <td>Require N consecutive above-threshold peaks (15+) with physiological timing before resetting <code>below_threshold_duration</code> or cancelling alarm</td>
+        <td><code>corsano_cardiac_arrest.c:287, 340-344</code></td>
+        <td><span class="badge badge-fail">OPEN</span></td>
+        <td>Prevents single spurious peak from resetting counter</td>
+    </tr>
+    <tr>
+        <td>3c</td>
+        <td>Suppress HR output when <code>cardiac_arrest</code> state is active</td>
+        <td><code>mmt_process_fxi.c:~1628</code></td>
+        <td><span class="badge badge-fail">OPEN</span></td>
+        <td>Ensures HR=0 reported during detected arrest</td>
+    </tr>
+    <tr>
+        <td>3d</td>
+        <td>Add amplitude gating: when green avg amp &lt; 100 (normal ~800), reject all peaks as noise</td>
+        <td><code>mmt_vital_algorithms.c</code></td>
+        <td><span class="badge badge-fail">OPEN</span></td>
+        <td>Prevents false HR during arrest (LED auto-gain compensation)</td>
     </tr>
     </tbody>
 </table>
@@ -880,22 +904,34 @@ Spo2s__1,71.08,64.57,85.45,78.18,50.84,86.30,82.37,65.54,67.07</code></pre>
     <thead><tr><th>#</th><th>Action</th><th>File</th><th>Impact</th></tr></thead>
     <tbody>
     <tr>
-        <td>4</td>
-        <td>Add dicrotic notch rejection for peaks within 300-500ms of systolic peak when amplitude is significantly smaller</td>
-        <td><code>mmt_vital_algorithms.c:929</code></td>
-        <td>Fixes HR doubling for HR &lt; 55 bpm (BUG-3)</td>
+        <td>4a</td>
+        <td>Lower bandpass filter cutoff from 0.7 Hz to 0.4 Hz (24 bpm)</td>
+        <td><code>mmt_vital_algorithms.c:281-283</code></td>
+        <td>Preserves fundamental frequency for bradycardic signals (BUG-3)</td>
+    </tr>
+    <tr>
+        <td>4b</td>
+        <td>Lower FFT search floor from 45 bpm to 25 bpm (<code>LOW_BPM_50</code>)</td>
+        <td><code>mmt_vital_algorithms.c:70</code></td>
+        <td>Allows detection of true bradycardic fundamental (BUG-3)</td>
+    </tr>
+    <tr>
+        <td>4c</td>
+        <td>Add sub-harmonic checking: if peak at f/2 has &gt;30% of peak at f, report f/2</td>
+        <td><code>mmt_vital_algorithms.c:3585-3690</code></td>
+        <td>Most robust fix for dicrotic notch doubling (BUG-3)</td>
     </tr>
     <tr>
         <td>5</td>
-        <td>Implement adaptive R-ratio quality thresholds for low SpO2 regimes (R &gt; 1.2)</td>
-        <td><code>mmt_vital_algorithms.c:4574</code></td>
-        <td>Fixes SpO2 selection bias at severe hypoxia</td>
+        <td>Implement adaptive R-ratio quality thresholds for low SpO2 (R &gt; 1.2): widen "spo2 bads" threshold, use median instead of mean, initialize <code>Proc_spo2</code> rolling to first valid value (not 100%)</td>
+        <td><code>mmt_vital_algorithms.c:4574, 5956</code></td>
+        <td>Fixes SpO2 selection bias + slow convergence at severe hypoxia</td>
     </tr>
     <tr>
         <td>6</td>
-        <td>Remove <code>+5</code> constant from old_mid SpO2 formula</td>
-        <td><code>mmt_vital_algorithms.c:5325</code></td>
-        <td>Eliminates SpO2 upward bias in fallback path (BUG-1)</td>
+        <td>Remove <code>+5</code> constant from old_mid SpO2 formula; also investigate hardcoded <code>+2</code> offset at <code>mmt_process_fxi.c:2655-2658</code></td>
+        <td><code>mmt_vital_algorithms.c:5325</code>, <code>mmt_process_fxi.c:2655</code></td>
+        <td>Eliminates SpO2 upward bias (BUG-1): +5 in old_mid, +2 in activity output</td>
     </tr>
     </tbody>
 </table>
@@ -918,9 +954,15 @@ Spo2s__1,71.08,64.57,85.45,78.18,50.84,86.30,82.37,65.54,67.07</code></pre>
     </tr>
     <tr>
         <td>9</td>
-        <td>Consider adding adaptive ACC classifier thresholds for shivering vs walking</td>
-        <td><code>sim_stubs.c:485-490</code></td>
-        <td>Improves hypothermia scenario accuracy (BUG-6)</td>
+        <td>Fix <code>mmt_idle_detection</code> thresholds to be frequency-aware (oscillatory tremor at 8-13 Hz should not trigger ACTIVE). Options: high-pass filter before <code>sum_d_acc</code>, or raise ACTIVE threshold above shivering floor (~40k)</td>
+        <td><code>mmt_idle_detection.c:167-175</code></td>
+        <td>Fixes SpO2 suppression during shivering (BUG-6). Note: PSP classifier already handles shivering correctly.</td>
+    </tr>
+    <tr>
+        <td>10</td>
+        <td>Scale <code>time_diff</code> threshold at <code>mmt_vital_algorithms.c:5989</code> with detected HR: <code>threshold = max(4.0, 60.0/HR * 2.5)</code></td>
+        <td><code>mmt_vital_algorithms.c:5989</code></td>
+        <td>Fixes SpO2=0 for scenario 34 (28&deg;C hypothermia) where valid SpO2=82 readings are rejected</td>
     </tr>
     </tbody>
 </table>
@@ -945,8 +987,8 @@ Spo2s__1,71.08,64.57,85.45,78.18,50.84,86.30,82.37,65.54,67.07</code></pre>
     </thead>
     <tbody>
     <tr style="background: var(--fail-bg);">
-        <td>BUG-4 + BUG-5 + NEW</td>
-        <td>Cardiac arrest undetected &mdash; patient may die without alarm</td>
+        <td>BUG-4 (partial) + NEW (alarm-OFF)</td>
+        <td>Cardiac arrest alarm fires but cycles ON/OFF within seconds. VF/VT scenarios have no alarm at all. Patient may die without sustained alarm.</td>
         <td>All patients experiencing VF, asystole, PEA</td>
         <td>100% of arrest events</td>
         <td style="color:var(--fail); font-weight:bold;">CRITICAL</td>
@@ -988,7 +1030,7 @@ Spo2s__1,71.08,64.57,85.45,78.18,50.84,86.30,82.37,65.54,67.07</code></pre>
 </table>
 
 <div class="alert-box alert-info" style="margin-top: 20px;">
-    <strong>Current Results:</strong> <strong>30 PASS (75.0%) / 5 WARN (12.5%) / 5 FAIL (12.5%)</strong>. Two tooling issues fixed: wrong expected HR (scenarios 26, 30) and hemorrhagic shock SNR (scenario 32 now PASS). All 5 WARNs are cardiac arrest scenarios requiring P1 firmware fixes. The 5 FAILs break down as: 4 HR doubling (BUG-3), 1 SpO2 selection bias at severe hypoxia (NEW).
+    <strong>Current Results:</strong> <strong>30 PASS (75.0%) / 5 WARN (12.5%) / 5 FAIL (12.5%)</strong>. BUG-4 and BUG-5 source fixes are active in DLL &mdash; alarms now fire in 2/4 cardiac arrest scenarios but cycle ON/OFF due to permissive alarm-OFF logic. 4 WARNs are cardiac arrest scenarios (1 is SpO2 bias). The 5 FAILs break down as: 4 HR doubling (BUG-3 &mdash; bandpass filter 0.7Hz + FFT floor 45bpm), 1 SpO2 selection bias at severe hypoxia (NEW). Next priority: fix alarm-OFF logic (un-comment timing validation, require sustained normal rhythm).
 </div>
 </section>
 
