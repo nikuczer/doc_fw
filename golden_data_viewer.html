@@ -838,25 +838,36 @@ function generateAIAnalysis(activityRecords, ppgGreen, ppgRed, ppgIR, acc, scena
   const avgRed = redValues.length > 0 ? Math.round(redValues.reduce((a,b) => a+b) / redValues.length) : 0;
   const avgIR = irValues.length > 0 ? Math.round(irValues.reduce((a,b) => a+b) / irValues.length) : 0;
 
-  // Calculate estimated AC component (simple peak-to-peak / 2)
-  const greenMax = greenValues.length > 0 ? Math.max(...greenValues) : 0;
-  const greenMin = greenValues.length > 0 ? Math.min(...greenValues) : 0;
-  const redMax = redValues.length > 0 ? Math.max(...redValues) : 0;
-  const redMin = redValues.length > 0 ? Math.min(...redValues) : 0;
-  const irMax = irValues.length > 0 ? Math.max(...irValues) : 0;
-  const irMin = irValues.length > 0 ? Math.min(...irValues) : 0;
+  // Calculate AC component using per-beat windowed peak-to-peak (32 samples = 1s @ 32Hz)
+  function computeWindowedAC(values, windowSize = 32) {
+    if (values.length < windowSize) return 0;
+    const ppValues = [];
+    for (let i = 0; i + windowSize <= values.length; i += windowSize) {
+      let wMin = values[i], wMax = values[i];
+      for (let j = i + 1; j < i + windowSize; j++) {
+        if (values[j] < wMin) wMin = values[j];
+        if (values[j] > wMax) wMax = values[j];
+      }
+      ppValues.push(wMax - wMin);
+    }
+    // Median peak-to-peak (robust against outliers)
+    ppValues.sort((a, b) => a - b);
+    const mid = Math.floor(ppValues.length / 2);
+    const medianPP = ppValues.length % 2 ? ppValues[mid] : (ppValues[mid - 1] + ppValues[mid]) / 2;
+    return medianPP / 2;
+  }
 
-  const acGreen = (greenMax - greenMin) / 2;
-  const acRed = (redMax - redMin) / 2;
-  const acIR = (irMax - irMin) / 2;
+  const acGreen = computeWindowedAC(greenValues);
+  const acRed = computeWindowedAC(redValues);
+  const acIR = computeWindowedAC(irValues);
 
   const dcGreen = avgGreen;
   const dcRed = avgRed;
   const dcIR = avgIR;
 
-  // Calculate R ratio for SpO2
+  // Calculate R ratio for SpO2 (firmware linear formula)
   const rRatio = (dcRed > 0 && dcIR > 0 && acIR > 0) ? ((acRed / dcRed) / (acIR / dcIR)).toFixed(3) : null;
-  const estimatedSpO2 = rRatio ? Math.round(108.49 - 30.09 * rRatio - 0.03 * rRatio * rRatio) : null;
+  const estimatedSpO2 = rRatio ? Math.round(112.1152 - 28.6318 * rRatio) : null;
 
   // ACC analysis
   const accX = acc.map(r => parseInt(r.accX));
@@ -874,12 +885,12 @@ function generateAIAnalysis(activityRecords, ppgGreen, ppgRed, ppgIR, acc, scena
   analysis += `<div style="background: var(--bg); padding: 20px; border-radius: 8px; margin-bottom: 20px;">`;
   analysis += `<div style="font-weight: 600; font-size: 15px; margin-bottom: 12px; color: var(--text);">📊 Raw PPG Signal Measurements</div>`;
   analysis += `<div style="font-family: 'Courier New', monospace; font-size: 13px; line-height: 1.8;">`;
-  analysis += `Green PPG: DC=${dcGreen.toLocaleString()} ADC, AC≈${acGreen.toFixed(0)} (pk-pk=${greenMax-greenMin}), AC/DC=${(acGreen/dcGreen*100).toFixed(2)}%<br>`;
-  analysis += `Red PPG:   DC=${dcRed.toLocaleString()} ADC, AC≈${acRed.toFixed(0)} (pk-pk=${redMax-redMin}), AC/DC=${(acRed/dcRed*100).toFixed(2)}%<br>`;
-  analysis += `IR PPG:    DC=${dcIR.toLocaleString()} ADC, AC≈${acIR.toFixed(0)} (pk-pk=${irMax-irMin}), AC/DC=${(acIR/dcIR*100).toFixed(2)}%<br>`;
+  analysis += `Green PPG: DC=${dcGreen.toLocaleString()} ADC, AC≈${acGreen.toFixed(0)} (per-beat median), AC/DC=${(acGreen/dcGreen*100).toFixed(3)}%<br>`;
+  analysis += `Red PPG:   DC=${dcRed.toLocaleString()} ADC, AC≈${acRed.toFixed(0)} (per-beat median), AC/DC=${(acRed/dcRed*100).toFixed(3)}%<br>`;
+  analysis += `IR PPG:    DC=${dcIR.toLocaleString()} ADC, AC≈${acIR.toFixed(0)} (per-beat median), AC/DC=${(acIR/dcIR*100).toFixed(3)}%<br>`;
   if (rRatio) {
     analysis += `<strong>R ratio = (AC_Red/DC_Red)/(AC_IR/DC_IR) = ${rRatio}</strong><br>`;
-    analysis += `<strong>Estimated SpO2 = 108.49 - 30.09×${rRatio} - 0.03×${rRatio}² = ${estimatedSpO2}%</strong>`;
+    analysis += `<strong>Estimated SpO2 = 112.12 - 28.63×R = ${estimatedSpO2}%</strong>`;
   }
   analysis += `</div>`;
   analysis += `</div>`;

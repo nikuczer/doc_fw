@@ -149,8 +149,9 @@ li { margin: 4px 0; font-size: 14px; }
   <p>Both Red and IR channels are independently assessed. The count of good pulses per channel is tracked in <code>ppg_state.no_good_pulses_red</code> / <code>no_good_pulses_ired</code>.</p>
 
   <h4>5. Good Pulse Matching &amp; Per-pulse SpO2</h4>
-  <p><code>mmt_spo2_find_good_pulses_two()</code> pairs Red and IR peaks that pass SQI. For each valid pair, a per-pulse SpO2 is computed using the quadratic polynomial:</p>
-  <p><code>SpO2 = -30.089 &times; R - 0.031 &times; R&sup2; + 108.490</code></p>
+  <p><code>mmt_spo2_find_good_pulses_two()</code> pairs Red and IR peaks that pass SQI. For each valid pair, a per-pulse SpO2 is computed using the linear formula:</p>
+  <p><code>SpO2 = -28.6318 &times; R + 112.1152</code></p>
+  <p><small>(Legacy quadratic path in <code>mmt_spo2.c</code>: <code>SpO2 = -30.089 &times; R - 0.031 &times; R&sup2; + 108.490</code>)</small></p>
   <p>Each pulse result is stored in a <code>Pulse_array_t</code> as a <code>Pulse_t</code> containing: RMS red, RMS IR, R-ratio, DC levels, SpO2 raw, SpO2 tuned (with skin/BMI offsets applied), quality flag, timestamp, and movement level. The tuned SpO2 value applies individual calibration offsets (<code>spo2_algo.spo2_offset</code>) at the pulse level.</p>
 
   <h4>6. SpO2 Calculation (Legacy Path &mdash; mmt_spo2.c)</h4>
