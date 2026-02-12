@@ -318,14 +318,14 @@
 </div>
 
 <div class="alert-box alert-warn">
-    <strong>HR Doubling Bug:</strong> Heart rate is consistently doubled for bradycardic patients (HR &lt; 55 bpm) due to dicrotic notch misdetection. Affects 4 scenarios with measured/expected ratios of exactly 2.0. Reported with high confidence (quality=3).
+    <strong>HR Doubling Bug:</strong> Heart rate is consistently doubled for bradycardic patients (HR &lt; 55 bpm) due to dicrotic notch misdetection. Affects 4 scenarios with measured/expected ratios approximately 2.0 (2.005, 2.145, 1.967, 2.006). Reported with high confidence (quality=3).
 </div>
 
 <h3>Key Findings</h3>
 <ul>
     <li><strong>8 bugs identified</strong> (5 previously known, 3 new) &mdash; <strong>6 open, 2 fixed</strong></li>
-    <li><strong>P1 (Patient Safety):</strong> 3 bugs &mdash; Cardiac arrest alarm never fires (BUG-4, BUG-5), counter reset by spurious peaks (NEW)</li>
-    <li><strong>P2 (Algorithm):</strong> 3 bugs &mdash; HR doubling (BUG-3), SpO2 selection bias (NEW), SpO2 old_mid bias (BUG-1)</li>
+    <li><strong>P1 (Patient Safety):</strong> 3 bugs &mdash; Cardiac arrest alarm never fires (BUG-4, BUG-5), counter reset by spurious peaks (NEW). Source fixes exist but DLL not rebuilt.</li>
+    <li><strong>P2 (Algorithm):</strong> 3 bugs &mdash; HR doubling (BUG-3), SpO2 selection bias + rolling avg initialization lag (NEW), SpO2 old_mid bias (BUG-1)</li>
     <li><strong>P3 (Simulator/Tooling):</strong> 1 open bug &mdash; ACC classifier (BUG-6). Two issues <strong>FIXED</strong>: analysis script wrong expected values (scenarios 26, 30), hemorrhagic shock SNR (scenario 32 now PASS)</li>
     <li><strong>Improvement vs previous run:</strong> Scenario 32 (hemorrhagic_shock) moved from FAIL to PASS (SpO2 97.3 vs 89.1 previously). Total: 30 PASS (+1), 5 FAIL (-1)</li>
 </ul>
@@ -389,7 +389,7 @@
 <tr><td>31</td><td>hcm</td><td><span class="category-header">Cardiac Path</span></td><td>70</td><td>75.8</td><td>5.8</td><td><span class="badge badge-pass">PASS</span></td><td>97</td><td>98.1</td><td>1.1</td><td><span class="badge badge-pass">PASS</span></td><td><span class="badge badge-pass">PASS</span></td><td>&mdash;</td></tr>
 <tr><td>32</td><td>hemorrhagic_shock</td><td><span class="category-header">Extreme</span></td><td>130</td><td>134.3</td><td>4.3</td><td><span class="badge badge-pass">PASS</span></td><td>96</td><td>97.3</td><td>1.3</td><td><span class="badge badge-pass">PASS</span></td><td><span class="badge badge-pass">PASS</span></td><td>&mdash;</td></tr>
 <tr><td>33</td><td>hypothermia_32C</td><td><span class="category-header">Extreme</span></td><td>55</td><td>108.2</td><td>53.2</td><td><span class="badge badge-fail">FAIL</span></td><td>94</td><td>0</td><td>&mdash;</td><td><span class="badge badge-na">N/A</span></td><td><span class="badge badge-fail">FAIL</span></td><td>BUG-3 + BUG-6</td></tr>
-<tr><td>34</td><td>hypothermia_28C</td><td><span class="category-header">Extreme</span></td><td>35</td><td>70.2</td><td>35.2</td><td><span class="badge badge-fail">FAIL</span></td><td>90</td><td>0</td><td>&mdash;</td><td><span class="badge badge-na">N/A</span></td><td><span class="badge badge-fail">FAIL</span></td><td>BUG-3</td></tr>
+<tr><td>34</td><td>hypothermia_28C</td><td><span class="category-header">Extreme</span></td><td>35</td><td>70.2</td><td>35.2</td><td><span class="badge badge-fail">FAIL</span></td><td>90</td><td>0</td><td>&mdash;</td><td><span class="badge badge-na">N/A</span></td><td><span class="badge badge-fail">FAIL</span></td><td>BUG-3 + low perfusion</td></tr>
 <tr><td>35</td><td>sleep_apnea</td><td><span class="category-header">Extreme</span></td><td>60</td><td>60.3</td><td>0.3</td><td><span class="badge badge-pass">PASS</span></td><td>var</td><td>97.2</td><td>&mdash;</td><td><span class="badge badge-na">N/A</span></td><td><span class="badge badge-pass">PASS</span></td><td>&mdash;</td></tr>
 <tr><td>36</td><td>vasovagal_syncope</td><td><span class="category-header">Extreme</span></td><td>var</td><td>78.9</td><td>&mdash;</td><td><span class="badge badge-na">N/A</span></td><td>var</td><td>98.1</td><td>&mdash;</td><td><span class="badge badge-na">N/A</span></td><td><span class="badge badge-pass">PASS</span></td><td>&mdash;</td></tr>
 <tr><td>37</td><td>venous_pooling</td><td><span class="category-header">Extreme</span></td><td>75</td><td>61.9</td><td>13.1</td><td><span class="badge badge-ok">OK</span></td><td>97</td><td>95.4</td><td>1.6</td><td><span class="badge badge-pass">PASS</span></td><td><span class="badge badge-pass">PASS</span></td><td>&mdash;</td></tr>
@@ -517,7 +517,7 @@ Cardiac below thresh 6.1 6.1   // RESET by spurious peak</code></pre>
             <dt>Symptom</dt>
             <dd>Heart rate is consistently reported at exactly 2x the true rate for bradycardic patients. Measured/expected ratios: 2.005, 2.023, 1.967, 2.006. Algorithm reports with high confidence (quality=3).</dd>
             <dt>Affected Scenarios</dt>
-            <dd>18_bradycardia (42&rarr;84 bpm), 20_bav3_complete (33&rarr;71 bpm), 33_hypothermia_32C (55&rarr;108 bpm), 34_hypothermia_28C (35&rarr;70 bpm)</dd>
+            <dd>18_bradycardia (42&rarr;84.2 bpm, ratio 2.005), 20_bav3_complete (33&rarr;70.8 bpm, ratio 2.145), 33_hypothermia_32C (55&rarr;108.2 bpm, ratio 1.967), 34_hypothermia_28C (35&rarr;70.2 bpm, ratio 2.006)</dd>
             <dt>Root Cause</dt>
             <dd>At HR &lt; 55 bpm (IBI &gt; 1090ms), the dicrotic notch in the PPG waveform has sufficient temporal separation from the systolic peak to be detected as a separate cardiac beat by the peak detector at <code>mmt_vital_algorithms.c:929</code>. Even with attenuated notch depth (0.04-0.06), the long IBI gives the notch maximum prominence.</dd>
             <dt>Evidence</dt>
@@ -525,7 +525,7 @@ Cardiac below thresh 6.1 6.1   // RESET by spurious peak</code></pre>
                 <table>
                     <tr><th>Scenario</th><th>Expected HR</th><th>Measured HR</th><th>Ratio</th><th>HR Std</th><th>Quality</th></tr>
                     <tr><td>18_bradycardia</td><td>42</td><td>84.2</td><td><span class="ratio-highlight">2.005</span></td><td>0.7</td><td>3 (high)</td></tr>
-                    <tr><td>20_bav3_complete</td><td>35</td><td>70.8</td><td><span class="ratio-highlight">2.023</span></td><td>0.5</td><td>3 (high)</td></tr>
+                    <tr><td>20_bav3_complete</td><td>33</td><td>70.8</td><td><span class="ratio-highlight">2.145</span></td><td>0.5</td><td>3 (high)</td></tr>
                     <tr><td>33_hypothermia_32C</td><td>55</td><td>108.2</td><td><span class="ratio-highlight">1.967</span></td><td>2.5</td><td>1-2 (low*)</td></tr>
                     <tr><td>34_hypothermia_28C</td><td>35</td><td>70.2</td><td><span class="ratio-highlight">2.006</span></td><td>0.5</td><td>3 (high)</td></tr>
                 </table>
@@ -548,7 +548,7 @@ Cardiac below thresh 6.1 6.1   // RESET by spurious peak</code></pre>
             <dt>Symptom</dt>
             <dd>Scenario 06 (severe hypoxia, target SpO2=72%): measured 86.6% (+14.6 delta). Per-beat SpO2 values scatter wildly from 50 to 97 in the same window.</dd>
             <dt>Root Cause</dt>
-            <dd>At R ~1.5 (SpO2 ~72%), the quality filter at <code>mmt_vital_algorithms.c:4574</code> (<code>if (R > 2) good = false</code>) and the <code>spo2_std > 10</code> filter systematically reject the most hypoxic beats (highest R values) while keeping beats where noise accidentally lowered R. This creates a <strong>positive selection bias</strong> &mdash; the average is biased upward. Additionally, 40% of measurement windows produce <code>avg_good = 0</code> (no qualifying beats), and the remaining windows are biased.</dd>
+            <dd>Two compounding mechanisms: (1) At R ~1.5 (SpO2 ~72%), the quality filter at <code>mmt_vital_algorithms.c:4574</code> (<code>if (R > 2) good = false</code>) and the <code>spo2_std > 10</code> filter systematically reject the most hypoxic beats (highest R values) while keeping beats where noise accidentally lowered R. This creates a <strong>positive selection bias</strong>. (2) The <code>Proc_spo2</code> rolling average initializes at 100% and converges too slowly for severely low SpO2 &mdash; only 9 non-zero SpO2 values are written in 60 minutes, with early values near 99% dragging the average up to 86.6%.</dd>
             <dt>Evidence</dt>
             <dd>TTT1 log: R = 1.518 (expected 1.401). Per-beat scatter: <code>Spo2s__1,92.76,87.03,64.37,70.92,92.97,70.90,67.76,61.34</code> &mdash; same window, values range from 61 to 93.</dd>
             <dt>Fix</dt>
@@ -664,10 +664,10 @@ Cardiac below thresh 6.1 6.1   // RESET by spurious peak</code></pre>
 <h3>Key SpO2 Findings</h3>
 
 <div class="finding-box">
-    <strong>06_hypoxia_severe:</strong> The quality filter (R &gt; 2 cutoff + spo2_std &gt; 10) creates selection bias at extreme R values. Per-beat SpO2 scatters wildly within a single window:
+    <strong>06_hypoxia_severe:</strong> Two compounding issues cause the +14.6 point deviation: (1) The quality filter (R &gt; 2 cutoff + spo2_std &gt; 10) creates selection bias, rejecting the most hypoxic beats while keeping beats where noise lowered R. (2) The <code>Proc_spo2</code> rolling average initializes at 100% and converges very slowly toward the true ~72%, with only 9 non-zero SpO2 values in 60 minutes of activity records. Mean of the 9 values (99, 97, 95, 91, 86, 83, 79, 76, 73) = 86.6%, matching the measured value exactly. Per-beat scatter within windows:
 <pre><code>Spo2s__1,92.76,87.03,64.37,70.92,92.97,70.90,67.76,61.34,75.47
 Spo2s__1,71.08,64.57,85.45,78.18,50.84,86.30,82.37,65.54,67.07</code></pre>
-    232 per-beat windows processed; SPO2_F quality&gt;0 in only 60.4% of intervals (145/240). Raw values range 56-81, but only 10.3% of 1-minute aggregations pass quality. The surviving minutes are biased upward by selection (+14.6 delta).
+    232 per-beat windows processed; SPO2_F quality&gt;0 in only 60.4% of intervals (145/240). No "venous pooling" messages found (BUG-2 not triggered, as <code>sleep_recording=false</code> in sim).
 </div>
 
 <div class="finding-box" style="border-left-color: var(--success);">
@@ -675,10 +675,10 @@ Spo2s__1,71.08,64.57,85.45,78.18,50.84,86.30,82.37,65.54,67.07</code></pre>
 </div>
 
 <div class="finding-box">
-    <strong>04_hypoxia_mild:</strong> TTT1 confirms mild desaturation (PI_IR ~5.9-6.1 &gt; PI_R ~4.2-4.3). The <code>old_mid</code> formula at <code>mmt_vital_algorithms.c:5325</code> contains <code>+5</code> bias:
-<pre><code>SPO2s1  avg_good(91.1,4)  old_mid (94,4)
-SPO2s2  avg_good(91.1,4)  old_mid (94,4)</code></pre>
-    The <code>avg_good</code> path reports 91.1% (close to target 92%), but old_mid gives 94-96%. Per-beat values cluster tightly at 90-93 (good consistency).
+    <strong>04_hypoxia_mild:</strong> TTT1 confirms mild desaturation (PI_IR ~5.9-6.1 &gt; PI_R ~4.2-4.3). The <code>avg_good</code> path reports 91.1% (close to target 92%), but a hardcoded <code>+2</code> offset at <code>mmt_process_fxi.c:2655-2658</code> is applied when SpO2 is between 90-98%:
+<pre><code>if ((mmt_activity_output.spo2 > 90) && (mmt_activity_output.spo2 < 98))
+    mmt_activity_output.spo2 = mmt_activity_output.spo2 + 2;</code></pre>
+    Per-beat SPO2_F outputs ~91 consistently. After the +2 bias and rolling average smoothing, the final reported value is 95.4% (+3.4 delta). Per-beat values cluster tightly at 90-93 (good consistency).
 </div>
 
 <h3>SpO2 Accuracy by Category</h3>
@@ -699,7 +699,7 @@ SPO2s2  avg_good(91.1,4)  old_mid (94,4)</code></pre>
 <h2>5. HR Detailed Analysis</h2>
 
 <h3>HR Doubling Evidence</h3>
-<p>Four scenarios show the classic dicrotic notch doubling signature: measured/expected ratio within [1.95, 2.05] with very low standard deviation.</p>
+<p>Four scenarios show the classic dicrotic notch doubling signature: measured/expected ratio approximately 2.0 with very low standard deviation.</p>
 
 <table>
     <thead><tr><th>Scenario</th><th>Expected HR</th><th>Measured HR</th><th>Ratio</th><th>Std Dev</th><th>Quality</th><th>Notch Depth</th></tr></thead>
@@ -708,7 +708,7 @@ SPO2s2  avg_good(91.1,4)  old_mid (94,4)</code></pre>
         <td>18_bradycardia</td><td>42</td><td>84.2</td><td><span class="ratio-highlight">2.005</span></td><td>0.7</td><td>3</td><td>0.06</td>
     </tr>
     <tr style="background: var(--fail-bg);">
-        <td>20_bav3_complete</td><td>35</td><td>70.8</td><td><span class="ratio-highlight">2.023</span></td><td>0.5</td><td>3</td><td>0.04</td>
+        <td>20_bav3_complete</td><td>33</td><td>70.8</td><td><span class="ratio-highlight">2.145</span></td><td>0.5</td><td>3</td><td>0.04</td>
     </tr>
     <tr style="background: var(--fail-bg);">
         <td>33_hypothermia_32C</td><td>55</td><td>108.2</td><td><span class="ratio-highlight">1.967</span></td><td>2.5</td><td>1-2</td><td>0.05</td>
@@ -748,7 +748,7 @@ SPO2s2  avg_good(91.1,4)  old_mid (94,4)</code></pre>
 <h2>6. Cardiac Arrest Detection Analysis</h2>
 
 <div class="alert-box alert-fail">
-    <strong>CRITICAL SAFETY FINDING:</strong> The cardiac arrest detection system is non-functional. None of the 4 arrest scenarios (VF, VT&rarr;VF, asystole, PEA) trigger a cardiac alarm. Three independent bugs prevent alarm activation.
+    <strong>CRITICAL SAFETY FINDING:</strong> The cardiac arrest detection system is non-functional. None of the 4 arrest scenarios (VF, VT&rarr;VF, asystole, PEA) trigger a cardiac alarm. Three independent bugs prevent alarm activation. <strong>Note:</strong> BUG-4 and BUG-5 source fixes exist in <code>corsano_cardiac_arrest.c</code> but the simulator DLL has not been rebuilt &mdash; current results reflect the unpatched code.
 </div>
 
 <h3>Per-Scenario Timeline</h3>
@@ -834,7 +834,7 @@ SPO2s2  avg_good(91.1,4)  old_mid (94,4)</code></pre>
 
 <h3>Extreme Conditions (Scenarios 32-40)</h3>
 <div class="finding-box">
-    <strong>7 PASS, 2 FAIL.</strong> Hemorrhagic shock now passes (SpO2=97.3%, previously failed). Both hypothermia scenarios fail (HR doubling + shivering). Sleep apnea, vasovagal syncope, venous pooling, severe anemia, Parkinson tremor, and CO poisoning all pass. <strong>Conclusion: Remaining failures are limited to hypothermia (HR doubling + BUG-6 interaction).</strong>
+    <strong>7 PASS, 2 FAIL.</strong> Hemorrhagic shock now passes (SpO2=97.3%, previously failed). Scenario 33 (32&deg;C) fails with HR doubling + shivering misclassification (BUG-3 + BUG-6, SpO2 rejected by motion). Scenario 34 (28&deg;C) fails with HR doubling + severe vasoconstriction (BUG-3, SpO2=0 due to insufficient signal amplitude at DC_R ~16k, led_g=60 max). Sleep apnea, vasovagal syncope, venous pooling, severe anemia, Parkinson tremor, and CO poisoning all pass.
 </div>
 </section>
 
@@ -865,6 +865,12 @@ SPO2s2  avg_good(91.1,4)  old_mid (94,4)</code></pre>
         <td>Require N consecutive above-threshold peaks before resetting below_threshold_duration</td>
         <td><code>corsano_cardiac_arrest.c:340-344</code></td>
         <td>Prevents spurious counter reset during arrest</td>
+    </tr>
+    <tr>
+        <td>3b</td>
+        <td><strong>Rebuild simulator DLL</strong> to include existing BUG-4/BUG-5 source fixes, then re-run all 40 golden scenarios to validate</td>
+        <td><code>sim/build/</code></td>
+        <td>Validates that source fixes resolve cardiac arrest detection failure</td>
     </tr>
     </tbody>
 </table>

@@ -460,7 +460,7 @@ function updateTimeRange() {
   }
 
   // Update all graphs with new time range
-  const graphIds = ['ppgGraph', 'accGraph', 'bpmGraph', 'spo2Graph'];
+  const graphIds = ['ppgGraph', 'accGraph', 'bpmGraph', 'spo2Graph', 'respGraph'];
   graphIds.forEach(id => {
     Plotly.relayout(id, {
       'xaxis.range': [start, end]
@@ -483,11 +483,28 @@ function updateStats(activityRecords) {
 }
 
 function plotAllGraphs() {
-  plotPPG(currentData.ppgGreen, currentData.ppgRed, currentData.ppgIR);
-  plotACC(currentData.acc);
-  plotBPM(currentData.activityRecords);
-  plotSpO2(currentData.activityRecords);
-  plotResp(currentData.activityRecords);
+  // Compute a single global t0 (seconds) from the earliest data source
+  // PPG/ACC timestamps are in ms, activity records in seconds (strings)
+  const candidates = [];
+  if (currentData.ppgGreen.length > 0) candidates.push(parseInt(currentData.ppgGreen[0].timestamp) / 1000);
+  if (currentData.acc.length > 0) candidates.push(parseInt(currentData.acc[0].timestamp) / 1000);
+  if (currentData.activityRecords.length > 0) candidates.push(parseInt(currentData.activityRecords[0].timestamp));
+  const globalT0 = candidates.length > 0 ? Math.min(...candidates) : 0;
+
+  // Compute global xMax from all sources
+  const endCandidates = [];
+  if (currentData.ppgGreen.length > 0) endCandidates.push(parseInt(currentData.ppgGreen[currentData.ppgGreen.length-1].timestamp) / 1000);
+  if (currentData.acc.length > 0) endCandidates.push(parseInt(currentData.acc[currentData.acc.length-1].timestamp) / 1000);
+  if (currentData.activityRecords.length > 0) endCandidates.push(parseInt(currentData.activityRecords[currentData.activityRecords.length-1].timestamp));
+  const globalXMax = endCandidates.length > 0 ? Math.max(...endCandidates) - globalT0 : 3600;
+
+  const xRange = [0, globalXMax];
+
+  plotPPG(currentData.ppgGreen, currentData.ppgRed, currentData.ppgIR, globalT0, xRange);
+  plotACC(currentData.acc, globalT0, xRange);
+  plotBPM(currentData.activityRecords, globalT0, xRange);
+  plotSpO2(currentData.activityRecords, globalT0, xRange);
+  plotResp(currentData.activityRecords, globalT0, xRange);
   synchronizeGraphs();
 
   // Show pre-computed analysis from JSON if available, else generate client-side
@@ -505,13 +522,11 @@ function plotAllGraphs() {
   }
 }
 
-function plotPPG(green, red, ir) {
-  // Normalize time to start from 0
-  const t0 = green.length > 0 ? parseInt(green[0].timestamp) / 1000 : 0;
+function plotPPG(green, red, ir, t0, xRange) {
 
   const traces = [
     {
-      x: green.map(r => parseInt(r.timestamp) / 1000 - t0),
+      x: green.map(r => parseInt(r.timestamp) / 1000 - t0),  // PPG timestamps in ms
       y: green.map(r => parseInt(r.value)),
       name: 'Green (530nm)',
       type: 'scatter',
@@ -537,7 +552,7 @@ function plotPPG(green, red, ir) {
   ];
 
   const layout = {
-    xaxis: {title: 'Time (seconds)'},
+    xaxis: {title: 'Time (seconds)', range: xRange},
     yaxis: {title: 'PPG Value (ADC counts)'},
     height: 400,
     margin: {l: 60, r: 30, t: 10, b: 50},
@@ -549,10 +564,7 @@ function plotPPG(green, red, ir) {
   Plotly.newPlot('ppgGraph', traces, layout, {responsive: true, displayModeBar: false});
 }
 
-function plotACC(acc) {
-  // Normalize time to start from 0
-  const t0 = acc.length > 0 ? parseInt(acc[0].timestamp) / 1000 : 0;
-
+function plotACC(acc, t0, xRange) {
   // Get ACC values
   const accX = acc.map(r => parseInt(r.x));
   const accY = acc.map(r => parseInt(r.y));
@@ -566,7 +578,7 @@ function plotACC(acc) {
 
   const traces = [
     {
-      x: acc.map(r => parseInt(r.timestamp) / 1000 - t0),
+      x: acc.map(r => parseInt(r.timestamp) / 1000 - t0),  // ACC timestamps in ms
       y: accX.map(v => v - dcX),
       name: `ACC X${removeDC ? ' (DC removed)' : ''}`,
       type: 'scatter',
@@ -574,7 +586,7 @@ function plotACC(acc) {
       line: {color: '#ff6b6b', width: 1}
     },
     {
-      x: acc.map(r => parseInt(r.timestamp) / 1000 - t0),
+      x: acc.map(r => parseInt(r.timestamp) / 1000 - t0),  // ACC timestamps in ms
       y: accY.map(v => v - dcY),
       name: `ACC Y${removeDC ? ' (DC removed)' : ''}`,
       type: 'scatter',
@@ -582,7 +594,7 @@ function plotACC(acc) {
       line: {color: '#4ecdc4', width: 1}
     },
     {
-      x: acc.map(r => parseInt(r.timestamp) / 1000 - t0),
+      x: acc.map(r => parseInt(r.timestamp) / 1000 - t0),  // ACC timestamps in ms
       y: accZ.map(v => v - dcZ),
       name: `ACC Z${removeDC ? ' (DC removed)' : ''}`,
       type: 'scatter',
@@ -592,7 +604,7 @@ function plotACC(acc) {
   ];
 
   const layout = {
-    xaxis: {title: 'Time (seconds)'},
+    xaxis: {title: 'Time (seconds)', range: xRange},
     yaxis: {title: `Acceleration (counts${removeDC ? ', DC removed' : ''})`},
     height: 350,
     margin: {l: 60, r: 30, t: 10, b: 50},
@@ -604,7 +616,7 @@ function plotACC(acc) {
   Plotly.newPlot('accGraph', traces, layout, {responsive: true, displayModeBar: false});
 }
 
-function plotBPM(records) {
+function plotBPM(records, t0, xRange) {
   const qualityColors = {
     0: '#cccccc',
     1: '#ff6b6b',
@@ -613,16 +625,13 @@ function plotBPM(records) {
     4: '#4ecdc4'
   };
 
-  // Normalize time to start from 0
-  const t0 = records.length > 0 ? parseInt(records[0].timestamp) : 0;
-
   const traces = [];
 
   // Single trace with color-coded points based on quality
   const filtered = records.filter(r => parseInt(r.bpm) > 0);
   if (filtered.length > 0) {
     traces.push({
-      x: filtered.map(r => parseInt(r.timestamp) - t0),
+      x: filtered.map(r => parseInt(r.timestamp) - t0),  // AR timestamps in seconds
       y: filtered.map(r => parseInt(r.bpm)),
       name: 'Heart Rate',
       type: 'scatter',
@@ -650,7 +659,7 @@ function plotBPM(records) {
   }));
 
   const layout = {
-    xaxis: {title: 'Time (seconds)'},
+    xaxis: {title: 'Time (seconds)', range: xRange},
     yaxis: {title: 'Heart Rate (bpm)', range: [0, 200]},
     height: 350,
     margin: {l: 60, r: 30, t: 10, b: 50},
@@ -664,7 +673,7 @@ function plotBPM(records) {
   Plotly.newPlot('bpmGraph', traces, layout, {responsive: true, displayModeBar: false});
 }
 
-function plotSpO2(records) {
+function plotSpO2(records, t0, xRange) {
   const qualityColors = {
     0: '#cccccc',
     1: '#ff6b6b',
@@ -673,16 +682,13 @@ function plotSpO2(records) {
     4: '#4ecdc4'
   };
 
-  // Normalize time to start from 0
-  const t0 = records.length > 0 ? parseInt(records[0].timestamp) : 0;
-
   const traces = [];
 
   // Single trace with color-coded points based on quality
   const filtered = records.filter(r => parseInt(r.spo2) > 0);
   if (filtered.length > 0) {
     traces.push({
-      x: filtered.map(r => parseInt(r.timestamp) - t0),
+      x: filtered.map(r => parseInt(r.timestamp) - t0),  // AR timestamps in seconds
       y: filtered.map(r => parseInt(r.spo2)),
       name: 'SpO2',
       type: 'scatter',
@@ -726,7 +732,7 @@ function plotSpO2(records) {
   }));
 
   const layout = {
-    xaxis: {title: 'Time (seconds)'},
+    xaxis: {title: 'Time (seconds)', range: xRange},
     yaxis: {title: 'SpO2 (%)', range: [75, 105]},
     height: 350,
     margin: {l: 60, r: 30, t: 10, b: 50},
@@ -740,7 +746,7 @@ function plotSpO2(records) {
   Plotly.newPlot('spo2Graph', traces, layout, {responsive: true, displayModeBar: false});
 }
 
-function plotResp(records) {
+function plotResp(records, t0, xRange) {
   const qualityColors = {
     0: '#cccccc',
     1: '#ff6b6b',
@@ -749,16 +755,13 @@ function plotResp(records) {
     4: '#4ecdc4'
   };
 
-  // Normalize time to start from 0
-  const t0 = records.length > 0 ? parseInt(records[0].timestamp) : 0;
-
   const traces = [];
 
   // Single trace with color-coded points based on quality
   const filtered = records.filter(r => parseInt(r.resp) > 0);
   if (filtered.length > 0) {
     traces.push({
-      x: filtered.map(r => parseInt(r.timestamp) - t0),
+      x: filtered.map(r => parseInt(r.timestamp) - t0),  // AR timestamps in seconds
       y: filtered.map(r => parseInt(r.resp)),
       name: 'Respiration',
       type: 'scatter',
@@ -802,7 +805,7 @@ function plotResp(records) {
   }));
 
   const layout = {
-    xaxis: {title: 'Time (seconds)'},
+    xaxis: {title: 'Time (seconds)', range: xRange},
     yaxis: {title: 'Respiration Rate (breaths/min)', range: [0, 40]},
     height: 350,
     margin: {l: 60, r: 30, t: 10, b: 50},
@@ -1122,7 +1125,7 @@ function generateAIAnalysis(activityRecords, ppgGreen, ppgRed, ppgIR, acc, scena
 }
 
 function synchronizeGraphs() {
-  const graphIds = ['ppgGraph', 'accGraph', 'bpmGraph', 'spo2Graph'];
+  const graphIds = ['ppgGraph', 'accGraph', 'bpmGraph', 'spo2Graph', 'respGraph'];
 
   graphIds.forEach(id => {
     const graph = document.getElementById(id);
