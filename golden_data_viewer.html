@@ -542,6 +542,7 @@ function plotPPG(green, red, ir) {
     height: 400,
     margin: {l: 60, r: 30, t: 10, b: 50},
     hovermode: 'x unified',
+    showlegend: false,
     autosize: true
   };
 
@@ -596,6 +597,7 @@ function plotACC(acc) {
     height: 350,
     margin: {l: 60, r: 30, t: 10, b: 50},
     hovermode: 'x unified',
+    showlegend: false,
     autosize: true
   };
 
@@ -634,19 +636,18 @@ function plotBPM(records) {
     });
   }
 
-  // Event markers (event.time is already in normalized seconds 0-3600)
+  // Event markers as shapes + annotations (not traces, to avoid legend width differences)
   const events = currentData.scenario.events || [];
-  events.forEach(event => {
-    traces.push({
-      x: [event.time, event.time],
-      y: [0, 200],
-      name: event.label,
-      type: 'scatter',
-      mode: 'lines',
-      line: {color: '#c5221f', width: 3, dash: 'dash'},
-      showlegend: true
-    });
-  });
+  const shapes = events.map(event => ({
+    type: 'line', x0: event.time, x1: event.time, y0: 0, y1: 200,
+    line: {color: '#c5221f', width: 3, dash: 'dash'}
+  }));
+  const annotations = events.map(event => ({
+    x: event.time, y: 195, xanchor: 'left', yanchor: 'top',
+    text: event.label, showarrow: false,
+    font: {color: '#c5221f', size: 12, family: 'Segoe UI, sans-serif'},
+    bgcolor: 'rgba(255,255,255,0.85)', borderpad: 3
+  }));
 
   const layout = {
     xaxis: {title: 'Time (seconds)'},
@@ -654,6 +655,9 @@ function plotBPM(records) {
     height: 350,
     margin: {l: 60, r: 30, t: 10, b: 50},
     hovermode: 'x unified',
+    showlegend: false,
+    shapes: shapes,
+    annotations: annotations,
     autosize: true
   };
 
@@ -708,19 +712,18 @@ function plotSpO2(records) {
     });
   }
 
-  // Event markers (event.time is already in normalized seconds 0-3600)
+  // Event markers as shapes + annotations
   const events = currentData.scenario.events || [];
-  events.forEach(event => {
-    traces.push({
-      x: [event.time, event.time],
-      y: [75, 105],
-      name: event.label,
-      type: 'scatter',
-      mode: 'lines',
-      line: {color: '#c5221f', width: 3, dash: 'dash'},
-      showlegend: true
-    });
-  });
+  const shapes = events.map(event => ({
+    type: 'line', x0: event.time, x1: event.time, y0: 75, y1: 105,
+    line: {color: '#c5221f', width: 3, dash: 'dash'}
+  }));
+  const annotations = events.map(event => ({
+    x: event.time, y: 104, xanchor: 'left', yanchor: 'top',
+    text: event.label, showarrow: false,
+    font: {color: '#c5221f', size: 12, family: 'Segoe UI, sans-serif'},
+    bgcolor: 'rgba(255,255,255,0.85)', borderpad: 3
+  }));
 
   const layout = {
     xaxis: {title: 'Time (seconds)'},
@@ -728,6 +731,9 @@ function plotSpO2(records) {
     height: 350,
     margin: {l: 60, r: 30, t: 10, b: 50},
     hovermode: 'x unified',
+    showlegend: false,
+    shapes: shapes,
+    annotations: annotations,
     autosize: true
   };
 
@@ -782,19 +788,18 @@ function plotResp(records) {
     });
   }
 
-  // Event markers (event.time is already in normalized seconds 0-3600)
+  // Event markers as shapes + annotations
   const events = currentData.scenario.events || [];
-  events.forEach(event => {
-    traces.push({
-      x: [event.time, event.time],
-      y: [0, 40],
-      name: event.label,
-      type: 'scatter',
-      mode: 'lines',
-      line: {color: '#c5221f', width: 3, dash: 'dash'},
-      showlegend: true
-    });
-  });
+  const shapes = events.map(event => ({
+    type: 'line', x0: event.time, x1: event.time, y0: 0, y1: 40,
+    line: {color: '#c5221f', width: 3, dash: 'dash'}
+  }));
+  const annotations = events.map(event => ({
+    x: event.time, y: 39, xanchor: 'left', yanchor: 'top',
+    text: event.label, showarrow: false,
+    font: {color: '#c5221f', size: 12, family: 'Segoe UI, sans-serif'},
+    bgcolor: 'rgba(255,255,255,0.85)', borderpad: 3
+  }));
 
   const layout = {
     xaxis: {title: 'Time (seconds)'},
@@ -802,6 +807,9 @@ function plotResp(records) {
     height: 350,
     margin: {l: 60, r: 30, t: 10, b: 50},
     hovermode: 'x unified',
+    showlegend: false,
+    shapes: shapes,
+    annotations: annotations,
     autosize: true
   };
 
