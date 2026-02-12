@@ -634,11 +634,11 @@ function plotBPM(records) {
     });
   }
 
-  // Event markers
+  // Event markers (event.time is already in normalized seconds 0-3600)
   const events = currentData.scenario.events || [];
   events.forEach(event => {
     traces.push({
-      x: [event.time - t0, event.time - t0],
+      x: [event.time, event.time],
       y: [0, 200],
       name: event.label,
       type: 'scatter',
@@ -708,11 +708,11 @@ function plotSpO2(records) {
     });
   }
 
-  // Event markers
+  // Event markers (event.time is already in normalized seconds 0-3600)
   const events = currentData.scenario.events || [];
   events.forEach(event => {
     traces.push({
-      x: [event.time - t0, event.time - t0],
+      x: [event.time, event.time],
       y: [75, 105],
       name: event.label,
       type: 'scatter',
@@ -782,11 +782,11 @@ function plotResp(records) {
     });
   }
 
-  // Event markers
+  // Event markers (event.time is already in normalized seconds 0-3600)
   const events = currentData.scenario.events || [];
   events.forEach(event => {
     traces.push({
-      x: [event.time - t0, event.time - t0],
+      x: [event.time, event.time],
       y: [0, 40],
       name: event.label,
       type: 'scatter',
